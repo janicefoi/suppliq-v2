@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jsh_erp_db
+    environment:
+      POSTGRES_DB: jsh_erp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    volumes:
+      - jsh_erp_pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d jsh_erp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  jsh_erp_pgdata:

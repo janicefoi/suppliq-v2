@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// CATEGORY
+// ============================================================
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  @@map("categories")
+}
+
+// ============================================================
+// ENUMS
+// ============================================================
+
+enum Role {
+  ADMIN
+  MANAGER
+  CASHIER
+}
+
+enum SaleType {
+  RETAIL
+  WHOLESALE
+  SPECIAL
+}
+
+enum PaymentStatus {
+  PAID
+  CREDIT
+}
+
+// ============================================================
+// BRANCH
+// ============================================================
+
+model Branch {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  phone     String?
+  paybill   String?
+  pin       String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users          User[]
+  customers      Customer[]
+  sales          Sale[]
+  stockLogs      StockLog[]
+  purchaseOrders PurchaseOrder[]
+  branchStocks   BranchStock[]
+
+  @@map("branches")
+}
+
+// ============================================================
+// MODELS
+// ============================================================
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true)
+  branchId     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  branch         Branch?         @relation(fields: [branchId], references: [id])
+  sales          Sale[]
+  creditPayments CreditPayment[]
+  purchaseOrders PurchaseOrder[]
+  stockLogs      StockLog[]
+
+  @@index([branchId])
+  @@map("users")
+}
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  email     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items          Item[]
+  purchaseOrders PurchaseOrder[]
+
+  @@map("suppliers")
+}
+
+model Item {
+  id             String   @id @default(cuid())
+  sku            String   @unique
+  name           String
+  category       String
+  description    String?
+  retailPrice    Decimal  @db.Decimal(10, 2)
+  wholesalePrice Decimal  @db.Decimal(10, 2)
+  specialPrice   Decimal? @db.Decimal(10, 2)
+  isActive       Boolean  @default(true)
+  supplierId     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
+  saleItems      SaleItem[]
+  purchaseOrders PurchaseOrder[]
+  stockLogs      StockLog[]
+  branchStocks   BranchStock[]
+
+  @@index([supplierId])
+  @@index([sku])
+  @@map("items")
+}
+
+model BranchStock {
+  id                String @id @default(cuid())
+  itemId            String
+  branchId          String
+  stockQty          Int    @default(0)
+  lowStockThreshold Int    @default(5)
+
+  item   Item   @relation(fields: [itemId], references: [id])
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([itemId, branchId])
+  @@index([branchId])
+  @@map("branch_stocks")
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  phone         String
+  address       String?
+  creditBalance Decimal  @db.Decimal(10, 2) @default(0)
+  branchId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  branch         Branch?         @relation(fields: [branchId], references: [id])
+  sales          Sale[]
+  creditPayments CreditPayment[]
+
+  @@index([branchId])
+  @@map("customers")
+}
+
+model Sale {
+  id             String        @id @default(cuid())
+  receiptNumber  String        @unique
+  saleType       SaleType
+  paymentStatus  PaymentStatus
+  discountAmount Decimal       @db.Decimal(10, 2) @default(0)
+  taxAmount      Decimal       @db.Decimal(10, 2) @default(0)
+  totalAmount    Decimal       @db.Decimal(10, 2)
+  isVoid         Boolean       @default(false)
+  voidReason     String?
+  voidedAt       DateTime?
+  customerId     String?
+  employeeId     String
+  branchId       String?
+  createdAt      DateTime      @default(now())
+
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+  employee User      @relation(fields: [employeeId], references: [id])
+  items    SaleItem[]
+
+  @@index([customerId])
+  @@index([employeeId])
+  @@index([branchId])
+  @@index([createdAt])
+  @@map("sales")
+}
+
+model SaleItem {
+  id        String  @id @default(cuid())
+  saleId    String
+  itemId    String
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(10, 2)
+
+  sale Sale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@index([saleId])
+  @@index([itemId])
+  @@map("sale_items")
+}
+
+model CreditPayment {
+  id           String   @id @default(cuid())
+  customerId   String
+  amount       Decimal  @db.Decimal(10, 2)
+  notes        String?
+  recordedById String
+  createdAt    DateTime @default(now())
+
+  customer   Customer @relation(fields: [customerId], references: [id])
+  recordedBy User     @relation(fields: [recordedById], references: [id])
+
+  @@index([customerId])
+  @@map("credit_payments")
+}
+
+model PurchaseOrder {
+  id           String   @id @default(cuid())
+  supplierId   String
+  itemId       String
+  quantity     Int
+  costPrice    Decimal  @db.Decimal(10, 2)
+  recordedById String
+  branchId     String?
+  createdAt    DateTime @default(now())
+
+  branch     Branch?  @relation(fields: [branchId], references: [id])
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  item       Item     @relation(fields: [itemId], references: [id])
+  recordedBy User     @relation(fields: [recordedById], references: [id])
+
+  @@index([supplierId])
+  @@index([itemId])
+  @@index([branchId])
+  @@map("purchase_orders")
+}
+
+model StockLog {
+  id           String   @id @default(cuid())
+  itemId       String
+  quantity     Int
+  recordedById String
+  branchId     String?
+  createdAt    DateTime @default(now())
+
+  branch     Branch? @relation(fields: [branchId], references: [id])
+  item       Item    @relation(fields: [itemId], references: [id])
+  recordedBy User    @relation(fields: [recordedById], references: [id])
+
+  @@index([itemId])
+  @@index([branchId])
+  @@map("stock_logs")
+}
