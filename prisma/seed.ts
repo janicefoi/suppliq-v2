@@ -1,64 +1,109 @@
-import { PrismaClient, Role } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  PurchaseOrderStatus,
+  StockMovementReason,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const VAT_EXTRACT = 16 / 116;
-function extractTax(total: number) { return Math.round(total * VAT_EXTRACT * 100) / 100; }
-function d(date: string, h: number, m = 0): Date { const dt = new Date(`${date}T00:00:00`); dt.setHours(h, m, 0, 0); return dt; }
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-const _seq: Record<string, number> = {};
+const VAT_EXTRACT = 16 / 116;
+function extractTax(total: number) {
+  return Math.round(total * VAT_EXTRACT * 100) / 100;
+}
+function d(date: string, h: number, m = 0): Date {
+  const dt = new Date(`${date}T00:00:00`);
+  dt.setHours(h, m, 0, 0);
+  return dt;
+}
+
+const _rcpSeq: Record<string, number> = {};
 function rcp(date: Date): string {
   const k = date.toISOString().slice(0, 10).replace(/-/g, "");
-  _seq[k] = (_seq[k] ?? 0) + 1;
-  return `RCP-${k}-${String(_seq[k]).padStart(4, "0")}`;
+  _rcpSeq[k] = (_rcpSeq[k] ?? 0) + 1;
+  return `RCP-${k}-${String(_rcpSeq[k]).padStart(4, "0")}`;
 }
+
+const _poSeq: Record<string, number> = {};
+function poNum(date: Date): string {
+  const k = date.toISOString().slice(0, 10).replace(/-/g, "");
+  _poSeq[k] = (_poSeq[k] ?? 0) + 1;
+  return `PO-${k}-${String(_poSeq[k]).padStart(4, "0")}`;
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
   console.log("Seeding database…\n");
 
-  // ── Branches ──────────────────────────────────────────────────────────────
+  // ── Organization ───────────────────────────────────────────────────────────
+  const org = await prisma.organization.upsert({
+    where: { slug: "jsh" },
+    update: {},
+    create: {
+      id: "seed-org-jsh",
+      name: "JSH Auto Spares",
+      slug: "jsh",
+      industry: "Automotive Parts",
+      country: "KE",
+      currency: "KES",
+    },
+  });
+  console.log(`✓ Organization: ${org.name}`);
+
+  // ── Branches ───────────────────────────────────────────────────────────────
   const b1 = await prisma.branch.upsert({
-    where:  { name: "Mukai Branch" },
+    where: { name_organizationId: { name: "Mukai Branch", organizationId: org.id } },
     update: { address: "PO BOX 4901 Eldoret Mukai", phone: "0722560051/0763560052", paybill: "315469", pin: "P0S1656847U" },
-    create: { name: "Mukai Branch", address: "PO BOX 4901 Eldoret Mukai", phone: "0722560051/0763560052", paybill: "315469", pin: "P0S1656847U" },
+    create: { name: "Mukai Branch", address: "PO BOX 4901 Eldoret Mukai", phone: "0722560051/0763560052", paybill: "315469", pin: "P0S1656847U", organizationId: org.id },
   });
   const b2 = await prisma.branch.upsert({
-    where:  { name: "Zulu Arcade Branch" },
+    where: { name_organizationId: { name: "Zulu Arcade Branch", organizationId: org.id } },
     update: { address: "PO BOX 30100 ELD Zulu Arcade", phone: "0712891212/0722560051", paybill: "858018", pin: "P0S1656847U" },
-    create: { name: "Zulu Arcade Branch", address: "PO BOX 30100 ELD Zulu Arcade", phone: "0712891212/0722560051", paybill: "858018", pin: "P0S1656847U" },
+    create: { name: "Zulu Arcade Branch", address: "PO BOX 30100 ELD Zulu Arcade", phone: "0712891212/0722560051", paybill: "858018", pin: "P0S1656847U", organizationId: org.id },
   });
   console.log(`✓ Branches: ${b1.name}, ${b2.name}`);
 
-  // ── Users (10 total) ──────────────────────────────────────────────────────
+  // ── Users ─────────────────────────────────────────────────────────────────
   const hw = (p: string) => bcrypt.hash(p, 10);
-  const admin = await prisma.user.upsert({ where: { email: "admin@jsh.co.ke" },         update: {}, create: { id: "seed-u-admin", name: "JSH Admin",       email: "admin@jsh.co.ke",           passwordHash: await hw("admin123"),    role: Role.ADMIN } });
-  const mgr1  = await prisma.user.upsert({ where: { email: "lucy.wangare@jsh.co.ke" },  update: {}, create: { id: "seed-u-mgr1",  name: "Lucy Wangare",  email: "lucy.wangare@jsh.co.ke",  passwordHash: await hw("manager123"),  role: Role.MANAGER, branchId: b1.id } });
-  const mgr2  = await prisma.user.upsert({ where: { email: "peter.kamau@jsh.co.ke" },   update: {}, create: { id: "seed-u-mgr2",  name: "Peter Kamau",   email: "peter.kamau@jsh.co.ke",   passwordHash: await hw("manager123"),  role: Role.MANAGER, branchId: b2.id } });
-  const cs1   = await prisma.user.upsert({ where: { email: "mary.akinyi@jsh.co.ke" },   update: {}, create: { id: "seed-u-cs1",   name: "Mary Akinyi",   email: "mary.akinyi@jsh.co.ke",   passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b1.id } });
-  const cs2   = await prisma.user.upsert({ where: { email: "james.otieno@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs2",   name: "James Otieno",  email: "james.otieno@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b1.id } });
-  const cs3   = await prisma.user.upsert({ where: { email: "brian.kiptoo@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs3",   name: "Brian Kiptoo",  email: "brian.kiptoo@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b1.id } });
-  const cs4   = await prisma.user.upsert({ where: { email: "susan.chebet@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs4",   name: "Susan Chebet",  email: "susan.chebet@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b1.id } });
-  const cs5   = await prisma.user.upsert({ where: { email: "david.mwangi@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs5",   name: "David Mwangi",  email: "david.mwangi@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b2.id } });
-  const cs6   = await prisma.user.upsert({ where: { email: "faith.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs6",   name: "Faith Njoroge", email: "faith.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b2.id } });
-  const cs7   = await prisma.user.upsert({ where: { email: "kevin.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs7",   name: "Kevin Njoroge", email: "kevin.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER, branchId: b2.id } });
+  const admin = await prisma.user.upsert({ where: { email: "admin@jsh.co.ke" },         update: {}, create: { id: "seed-u-admin", name: "JSH Admin",       email: "admin@jsh.co.ke",           passwordHash: await hw("admin123"),    role: Role.ADMIN,    organizationId: org.id } });
+  const mgr1  = await prisma.user.upsert({ where: { email: "lucy.wangare@jsh.co.ke" },  update: {}, create: { id: "seed-u-mgr1",  name: "Lucy Wangare",  email: "lucy.wangare@jsh.co.ke",  passwordHash: await hw("manager123"),  role: Role.MANAGER,  organizationId: org.id, branchId: b1.id } });
+  const mgr2  = await prisma.user.upsert({ where: { email: "peter.kamau@jsh.co.ke" },   update: {}, create: { id: "seed-u-mgr2",  name: "Peter Kamau",   email: "peter.kamau@jsh.co.ke",   passwordHash: await hw("manager123"),  role: Role.MANAGER,  organizationId: org.id, branchId: b2.id } });
+  const cs1   = await prisma.user.upsert({ where: { email: "mary.akinyi@jsh.co.ke" },   update: {}, create: { id: "seed-u-cs1",   name: "Mary Akinyi",   email: "mary.akinyi@jsh.co.ke",   passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
+  const cs2   = await prisma.user.upsert({ where: { email: "james.otieno@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs2",   name: "James Otieno",  email: "james.otieno@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
+  const cs3   = await prisma.user.upsert({ where: { email: "brian.kiptoo@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs3",   name: "Brian Kiptoo",  email: "brian.kiptoo@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
+  const cs4   = await prisma.user.upsert({ where: { email: "susan.chebet@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs4",   name: "Susan Chebet",  email: "susan.chebet@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
+  const cs5   = await prisma.user.upsert({ where: { email: "david.mwangi@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs5",   name: "David Mwangi",  email: "david.mwangi@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
+  const cs6   = await prisma.user.upsert({ where: { email: "faith.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs6",   name: "Faith Njoroge", email: "faith.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
+  const cs7   = await prisma.user.upsert({ where: { email: "kevin.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs7",   name: "Kevin Njoroge", email: "kevin.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
   void admin;
   console.log("✓ 10 users");
 
-  // ── Categories ────────────────────────────────────────────────────────────
-  for (const n of ["Engine Parts","Electrical","Brakes","Tyres & Tubes","Oils & Lubricants","Body Parts","Transmission","Filters"])
-    await prisma.category.upsert({ where: { name: n }, update: {}, create: { name: n } });
-  console.log("✓ 8 categories");
+  // ── Categories (build id map for item FK) ─────────────────────────────────
+  const catNames = ["Engine Parts", "Electrical", "Brakes", "Tyres & Tubes", "Oils & Lubricants", "Body Parts", "Transmission", "Filters"];
+  const catMap: Record<string, string> = {};
+  for (const n of catNames) {
+    const cat = await prisma.category.upsert({
+      where: { name_organizationId: { name: n, organizationId: org.id } },
+      update: {},
+      create: { name: n, organizationId: org.id },
+    });
+    catMap[n] = cat.id;
+  }
+  console.log(`✓ ${catNames.length} categories`);
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
-  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Mombasa Auto Spares Ltd",   phone: "0712000001", email: "orders@mombasaauto.co.ke",  address: "Mombasa Road, Industrial Area, Nairobi", notes: "Primary supplier — net 30 payment terms" } });
-  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Eldoret Motor Accessories", phone: "0721000002", email: "sales@eldoretmoto.co.ke",   address: "Uganda Road, Eldoret",                   notes: "Local supplier — fast delivery" } });
-  const sup3 = await prisma.supplier.upsert({ where: { id: "seed-sup-3" }, update: {}, create: { id: "seed-sup-3", name: "Nairobi Tyre & Tube Hub",   phone: "0733000003", email: "info@nairobityres.co.ke",   address: "Kirinyaga Road, Nairobi",                 notes: "Tyres and tubes specialist" } });
-  const sup4 = await prisma.supplier.upsert({ where: { id: "seed-sup-4" }, update: {}, create: { id: "seed-sup-4", name: "General Moto Supplies",     phone: "0700000004", email: "gms@motosupplies.co.ke",    address: "Nakuru Town, Nakuru County",              notes: "Oils, filters, and consumables" } });
+  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Mombasa Auto Spares Ltd",   phone: "0712000001", email: "orders@mombasaauto.co.ke",  address: "Mombasa Road, Industrial Area, Nairobi", notes: "Primary supplier — net 30 payment terms", organizationId: org.id } });
+  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Eldoret Motor Accessories", phone: "0721000002", email: "sales@eldoretmoto.co.ke",   address: "Uganda Road, Eldoret",                   notes: "Local supplier — fast delivery",          organizationId: org.id } });
+  const sup3 = await prisma.supplier.upsert({ where: { id: "seed-sup-3" }, update: {}, create: { id: "seed-sup-3", name: "Nairobi Tyre & Tube Hub",   phone: "0733000003", email: "info@nairobityres.co.ke",   address: "Kirinyaga Road, Nairobi",                 notes: "Tyres and tubes specialist",              organizationId: org.id } });
+  const sup4 = await prisma.supplier.upsert({ where: { id: "seed-sup-4" }, update: {}, create: { id: "seed-sup-4", name: "General Moto Supplies",     phone: "0700000004", email: "gms@motosupplies.co.ke",    address: "Nakuru Town, Nakuru County",              notes: "Oils, filters, and consumables",          organizationId: org.id } });
   console.log("✓ 4 suppliers");
 
-  // ── Items (83 brand-specific parts) ──────────────────────────────────────
-  type IS = { sku: string; name: string; cat: string; rp: number; wp: number; sp: number|null; sup: string; b1: number; b2: number; thr: number };
+  // ── Items ─────────────────────────────────────────────────────────────────
+  type IS = { sku: string; name: string; cat: string; rp: number; wp: number; sp: number | null; sup: string; b1: number; b2: number; thr: number };
   const itemSeeds: IS[] = [
     // ENGINE PARTS
     { sku:"ENG-001", name:"Piston Ring Set — Honda CG125",          cat:"Engine Parts",      rp:850,  wp:700,  sp:620,  sup:sup1.id, b1:80,  b2:40,  thr:15 },
@@ -156,12 +201,29 @@ async function main() {
   const iMap: Record<string, { id: string; rp: number; wp: number }> = {};
   for (const s of itemSeeds) {
     const item = await prisma.item.upsert({
-      where:  { sku: s.sku },
+      where:  { sku_organizationId: { sku: s.sku, organizationId: org.id } },
       update: { retailPrice: s.rp, wholesalePrice: s.wp, specialPrice: s.sp },
-      create: { sku: s.sku, name: s.name, category: s.cat, retailPrice: s.rp, wholesalePrice: s.wp, specialPrice: s.sp, supplierId: s.sup },
+      create: {
+        sku: s.sku,
+        name: s.name,
+        categoryId: catMap[s.cat],
+        retailPrice: s.rp,
+        wholesalePrice: s.wp,
+        specialPrice: s.sp,
+        supplierId: s.sup,
+        organizationId: org.id,
+      },
     });
-    await prisma.branchStock.upsert({ where: { itemId_branchId: { itemId: item.id, branchId: b1.id } }, update: { stockQty: s.b1, lowStockThreshold: s.thr }, create: { itemId: item.id, branchId: b1.id, stockQty: s.b1, lowStockThreshold: s.thr } });
-    await prisma.branchStock.upsert({ where: { itemId_branchId: { itemId: item.id, branchId: b2.id } }, update: { stockQty: s.b2, lowStockThreshold: s.thr }, create: { itemId: item.id, branchId: b2.id, stockQty: s.b2, lowStockThreshold: s.thr } });
+    await prisma.branchStock.upsert({
+      where:  { itemId_branchId: { itemId: item.id, branchId: b1.id } },
+      update: { stockQty: s.b1, lowStockThreshold: s.thr },
+      create: { itemId: item.id, branchId: b1.id, stockQty: s.b1, lowStockThreshold: s.thr },
+    });
+    await prisma.branchStock.upsert({
+      where:  { itemId_branchId: { itemId: item.id, branchId: b2.id } },
+      update: { stockQty: s.b2, lowStockThreshold: s.thr },
+      create: { itemId: item.id, branchId: b2.id, stockQty: s.b2, lowStockThreshold: s.thr },
+    });
     iMap[s.sku] = { id: item.id, rp: s.rp, wp: s.wp };
   }
   console.log(`✓ ${itemSeeds.length} items + branch stocks`);
@@ -169,7 +231,6 @@ async function main() {
   // ── Customers ─────────────────────────────────────────────────────────────
   type CS = { id: string; name: string; phone: string; address: string; br: string };
   const custSpecs: CS[] = [
-    // Mukai Branch
     { id:"seed-c-001", name:"Charles Kiprop",    phone:"0722100001", address:"Eldoret Town, Uasin Gishu",  br:b1.id },
     { id:"seed-c-002", name:"William Baloo",     phone:"0722100002", address:"Eldoret, Huruma Estate",     br:b1.id },
     { id:"seed-c-003", name:"Joseph Mutai",      phone:"0722100003", address:"Turbo, Uasin Gishu",         br:b1.id },
@@ -183,7 +244,6 @@ async function main() {
     { id:"seed-c-011", name:"Francis Rutto",     phone:"0722100011", address:"Ainabkoi, Eldoret",          br:b1.id },
     { id:"seed-c-012", name:"Ann Cherono",       phone:"0722100012", address:"Eldoret, Kipkaren",          br:b1.id },
     { id:"seed-c-013", name:"Benson Cheruiyot",  phone:"0722100013", address:"Eldoret, Langas",            br:b1.id },
-    // Zulu Arcade Branch
     { id:"seed-c-014", name:"John Mwangi",       phone:"0712100001", address:"Eldoret CBD",                br:b2.id },
     { id:"seed-c-015", name:"Mary Wanjiru",      phone:"0712100002", address:"Eldoret, Zulu",              br:b2.id },
     { id:"seed-c-016", name:"Peter Njoroge",     phone:"0712100003", address:"Eldoret, Maili Tatu",        br:b2.id },
@@ -196,197 +256,207 @@ async function main() {
     { id:"seed-c-023", name:"George Omondi",     phone:"0712100010", address:"Eldoret, Huruma",            br:b2.id },
   ];
   for (const c of custSpecs)
-    await prisma.customer.upsert({ where: { id: c.id }, update: {}, create: { id: c.id, name: c.name, phone: c.phone, address: c.address, branchId: c.br, creditBalance: 0 } });
+    await prisma.customer.upsert({
+      where:  { id: c.id },
+      update: {},
+      create: { id: c.id, name: c.name, phone: c.phone, address: c.address, branchId: c.br, organizationId: org.id, creditBalance: 0 },
+    });
   console.log(`✓ ${custSpecs.length} customers`);
 
-  // ── Employee / branch shorthands (used in sales + POs) ──────────────────
+  // ── Sales + StockLogs ─────────────────────────────────────────────────────
   const B1 = b1.id, B2 = b2.id;
   const M1 = mgr1.id, M2 = mgr2.id;
   const C1 = cs1.id, C2 = cs2.id, C3 = cs3.id, C4 = cs4.id;
   const C5 = cs5.id, C6 = cs6.id, C7 = cs7.id;
 
-  // ── Sales ─────────────────────────────────────────────────────────────────
-  const existSales = await prisma.sale.count({ where: { employee: { email: { endsWith: "@jsh.co.ke" } } } });
+  const existSales = await prisma.sale.count({
+    where: { organizationId: org.id },
+  });
+
   if (existSales >= 10) {
     console.log(`✓ Sales already seeded (${existSales}), skipping`);
   } else {
     type LS = { sku: string; qty: number };
-    type SS = { br: string; emp: string; cust: string|null; type: "RETAIL"|"WHOLESALE"; pay: "PAID"|"CREDIT"; disc: number; date: Date; lines: LS[] };
+    type SS = {
+      br: string; emp: string; cust: string | null;
+      type: "RETAIL" | "WHOLESALE"; pay: "PAID" | "CREDIT";
+      disc: number; date: Date; lines: LS[];
+    };
 
-    function p(sku: string, type: "RETAIL"|"WHOLESALE") { return type === "RETAIL" ? iMap[sku].rp : iMap[sku].wp; }
-    function calc(lines: LS[], type: "RETAIL"|"WHOLESALE", disc: number) {
-      const ll = lines.map(l => ({ itemId: iMap[l.sku].id, qty: l.qty, unitPrice: p(l.sku, type), subtotal: p(l.sku, type) * l.qty }));
+    function p(sku: string, type: "RETAIL" | "WHOLESALE") {
+      return type === "RETAIL" ? iMap[sku].rp : iMap[sku].wp;
+    }
+    function calc(lines: LS[], type: "RETAIL" | "WHOLESALE", disc: number) {
+      const ll = lines.map(l => ({
+        itemId: iMap[l.sku].id,
+        qty: l.qty,
+        unitPrice: p(l.sku, type),
+        subtotal: p(l.sku, type) * l.qty,
+      }));
       const total = ll.reduce((s, l) => s + l.subtotal, 0) - disc;
       return { ll, total, taxAmt: extractTax(total) };
     }
 
     const specs: SS[] = [
-      // ── APRIL 2026 ────────────────────────────────────────────────────────
-
-      // Apr 4
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-04",9,20),  lines:[{sku:"ENG-001",qty:2},{sku:"OIL-001",qty:4}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-04",11,0),  lines:[{sku:"BRA-001",qty:2},{sku:"BRA-007",qty:3}] },
-      // Apr 7
-      { br:B1, emp:C2, cust:"seed-c-004", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-04-07",10,0),  lines:[{sku:"ELE-001",qty:2},{sku:"FIL-001",qty:3}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-07",14,30), lines:[{sku:"OIL-001",qty:5},{sku:"OIL-003",qty:3}] },
-      // Apr 8
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-08",9,45),  lines:[{sku:"TYR-001",qty:3},{sku:"TYR-003",qty:5}] },
-      { br:B2, emp:C5, cust:"seed-c-017", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-04-08",11,20), lines:[{sku:"BRA-003",qty:2},{sku:"BRA-006",qty:4}] },
-      // Apr 10 ── BIG WHOLESALE: Daniel Kiprotich (B1, ~115k)
+      // ── APRIL 2026 ──────────────────────────────────────────────────────────
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-04",9,20),  lines:[{sku:"ENG-001",qty:2},{sku:"OIL-001",qty:4}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-04",11,0),  lines:[{sku:"BRA-001",qty:2},{sku:"BRA-007",qty:3}] },
+      { br:B1, emp:C2, cust:"seed-c-004", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-04-07",10,0),  lines:[{sku:"ELE-001",qty:2},{sku:"FIL-001",qty:3}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-07",14,30), lines:[{sku:"OIL-001",qty:5},{sku:"OIL-003",qty:3}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-08",9,45),  lines:[{sku:"TYR-001",qty:3},{sku:"TYR-003",qty:5}] },
+      { br:B2, emp:C5, cust:"seed-c-017", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-04-08",11,20), lines:[{sku:"BRA-003",qty:2},{sku:"BRA-006",qty:4}] },
+      // Big wholesale: Daniel Kiprotich
       { br:B1, emp:M1, cust:"seed-c-006", type:"WHOLESALE", pay:"CREDIT", disc:2000, date:d("2026-04-10",9,0),
         lines:[{sku:"ENG-016",qty:20},{sku:"ENG-008",qty:20},{sku:"BRA-001",qty:30},{sku:"TYR-003",qty:50},{sku:"TRN-001",qty:30},{sku:"ELE-003",qty:20},{sku:"OIL-001",qty:50},{sku:"TRN-014",qty:8}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-10",13,0),  lines:[{sku:"ENG-006",qty:1},{sku:"OIL-002",qty:3}] },
-      // Apr 11
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-04-11",10,30), lines:[{sku:"FIL-002",qty:2},{sku:"FIL-004",qty:2}] },
-      { br:B2, emp:C6, cust:"seed-c-021", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-04-11",11,0),  lines:[{sku:"ELE-005",qty:2},{sku:"ELE-008",qty:3}] },
-      // Apr 14
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-14",9,0),   lines:[{sku:"BOD-001",qty:2},{sku:"ELE-010",qty:2}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-14",14,0),  lines:[{sku:"TYR-002",qty:4},{sku:"OIL-001",qty:4}] },
-      // Apr 15 — medium sales
-      { br:B1, emp:M1, cust:"seed-c-008", type:"WHOLESALE", pay:"CREDIT", disc:0,  date:d("2026-04-15",9,0),   lines:[{sku:"BRA-001",qty:20},{sku:"BRA-004",qty:20},{sku:"BRA-006",qty:30},{sku:"TRN-001",qty:15}] },
-      { br:B2, emp:M2, cust:"seed-c-015", type:"WHOLESALE", pay:"CREDIT", disc:500, date:d("2026-04-15",10,0),  lines:[{sku:"ENG-002",qty:10},{sku:"ENG-007",qty:10},{sku:"OIL-001",qty:30}] },
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-15",15,30), lines:[{sku:"ENG-012",qty:2},{sku:"ENG-019",qty:3}] },
-      // Apr 16
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-16",10,0),  lines:[{sku:"TRN-003",qty:3},{sku:"TRN-005",qty:2},{sku:"TRN-009",qty:5}] },
-      { br:B2, emp:C7, cust:"seed-c-022", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-04-16",11,30), lines:[{sku:"ELE-006",qty:1},{sku:"FIL-003",qty:2}] },
-      // Apr 18
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-18",9,15),  lines:[{sku:"OIL-004",qty:4},{sku:"OIL-005",qty:2}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-18",13,0),  lines:[{sku:"BOD-004",qty:1},{sku:"BOD-005",qty:2}] },
-      // Apr 21
-      { br:B1, emp:C4, cust:"seed-c-003", type:"RETAIL",  pay:"PAID",   disc:0,    date:d("2026-04-21",10,0),  lines:[{sku:"ENG-020",qty:5},{sku:"ENG-021",qty:5}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-04-21",14,30), lines:[{sku:"TRN-007",qty:2},{sku:"TRN-008",qty:2}] },
-      // Apr 22
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-22",9,30),  lines:[{sku:"ELE-009",qty:20},{sku:"ELE-010",qty:5}] },
-      { br:B2, emp:M2, cust:"seed-c-019", type:"WHOLESALE", pay:"CREDIT", disc:0,  date:d("2026-04-22",10,0),   lines:[{sku:"TRN-002",qty:20},{sku:"TRN-004",qty:15},{sku:"TRN-006",qty:15}] },
-      // Apr 23
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-23",11,0),  lines:[{sku:"FIL-005",qty:3},{sku:"FIL-006",qty:4}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-23",14,0),  lines:[{sku:"BRA-008",qty:1},{sku:"BOD-007",qty:2}] },
-      // Apr 25 ── BIG WHOLESALE: William Baloo (B1, ~107k)
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-10",13,0),  lines:[{sku:"ENG-006",qty:1},{sku:"OIL-002",qty:3}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-04-11",10,30), lines:[{sku:"FIL-002",qty:2},{sku:"FIL-004",qty:2}] },
+      { br:B2, emp:C6, cust:"seed-c-021", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-04-11",11,0),  lines:[{sku:"ELE-005",qty:2},{sku:"ELE-008",qty:3}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-14",9,0),   lines:[{sku:"BOD-001",qty:2},{sku:"ELE-010",qty:2}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-14",14,0),  lines:[{sku:"TYR-002",qty:4},{sku:"OIL-001",qty:4}] },
+      { br:B1, emp:M1, cust:"seed-c-008", type:"WHOLESALE", pay:"CREDIT", disc:0,    date:d("2026-04-15",9,0),   lines:[{sku:"BRA-001",qty:20},{sku:"BRA-004",qty:20},{sku:"BRA-006",qty:30},{sku:"TRN-001",qty:15}] },
+      { br:B2, emp:M2, cust:"seed-c-015", type:"WHOLESALE", pay:"CREDIT", disc:500,  date:d("2026-04-15",10,0),  lines:[{sku:"ENG-002",qty:10},{sku:"ENG-007",qty:10},{sku:"OIL-001",qty:30}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-15",15,30), lines:[{sku:"ENG-012",qty:2},{sku:"ENG-019",qty:3}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-16",10,0),  lines:[{sku:"TRN-003",qty:3},{sku:"TRN-005",qty:2},{sku:"TRN-009",qty:5}] },
+      { br:B2, emp:C7, cust:"seed-c-022", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-04-16",11,30), lines:[{sku:"ELE-006",qty:1},{sku:"FIL-003",qty:2}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-18",9,15),  lines:[{sku:"OIL-004",qty:4},{sku:"OIL-005",qty:2}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-18",13,0),  lines:[{sku:"BOD-004",qty:1},{sku:"BOD-005",qty:2}] },
+      { br:B1, emp:C4, cust:"seed-c-003", type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-21",10,0),  lines:[{sku:"ENG-020",qty:5},{sku:"ENG-021",qty:5}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-04-21",14,30), lines:[{sku:"TRN-007",qty:2},{sku:"TRN-008",qty:2}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-22",9,30),  lines:[{sku:"ELE-009",qty:20},{sku:"ELE-010",qty:5}] },
+      { br:B2, emp:M2, cust:"seed-c-019", type:"WHOLESALE", pay:"CREDIT", disc:0,    date:d("2026-04-22",10,0),  lines:[{sku:"TRN-002",qty:20},{sku:"TRN-004",qty:15},{sku:"TRN-006",qty:15}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-23",11,0),  lines:[{sku:"FIL-005",qty:3},{sku:"FIL-006",qty:4}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-23",14,0),  lines:[{sku:"BRA-008",qty:1},{sku:"BOD-007",qty:2}] },
+      // Big wholesale: William Baloo
       { br:B1, emp:M1, cust:"seed-c-002", type:"WHOLESALE", pay:"CREDIT", disc:1500, date:d("2026-04-25",9,0),
         lines:[{sku:"ENG-001",qty:15},{sku:"ENG-006",qty:15},{sku:"BRA-003",qty:30},{sku:"TYR-001",qty:40},{sku:"TRN-001",qty:20},{sku:"ELE-005",qty:15},{sku:"FIL-002",qty:20},{sku:"OIL-001",qty:30},{sku:"TRN-003",qty:20},{sku:"TRN-005",qty:20},{sku:"BOD-006",qty:5},{sku:"ENG-010",qty:10},{sku:"TRN-009",qty:20},{sku:"ELE-001",qty:10}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-25",13,0),  lines:[{sku:"OIL-001",qty:6},{sku:"OIL-002",qty:4}] },
-      // Apr 26
-      { br:B1, emp:C3, cust:"seed-c-009", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-04-26",10,0),  lines:[{sku:"ELE-003",qty:2},{sku:"ELE-007",qty:1}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-26",14,0),  lines:[{sku:"TYR-005",qty:2},{sku:"TYR-006",qty:2}] },
-      // Apr 28
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-28",9,30),  lines:[{sku:"BOD-002",qty:1},{sku:"BOD-003",qty:2}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-04-28",11,30), lines:[{sku:"BRA-009",qty:3},{sku:"BRA-005",qty:4}] },
-      // Apr 29
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-29",10,0),  lines:[{sku:"ENG-013",qty:3},{sku:"ENG-014",qty:2}] },
-      { br:B2, emp:C5, cust:"seed-c-020", type:"RETAIL",  pay:"PAID",   disc:0,    date:d("2026-04-29",13,30), lines:[{sku:"FIL-001",qty:4},{sku:"OIL-003",qty:5}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-25",13,0),  lines:[{sku:"OIL-001",qty:6},{sku:"OIL-002",qty:4}] },
+      { br:B1, emp:C3, cust:"seed-c-009", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-04-26",10,0),  lines:[{sku:"ELE-003",qty:2},{sku:"ELE-007",qty:1}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-26",14,0),  lines:[{sku:"TYR-005",qty:2},{sku:"TYR-006",qty:2}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-28",9,30),  lines:[{sku:"BOD-002",qty:1},{sku:"BOD-003",qty:2}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-04-28",11,30), lines:[{sku:"BRA-009",qty:3},{sku:"BRA-005",qty:4}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-29",10,0),  lines:[{sku:"ENG-013",qty:3},{sku:"ENG-014",qty:2}] },
+      { br:B2, emp:C5, cust:"seed-c-020", type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-04-29",13,30), lines:[{sku:"FIL-001",qty:4},{sku:"OIL-003",qty:5}] },
 
-      // ── MAY 2026 ──────────────────────────────────────────────────────────
-
-      // May 2
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-02",9,0),   lines:[{sku:"TRN-010",qty:3},{sku:"TRN-011",qty:3},{sku:"TRN-012",qty:4}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-02",14,0),  lines:[{sku:"ENG-004",qty:2},{sku:"OIL-002",qty:4}] },
-      // May 5
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-05",9,30),  lines:[{sku:"ELE-011",qty:3},{sku:"ELE-012",qty:2}] },
-      { br:B1, emp:M1, cust:"seed-c-011", type:"WHOLESALE", pay:"CREDIT", disc:500, date:d("2026-05-05",10,0),  lines:[{sku:"BRA-001",qty:25},{sku:"BRA-002",qty:25},{sku:"BRA-004",qty:30},{sku:"BRA-007",qty:40}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-05",14,0),  lines:[{sku:"TYR-003",qty:10},{sku:"TYR-004",qty:5}] },
-      // May 6
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-06",10,30), lines:[{sku:"ENG-017",qty:2},{sku:"ENG-018",qty:2}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-06",14,0),  lines:[{sku:"BOD-001",qty:3},{sku:"BOD-004",qty:2}] },
-      // May 7
-      { br:B1, emp:C1, cust:"seed-c-001", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-05-07",9,0),   lines:[{sku:"ELE-009",qty:30},{sku:"ELE-010",qty:8}] },
-      { br:B2, emp:M2, cust:"seed-c-016", type:"WHOLESALE", pay:"CREDIT", disc:0,  date:d("2026-05-07",10,30), lines:[{sku:"TRN-001",qty:20},{sku:"TRN-002",qty:20},{sku:"TRN-009",qty:40}] },
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-07",15,0),  lines:[{sku:"FIL-004",qty:3},{sku:"FIL-005",qty:3}] },
-      // May 8 ── BIG WHOLESALE: Mary Wanjiru (B2, ~104k)
+      // ── MAY 2026 ────────────────────────────────────────────────────────────
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-02",9,0),   lines:[{sku:"TRN-010",qty:3},{sku:"TRN-011",qty:3},{sku:"TRN-012",qty:4}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-02",14,0),  lines:[{sku:"ENG-004",qty:2},{sku:"OIL-002",qty:4}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-05",9,30),  lines:[{sku:"ELE-011",qty:3},{sku:"ELE-012",qty:2}] },
+      { br:B1, emp:M1, cust:"seed-c-011", type:"WHOLESALE", pay:"CREDIT", disc:500,  date:d("2026-05-05",10,0),  lines:[{sku:"BRA-001",qty:25},{sku:"BRA-002",qty:25},{sku:"BRA-004",qty:30},{sku:"BRA-007",qty:40}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-05",14,0),  lines:[{sku:"TYR-003",qty:10},{sku:"TYR-004",qty:5}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-06",10,30), lines:[{sku:"ENG-017",qty:2},{sku:"ENG-018",qty:2}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-06",14,0),  lines:[{sku:"BOD-001",qty:3},{sku:"BOD-004",qty:2}] },
+      { br:B1, emp:C1, cust:"seed-c-001", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-05-07",9,0),   lines:[{sku:"ELE-009",qty:30},{sku:"ELE-010",qty:8}] },
+      { br:B2, emp:M2, cust:"seed-c-016", type:"WHOLESALE", pay:"CREDIT", disc:0,    date:d("2026-05-07",10,30), lines:[{sku:"TRN-001",qty:20},{sku:"TRN-002",qty:20},{sku:"TRN-009",qty:40}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-07",15,0),  lines:[{sku:"FIL-004",qty:3},{sku:"FIL-005",qty:3}] },
+      // Big wholesale: Mary Wanjiru
       { br:B2, emp:M2, cust:"seed-c-015", type:"WHOLESALE", pay:"CREDIT", disc:1000, date:d("2026-05-08",9,0),
         lines:[{sku:"ENG-002",qty:20},{sku:"ENG-007",qty:20},{sku:"BRA-001",qty:40},{sku:"TYR-003",qty:50},{sku:"TRN-002",qty:30},{sku:"ELE-002",qty:20},{sku:"OIL-001",qty:50},{sku:"TRN-010",qty:10},{sku:"TRN-011",qty:10},{sku:"ENG-013",qty:10},{sku:"BOD-003",qty:10},{sku:"BOD-008",qty:5}] },
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-08",11,30), lines:[{sku:"OIL-001",qty:5},{sku:"OIL-004",qty:3}] },
-      // May 9
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-09",9,30),  lines:[{sku:"ENG-003",qty:2},{sku:"ENG-009",qty:2}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-09",13,0),  lines:[{sku:"TRN-013",qty:2},{sku:"BOD-005",qty:2}] },
-      // May 12
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-12",9,15),  lines:[{sku:"TYR-001",qty:5},{sku:"TYR-003",qty:10}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-12",10,30), lines:[{sku:"FIL-001",qty:3},{sku:"FIL-006",qty:4}] },
-      { br:B1, emp:M1, cust:"seed-c-013", type:"WHOLESALE", pay:"CREDIT", disc:300, date:d("2026-05-12",11,0),  lines:[{sku:"ENG-005",qty:10},{sku:"ENG-012",qty:10},{sku:"TRN-007",qty:8}] },
-      // May 13
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-13",10,0),  lines:[{sku:"ELE-004",qty:2},{sku:"ELE-006",qty:2}] },
-      { br:B2, emp:C5, cust:"seed-c-023", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-05-13",14,0),  lines:[{sku:"BRA-008",qty:2},{sku:"BRA-009",qty:4}] },
-      // May 14
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-14",9,30),  lines:[{sku:"OIL-002",qty:6},{sku:"OIL-003",qty:4}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-14",13,30), lines:[{sku:"BOD-006",qty:2},{sku:"BOD-007",qty:3}] },
-      // May 15 ── BIG WHOLESALE: Elizabeth Njeri (B2, ~127k)
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-08",11,30), lines:[{sku:"OIL-001",qty:5},{sku:"OIL-004",qty:3}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-09",9,30),  lines:[{sku:"ENG-003",qty:2},{sku:"ENG-009",qty:2}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-09",13,0),  lines:[{sku:"TRN-013",qty:2},{sku:"BOD-005",qty:2}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-12",9,15),  lines:[{sku:"TYR-001",qty:5},{sku:"TYR-003",qty:10}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-12",10,30), lines:[{sku:"FIL-001",qty:3},{sku:"FIL-006",qty:4}] },
+      { br:B1, emp:M1, cust:"seed-c-013", type:"WHOLESALE", pay:"CREDIT", disc:300,  date:d("2026-05-12",11,0),  lines:[{sku:"ENG-005",qty:10},{sku:"ENG-012",qty:10},{sku:"TRN-007",qty:8}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-13",10,0),  lines:[{sku:"ELE-004",qty:2},{sku:"ELE-006",qty:2}] },
+      { br:B2, emp:C5, cust:"seed-c-023", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-05-13",14,0),  lines:[{sku:"BRA-008",qty:2},{sku:"BRA-009",qty:4}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-14",9,30),  lines:[{sku:"OIL-002",qty:6},{sku:"OIL-003",qty:4}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-14",13,30), lines:[{sku:"BOD-006",qty:2},{sku:"BOD-007",qty:3}] },
+      // Big wholesale: Elizabeth Njeri
       { br:B2, emp:M2, cust:"seed-c-019", type:"WHOLESALE", pay:"CREDIT", disc:3000, date:d("2026-05-15",9,0),
         lines:[{sku:"ENG-003",qty:30},{sku:"BRA-002",qty:30},{sku:"TYR-002",qty:50},{sku:"ELE-003",qty:20},{sku:"ELE-005",qty:20},{sku:"OIL-001",qty:50},{sku:"TRN-008",qty:20},{sku:"TRN-014",qty:10}] },
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-15",11,0),  lines:[{sku:"ENG-011",qty:1},{sku:"OIL-005",qty:2}] },
-      // May 16
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-16",9,0),   lines:[{sku:"TRN-004",qty:4},{sku:"TRN-006",qty:3}] },
-      { br:B2, emp:C5, cust:"seed-c-022", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-05-16",11,30), lines:[{sku:"ELE-007",qty:2},{sku:"ELE-008",qty:3}] },
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-16",15,0),  lines:[{sku:"FIL-002",qty:4},{sku:"FIL-005",qty:4}] },
-      // May 19
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-19",10,0),  lines:[{sku:"BRA-003",qty:3},{sku:"BRA-005",qty:4}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-19",13,0),  lines:[{sku:"TYR-006",qty:2},{sku:"TYR-007",qty:2}] },
-      // May 20
-      { br:B1, emp:M1, cust:"seed-c-006", type:"WHOLESALE", pay:"PAID",  disc:0,   date:d("2026-05-20",9,30),  lines:[{sku:"TRN-015",qty:5},{sku:"TRN-013",qty:5},{sku:"BOD-004",qty:10}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-20",14,0),  lines:[{sku:"ENG-019",qty:4},{sku:"ENG-020",qty:3}] },
-      // May 21
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-21",9,15),  lines:[{sku:"ELE-011",qty:2},{sku:"ELE-012",qty:2}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-21",11,0),  lines:[{sku:"OIL-001",qty:8},{sku:"OIL-002",qty:5}] },
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-05-21",14,30), lines:[{sku:"BOD-001",qty:2},{sku:"BOD-007",qty:2}] },
-      // May 22 ── BIG WHOLESALE: Daniel Kiprotich again (B1, ~116k)
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-15",11,0),  lines:[{sku:"ENG-011",qty:1},{sku:"OIL-005",qty:2}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-16",9,0),   lines:[{sku:"TRN-004",qty:4},{sku:"TRN-006",qty:3}] },
+      { br:B2, emp:C5, cust:"seed-c-022", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-05-16",11,30), lines:[{sku:"ELE-007",qty:2},{sku:"ELE-008",qty:3}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-16",15,0),  lines:[{sku:"FIL-002",qty:4},{sku:"FIL-005",qty:4}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-19",10,0),  lines:[{sku:"BRA-003",qty:3},{sku:"BRA-005",qty:4}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-19",13,0),  lines:[{sku:"TYR-006",qty:2},{sku:"TYR-007",qty:2}] },
+      { br:B1, emp:M1, cust:"seed-c-006", type:"WHOLESALE", pay:"PAID",   disc:0,    date:d("2026-05-20",9,30),  lines:[{sku:"TRN-015",qty:5},{sku:"TRN-013",qty:5},{sku:"BOD-004",qty:10}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-20",14,0),  lines:[{sku:"ENG-019",qty:4},{sku:"ENG-020",qty:3}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-21",9,15),  lines:[{sku:"ELE-011",qty:2},{sku:"ELE-012",qty:2}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-21",11,0),  lines:[{sku:"OIL-001",qty:8},{sku:"OIL-002",qty:5}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:50,   date:d("2026-05-21",14,30), lines:[{sku:"BOD-001",qty:2},{sku:"BOD-007",qty:2}] },
+      // Big wholesale: Daniel Kiprotich again
       { br:B1, emp:M1, cust:"seed-c-006", type:"WHOLESALE", pay:"CREDIT", disc:1150, date:d("2026-05-22",9,0),
         lines:[{sku:"ENG-016",qty:25},{sku:"TRN-014",qty:9},{sku:"ELE-011",qty:30},{sku:"BRA-001",qty:30},{sku:"OIL-001",qty:40},{sku:"TRN-001",qty:20},{sku:"ENG-015",qty:10}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-22",13,30), lines:[{sku:"FIL-004",qty:3},{sku:"ENG-021",qty:4}] },
-      // May 23
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-23",9,30),  lines:[{sku:"TYR-001",qty:6},{sku:"TYR-003",qty:8}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-23",11,0),  lines:[{sku:"BRA-004",qty:5},{sku:"BRA-007",qty:6}] },
-      { br:B1, emp:C3, cust:"seed-c-005", type:"RETAIL",  pay:"PAID",   disc:0,    date:d("2026-05-23",15,30), lines:[{sku:"ELE-009",qty:10},{sku:"OIL-001",qty:5}] },
-      // May 26
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-26",10,0),  lines:[{sku:"ENG-014",qty:3},{sku:"ENG-004",qty:2}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-26",13,30), lines:[{sku:"TRN-010",qty:4},{sku:"TRN-012",qty:4}] },
-      // May 27
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-27",9,0),   lines:[{sku:"OIL-003",qty:6},{sku:"OIL-004",qty:4}] },
-      { br:B2, emp:M2, cust:"seed-c-021", type:"WHOLESALE", pay:"CREDIT", disc:0,  date:d("2026-05-27",10,30), lines:[{sku:"TRN-002",qty:15},{sku:"BRA-001",qty:20},{sku:"OIL-001",qty:25}] },
-      // May 28 ── BIG WHOLESALE: William Baloo again (B1, ~132k)
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-22",13,30), lines:[{sku:"FIL-004",qty:3},{sku:"ENG-021",qty:4}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-23",9,30),  lines:[{sku:"TYR-001",qty:6},{sku:"TYR-003",qty:8}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-23",11,0),  lines:[{sku:"BRA-004",qty:5},{sku:"BRA-007",qty:6}] },
+      { br:B1, emp:C3, cust:"seed-c-005", type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-23",15,30), lines:[{sku:"ELE-009",qty:10},{sku:"OIL-001",qty:5}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-26",10,0),  lines:[{sku:"ENG-014",qty:3},{sku:"ENG-004",qty:2}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-26",13,30), lines:[{sku:"TRN-010",qty:4},{sku:"TRN-012",qty:4}] },
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-27",9,0),   lines:[{sku:"OIL-003",qty:6},{sku:"OIL-004",qty:4}] },
+      { br:B2, emp:M2, cust:"seed-c-021", type:"WHOLESALE", pay:"CREDIT", disc:0,    date:d("2026-05-27",10,30), lines:[{sku:"TRN-002",qty:15},{sku:"BRA-001",qty:20},{sku:"OIL-001",qty:25}] },
+      // Big wholesale: William Baloo again
       { br:B1, emp:M1, cust:"seed-c-002", type:"WHOLESALE", pay:"CREDIT", disc:1500, date:d("2026-05-28",9,0),
         lines:[{sku:"TRN-015",qty:20},{sku:"ENG-018",qty:20},{sku:"BRA-003",qty:30},{sku:"TYR-001",qty:40},{sku:"ELE-001",qty:20},{sku:"ENG-010",qty:10},{sku:"OIL-001",qty:50},{sku:"TRN-003",qty:20},{sku:"TRN-005",qty:20},{sku:"BOD-006",qty:10}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-28",14,0),  lines:[{sku:"ENG-007",qty:2},{sku:"FIL-003",qty:3}] },
-      // May 29
-      { br:B1, emp:C2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-29",10,0),  lines:[{sku:"BOD-002",qty:1},{sku:"BOD-005",qty:2}] },
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-29",11,30), lines:[{sku:"TYR-002",qty:4},{sku:"TYR-004",qty:3}] },
-      { br:B1, emp:C3, cust:"seed-c-007", type:"RETAIL",  pay:"PAID",   disc:0,    date:d("2026-05-29",14,0),  lines:[{sku:"ENG-001",qty:2},{sku:"ELE-005",qty:1}] },
-      // May 30
-      { br:B1, emp:C4, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-30",9,30),  lines:[{sku:"FIL-006",qty:5},{sku:"FIL-001",qty:3}] },
-      { br:B2, emp:C5, cust:null,       type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-30",13,0),  lines:[{sku:"ELE-001",qty:1},{sku:"OIL-002",qty:4}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-28",14,0),  lines:[{sku:"ENG-007",qty:2},{sku:"FIL-003",qty:3}] },
+      { br:B1, emp:C2, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-29",10,0),  lines:[{sku:"BOD-002",qty:1},{sku:"BOD-005",qty:2}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-29",11,30), lines:[{sku:"TYR-002",qty:4},{sku:"TYR-004",qty:3}] },
+      { br:B1, emp:C3, cust:"seed-c-007", type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-29",14,0),  lines:[{sku:"ENG-001",qty:2},{sku:"ELE-005",qty:1}] },
+      { br:B1, emp:C4, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-05-30",9,30),  lines:[{sku:"FIL-006",qty:5},{sku:"FIL-001",qty:3}] },
+      { br:B2, emp:C5, cust:null,         type:"RETAIL",    pay:"PAID",   disc:100,  date:d("2026-05-30",13,0),  lines:[{sku:"ELE-001",qty:1},{sku:"OIL-002",qty:4}] },
 
-      // ── JUNE 2026 ─────────────────────────────────────────────────────────
-
-      // Jun 2
-      { br:B1, emp:C1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-02",9,15),  lines:[{sku:"TRN-001",qty:3},{sku:"TRN-009",qty:6}] },
-      { br:B2, emp:C7, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-02",10,30), lines:[{sku:"BRA-002",qty:4},{sku:"BRA-005",qty:5}] },
-      { br:B1, emp:C2, cust:"seed-c-010", type:"RETAIL",  pay:"CREDIT", disc:0,    date:d("2026-06-02",14,0),  lines:[{sku:"ELE-002",qty:2},{sku:"ELE-007",qty:1}] },
-      // Jun 3 (today)
-      { br:B2, emp:C6, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-03",9,30),  lines:[{sku:"OIL-001",qty:5},{sku:"OIL-005",qty:2}] },
-      { br:B1, emp:C3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-03",11,0),  lines:[{sku:"ENG-001",qty:1},{sku:"ENG-006",qty:1},{sku:"FIL-002",qty:2}] },
-      { br:B2, emp:M2, cust:"seed-c-014", type:"RETAIL",  pay:"PAID",   disc:0,    date:d("2026-06-03",14,0),  lines:[{sku:"TYR-003",qty:8},{sku:"TYR-001",qty:4},{sku:"ENG-003",qty:1}] },
+      // ── JUNE 2026 ────────────────────────────────────────────────────────────
+      { br:B1, emp:C1, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-02",9,15),  lines:[{sku:"TRN-001",qty:3},{sku:"TRN-009",qty:6}] },
+      { br:B2, emp:C7, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-02",10,30), lines:[{sku:"BRA-002",qty:4},{sku:"BRA-005",qty:5}] },
+      { br:B1, emp:C2, cust:"seed-c-010", type:"RETAIL",    pay:"CREDIT", disc:0,    date:d("2026-06-02",14,0),  lines:[{sku:"ELE-002",qty:2},{sku:"ELE-007",qty:1}] },
+      { br:B2, emp:C6, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-03",9,30),  lines:[{sku:"OIL-001",qty:5},{sku:"OIL-005",qty:2}] },
+      { br:B1, emp:C3, cust:null,         type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-03",11,0),  lines:[{sku:"ENG-001",qty:1},{sku:"ENG-006",qty:1},{sku:"FIL-002",qty:2}] },
+      { br:B2, emp:M2, cust:"seed-c-014", type:"RETAIL",    pay:"PAID",   disc:0,    date:d("2026-06-03",14,0),  lines:[{sku:"TYR-003",qty:8},{sku:"TYR-001",qty:4},{sku:"ENG-003",qty:1}] },
     ];
 
-    // Sort chronologically then assign receipt numbers + create
     specs.sort((a, b) => a.date.getTime() - b.date.getTime());
 
     for (const spec of specs) {
       const rcpNum = rcp(spec.date);
       const { ll, total, taxAmt } = calc(spec.lines, spec.type, spec.disc);
-      await prisma.sale.upsert({
-        where:  { receiptNumber: rcpNum },
+
+      const sale = await prisma.sale.upsert({
+        where:  { receiptNumber_organizationId: { receiptNumber: rcpNum, organizationId: org.id } },
         update: {},
         create: {
           receiptNumber: rcpNum,
-          saleType: spec.type, paymentStatus: spec.pay,
-          discountAmount: spec.disc, taxAmount: taxAmt, totalAmount: total,
+          saleType: spec.type,
+          paymentStatus: spec.pay,
+          discountAmount: spec.disc,
+          taxAmount: taxAmt,
+          totalAmount: total,
           isVoid: false,
-          customerId: spec.cust, employeeId: spec.emp, branchId: spec.br,
+          customerId: spec.cust,
+          employeeId: spec.emp,
+          branchId: spec.br,
+          organizationId: org.id,
           createdAt: spec.date,
-          items: { create: ll.map(l => ({ itemId: l.itemId, quantity: l.qty, unitPrice: l.unitPrice, subtotal: l.subtotal })) },
+          items: {
+            create: ll.map(l => ({
+              itemId: l.itemId,
+              quantity: l.qty,
+              unitPrice: l.unitPrice,
+              subtotal: l.subtotal,
+            })),
+          },
         },
       });
-    }
-    console.log(`✓ ${specs.length} sales`);
 
-    // ── Credit Payments ────────────────────────────────────────────────────
+      // StockLog for each sold line item (AI training signal: demand history)
+      for (const l of ll) {
+        await prisma.stockLog.create({
+          data: {
+            itemId: l.itemId,
+            branchId: spec.br,
+            organizationId: org.id,
+            quantity: -l.qty,
+            reason: StockMovementReason.SALE,
+            referenceId: sale.id,
+            recordedById: spec.emp,
+            createdAt: spec.date,
+          },
+        });
+      }
+    }
+    console.log(`✓ ${specs.length} sales + stock logs`);
+
+    // ── Credit Payments ──────────────────────────────────────────────────────
     const cpSpecs = [
       { id:"seed-cp-01", cust:"seed-c-006", amt:50000, by:M1, date:d("2026-05-05",10,0),  notes:"Bank transfer — partial" },
       { id:"seed-cp-02", cust:"seed-c-006", amt:30000, by:M1, date:d("2026-05-20",9,0),   notes:"M-Pesa" },
@@ -405,25 +475,36 @@ async function main() {
       { id:"seed-cp-15", cust:"seed-c-022", amt:2000,  by:C7, date:d("2026-05-20",14,0),  notes:"Cash" },
     ];
     for (const cp of cpSpecs)
-      await prisma.creditPayment.upsert({ where: { id: cp.id }, update: {}, create: { id: cp.id, customerId: cp.cust, amount: cp.amt, notes: cp.notes, recordedById: cp.by, createdAt: cp.date } });
+      await prisma.creditPayment.upsert({
+        where:  { id: cp.id },
+        update: {},
+        create: { id: cp.id, customerId: cp.cust, amount: cp.amt, notes: cp.notes, recordedById: cp.by, createdAt: cp.date },
+      });
     console.log(`✓ ${cpSpecs.length} credit payments`);
 
-    // ── Recalculate credit balances ────────────────────────────────────────
+    // ── Recalculate credit balances ──────────────────────────────────────────
     for (const cust of custSpecs) {
-      const owed = specs.filter(s => s.cust === cust.id && s.pay === "CREDIT").reduce((sum, s) => sum + calc(s.lines, s.type, s.disc).total, 0);
-      const paid = cpSpecs.filter(p => p.cust === cust.id).reduce((sum, p) => sum + p.amt, 0);
-      const bal  = Math.max(0, owed - paid);
-      if (bal > 0) await prisma.customer.update({ where: { id: cust.id }, data: { creditBalance: bal } });
+      const owed = specs.filter(s => s.cust === cust.id && s.pay === "CREDIT")
+        .reduce((sum, s) => sum + calc(s.lines, s.type, s.disc).total, 0);
+      const paid = cpSpecs.filter(p => p.cust === cust.id)
+        .reduce((sum, p) => sum + p.amt, 0);
+      const bal = Math.max(0, owed - paid);
+      if (bal > 0)
+        await prisma.customer.update({ where: { id: cust.id }, data: { creditBalance: bal } });
     }
     console.log("✓ Credit balances updated");
   }
 
   // ── Purchase Orders ───────────────────────────────────────────────────────
-  const existPOs = await prisma.purchaseOrder.count({ where: { id: { startsWith: "seed-po-" } } });
+  const existPOs = await prisma.purchaseOrder.count({
+    where: { id: { startsWith: "seed-po-" } },
+  });
+
   if (existPOs > 0) {
-    console.log(`✓ POs already seeded (${existPOs})`);
+    console.log(`✓ Purchase orders already seeded (${existPOs}), skipping`);
   } else {
-    const poData = [
+    type POS = { id: string; sup: string; sku: string; qty: number; cost: number; by: string; br: string; date: Date };
+    const poSpecs: POS[] = [
       { id:"seed-po-01", sup:sup1.id, sku:"ENG-001", qty:200, cost:580,  by:M1, br:B1, date:d("2026-03-01",10,0) },
       { id:"seed-po-02", sup:sup1.id, sku:"ENG-003", qty:200, cost:600,  by:M1, br:B1, date:d("2026-03-01",10,0) },
       { id:"seed-po-03", sup:sup1.id, sku:"ENG-016", qty:150, cost:960,  by:M1, br:B1, date:d("2026-03-05",9,0)  },
@@ -445,14 +526,266 @@ async function main() {
       { id:"seed-po-19", sup:sup4.id, sku:"OIL-001", qty:300, cost:230,  by:M2, br:B2, date:d("2026-05-15",10,0) },
       { id:"seed-po-20", sup:sup2.id, sku:"BRA-003", qty:250, cost:255,  by:M1, br:B1, date:d("2026-05-20",9,0)  },
     ];
-    for (const po of poData)
-      await prisma.purchaseOrder.create({ data: { id: po.id, supplierId: po.sup, itemId: iMap[po.sku].id, quantity: po.qty, costPrice: po.cost, recordedById: po.by, branchId: po.br, createdAt: po.date } });
-    console.log(`✓ ${poData.length} purchase orders`);
+
+    for (const po of poSpecs) {
+      const createdPO = await prisma.purchaseOrder.create({
+        data: {
+          id: po.id,
+          poNumber: poNum(po.date),
+          supplierId: po.sup,
+          status: PurchaseOrderStatus.RECEIVED,
+          organizationId: org.id,
+          branchId: po.br,
+          createdById: po.by,
+          deliveredAt: po.date,
+          createdAt: po.date,
+          items: {
+            create: [{
+              itemId: iMap[po.sku].id,
+              quantity: po.qty,
+              costPrice: po.cost,
+              receivedQty: po.qty,
+            }],
+          },
+        },
+      });
+
+      // StockLog for this PO receipt (AI training signal: replenishment history)
+      await prisma.stockLog.create({
+        data: {
+          itemId: iMap[po.sku].id,
+          branchId: po.br,
+          organizationId: org.id,
+          quantity: po.qty,
+          reason: StockMovementReason.PURCHASE_RECEIVED,
+          referenceId: createdPO.id,
+          recordedById: po.by,
+          createdAt: po.date,
+        },
+      });
+    }
+    console.log(`✓ ${poSpecs.length} purchase orders + stock logs`);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ORGANISATION 2 — Ngumo General Supplies (Building & Hardware)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const org2 = await prisma.organization.upsert({
+    where: { slug: "ngumo" },
+    update: {},
+    create: { id: "seed-org-ngumo", name: "Ngumo General Supplies", slug: "ngumo", industry: "Building & Hardware", country: "KE", currency: "KES" },
+  });
+  console.log(`\n✓ Org 2: ${org2.name}`);
+
+  const nb1 = await prisma.branch.upsert({
+    where: { name_organizationId: { name: "CBD Branch", organizationId: org2.id } },
+    update: {},
+    create: { name: "CBD Branch", address: "Kirinyaga Road, Nairobi CBD", phone: "0712000101", organizationId: org2.id },
+  });
+  const nb2 = await prisma.branch.upsert({
+    where: { name_organizationId: { name: "Westlands Branch", organizationId: org2.id } },
+    update: {},
+    create: { name: "Westlands Branch", address: "Westlands, Nairobi", phone: "0712000102", organizationId: org2.id },
+  });
+  console.log(`✓ Branches: ${nb1.name}, ${nb2.name}`);
+
+  const nAdmin = await prisma.user.upsert({ where: { email: "admin@ngumo.co.ke" },    update: {}, create: { id: "seed-n-admin", name: "Ngumo Admin",    email: "admin@ngumo.co.ke",    passwordHash: await hw("admin123"),   role: Role.ADMIN,   organizationId: org2.id } });
+  const nMgr   = await prisma.user.upsert({ where: { email: "manager@ngumo.co.ke" },  update: {}, create: { id: "seed-n-mgr",   name: "Store Manager", email: "manager@ngumo.co.ke",  passwordHash: await hw("manager123"), role: Role.MANAGER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs1   = await prisma.user.upsert({ where: { email: "cashier1@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs1",   name: "Cashier One",   email: "cashier1@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs2   = await prisma.user.upsert({ where: { email: "cashier2@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs2",   name: "Cashier Two",   email: "cashier2@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs3   = await prisma.user.upsert({ where: { email: "cashier3@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs3",   name: "Cashier Three", email: "cashier3@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb2.id } });
+  void nAdmin;
+  console.log("✓ 5 users (Org 2)");
+
+  const nCatNames = ["Hardware", "Plumbing", "Electrical", "Paints"];
+  const nCatMap: Record<string, string> = {};
+  for (const n of nCatNames) {
+    const cat = await prisma.category.upsert({
+      where: { name_organizationId: { name: n, organizationId: org2.id } },
+      update: {},
+      create: { name: n, organizationId: org2.id },
+    });
+    nCatMap[n] = cat.id;
+  }
+  console.log(`✓ ${nCatNames.length} categories (Org 2)`);
+
+  const nSup1 = await prisma.supplier.upsert({ where: { id: "seed-nsup-1" }, update: {}, create: { id: "seed-nsup-1", name: "Ngumo Buildmart Ltd",       phone: "0711000101", email: "orders@ngumobuild.co.ke", address: "Industrial Area, Nairobi",   organizationId: org2.id } });
+  const nSup2 = await prisma.supplier.upsert({ where: { id: "seed-nsup-2" }, update: {}, create: { id: "seed-nsup-2", name: "Kenya Electrical Supplies", phone: "0722000202", email: "sales@kenyaelec.co.ke",   address: "Tom Mboya Street, Nairobi", organizationId: org2.id } });
+  console.log("✓ 2 suppliers (Org 2)");
+
+  type NIS = { sku: string; name: string; cat: string; rp: number; wp: number; sup: string; b1: number; b2: number; thr: number };
+  const nItemSeeds: NIS[] = [
+    { sku:"HAR-001", name:"Claw Hammer 500g",              cat:"Hardware",   rp:650,  wp:500,  sup:nSup1.id, b1:80,  b2:40,  thr:15 },
+    { sku:"HAR-002", name:"Nails Box 200pcs 2in",          cat:"Hardware",   rp:280,  wp:220,  sup:nSup1.id, b1:200, b2:100, thr:30 },
+    { sku:"HAR-003", name:"Measuring Tape 5m",             cat:"Hardware",   rp:350,  wp:280,  sup:nSup1.id, b1:80,  b2:40,  thr:12 },
+    { sku:"HAR-004", name:"Screwdriver Set 6pc",           cat:"Hardware",   rp:480,  wp:380,  sup:nSup1.id, b1:60,  b2:30,  thr:10 },
+    { sku:"HAR-005", name:"Combination Pliers 8in",        cat:"Hardware",   rp:380,  wp:300,  sup:nSup1.id, b1:70,  b2:35,  thr:10 },
+    { sku:"PLM-001", name:"PVC Pipe 0.5in x 1m",          cat:"Plumbing",   rp:180,  wp:140,  sup:nSup1.id, b1:200, b2:100, thr:30 },
+    { sku:"PLM-002", name:"Ball Valve 0.5in Chrome",       cat:"Plumbing",   rp:320,  wp:250,  sup:nSup1.id, b1:100, b2:50,  thr:15 },
+    { sku:"PLM-003", name:"Pipe Wrench 14in",              cat:"Plumbing",   rp:720,  wp:580,  sup:nSup1.id, b1:40,  b2:20,  thr:6  },
+    { sku:"ELC-001", name:"Wall Switch Single 10A",        cat:"Electrical", rp:120,  wp:90,   sup:nSup2.id, b1:250, b2:120, thr:40 },
+    { sku:"ELC-002", name:"Power Socket 3-Pin 15A",        cat:"Electrical", rp:180,  wp:140,  sup:nSup2.id, b1:200, b2:100, thr:30 },
+    { sku:"ELC-003", name:"Extension Cable 5m 4-Way",      cat:"Electrical", rp:420,  wp:320,  sup:nSup2.id, b1:80,  b2:40,  thr:12 },
+    { sku:"ELC-004", name:"LED Bulb 9W B22 Daylight",      cat:"Electrical", rp:85,   wp:60,   sup:nSup2.id, b1:400, b2:200, thr:60 },
+    { sku:"PAI-001", name:"Wall Paint 4L White Crown",     cat:"Paints",     rp:1200, wp:950,  sup:nSup2.id, b1:60,  b2:30,  thr:10 },
+    { sku:"PAI-002", name:"Wall Paint 20L White Crown",    cat:"Paints",     rp:5500, wp:4400, sup:nSup2.id, b1:20,  b2:10,  thr:4  },
+    { sku:"PAI-003", name:"Undercoat Primer 4L",           cat:"Paints",     rp:980,  wp:780,  sup:nSup2.id, b1:40,  b2:20,  thr:8  },
+  ];
+
+  const nIMap: Record<string, { id: string; rp: number; wp: number }> = {};
+  for (const s of nItemSeeds) {
+    const item = await prisma.item.upsert({
+      where:  { sku_organizationId: { sku: s.sku, organizationId: org2.id } },
+      update: { retailPrice: s.rp, wholesalePrice: s.wp },
+      create: { sku: s.sku, name: s.name, categoryId: nCatMap[s.cat], retailPrice: s.rp, wholesalePrice: s.wp, supplierId: s.sup, organizationId: org2.id },
+    });
+    await prisma.branchStock.upsert({
+      where:  { itemId_branchId: { itemId: item.id, branchId: nb1.id } },
+      update: { stockQty: s.b1, lowStockThreshold: s.thr },
+      create: { itemId: item.id, branchId: nb1.id, stockQty: s.b1, lowStockThreshold: s.thr },
+    });
+    await prisma.branchStock.upsert({
+      where:  { itemId_branchId: { itemId: item.id, branchId: nb2.id } },
+      update: { stockQty: s.b2, lowStockThreshold: s.thr },
+      create: { itemId: item.id, branchId: nb2.id, stockQty: s.b2, lowStockThreshold: s.thr },
+    });
+    nIMap[s.sku] = { id: item.id, rp: s.rp, wp: s.wp };
+  }
+  console.log(`✓ ${nItemSeeds.length} items + branch stocks (Org 2)`);
+
+  type NCS2 = { id: string; name: string; phone: string; address: string; br: string };
+  const nCustSpecs: NCS2[] = [
+    { id:"seed-nc-1", name:"Amos Njoroge",     phone:"0722200001", address:"Nairobi CBD",        br:nb1.id },
+    { id:"seed-nc-2", name:"Joyce Muthoni",    phone:"0722200002", address:"Westlands, Nairobi", br:nb1.id },
+    { id:"seed-nc-3", name:"Anthony Waweru",   phone:"0733200003", address:"Westlands, Nairobi", br:nb2.id },
+    { id:"seed-nc-4", name:"Caroline Achieng", phone:"0733200004", address:"Parklands, Nairobi", br:nb2.id },
+    { id:"seed-nc-5", name:"Hassan Omar",      phone:"0700200005", address:"Eastleigh, Nairobi", br:nb1.id },
+  ];
+  for (const c of nCustSpecs)
+    await prisma.customer.upsert({
+      where:  { id: c.id },
+      update: {},
+      create: { id: c.id, name: c.name, phone: c.phone, address: c.address, branchId: c.br, organizationId: org2.id, creditBalance: 0 },
+    });
+  console.log(`✓ ${nCustSpecs.length} customers (Org 2)`);
+
+  const NB1 = nb1.id, NB2 = nb2.id;
+  const NM = nMgr.id, NC1 = nCs1.id, NC2 = nCs2.id, NC3 = nCs3.id;
+
+  const existNSales = await prisma.sale.count({ where: { organizationId: org2.id } });
+  if (existNSales >= 5) {
+    console.log(`✓ Sales already seeded for Org 2 (${existNSales}), skipping`);
+  } else {
+    type NLS = { sku: string; qty: number };
+    function np(sku: string, type: "RETAIL" | "WHOLESALE") {
+      return type === "RETAIL" ? nIMap[sku].rp : nIMap[sku].wp;
+    }
+    function ncalc(lines: NLS[], type: "RETAIL" | "WHOLESALE", disc: number) {
+      const ll = lines.map(l => ({ itemId: nIMap[l.sku].id, qty: l.qty, unitPrice: np(l.sku, type), subtotal: np(l.sku, type) * l.qty }));
+      const total = ll.reduce((s, l) => s + l.subtotal, 0) - disc;
+      return { ll, total, taxAmt: extractTax(total) };
+    }
+    type NSS = { br: string; emp: string; cust: string | null; type: "RETAIL" | "WHOLESALE"; pay: "PAID" | "CREDIT"; disc: number; date: Date; lines: NLS[] };
+    const nSpecs: NSS[] = [
+      // March 2026
+      { br:NB1, emp:NC1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-03-02",9,30),  lines:[{sku:"HAR-001",qty:3},{sku:"HAR-002",qty:5}] },
+      { br:NB1, emp:NM,  cust:"seed-nc-1",type:"RETAIL",    pay:"CREDIT", disc:0,   date:d("2026-03-03",10,0),  lines:[{sku:"PLM-001",qty:5},{sku:"PLM-002",qty:2}] },
+      { br:NB2, emp:NC3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-03-05",11,0),  lines:[{sku:"ELC-001",qty:10},{sku:"ELC-002",qty:8}] },
+      { br:NB1, emp:NC2, cust:null,       type:"RETAIL",    pay:"PAID",   disc:50,  date:d("2026-03-06",13,0),  lines:[{sku:"ELC-004",qty:20},{sku:"HAR-003",qty:2}] },
+      { br:NB1, emp:NM,  cust:"seed-nc-2",type:"WHOLESALE", pay:"CREDIT", disc:300, date:d("2026-03-08",9,0),   lines:[{sku:"HAR-001",qty:10},{sku:"HAR-004",qty:8}] },
+      { br:NB2, emp:NC3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-03-10",14,0),  lines:[{sku:"PAI-001",qty:4},{sku:"PAI-003",qty:2}] },
+      { br:NB1, emp:NC1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-03-12",10,30), lines:[{sku:"ELC-003",qty:3},{sku:"ELC-004",qty:10}] },
+      { br:NB1, emp:NC2, cust:"seed-nc-5",type:"RETAIL",    pay:"CREDIT", disc:0,   date:d("2026-03-14",11,0),  lines:[{sku:"PLM-001",qty:8},{sku:"PLM-002",qty:3}] },
+      // April 2026
+      { br:NB1, emp:NC1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-04-01",9,30),  lines:[{sku:"HAR-001",qty:5},{sku:"HAR-002",qty:10}] },
+      { br:NB2, emp:NC3, cust:"seed-nc-3",type:"RETAIL",    pay:"CREDIT", disc:0,   date:d("2026-04-03",10,0),  lines:[{sku:"ELC-001",qty:15},{sku:"ELC-004",qty:30}] },
+      { br:NB1, emp:NC1, cust:null,       type:"RETAIL",    pay:"PAID",   disc:100, date:d("2026-04-05",11,30), lines:[{sku:"PAI-001",qty:6},{sku:"PAI-002",qty:1}] },
+      { br:NB1, emp:NM,  cust:"seed-nc-1",type:"WHOLESALE", pay:"PAID",   disc:0,   date:d("2026-04-07",9,0),   lines:[{sku:"PLM-001",qty:30},{sku:"PLM-002",qty:15}] },
+      { br:NB2, emp:NC3, cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-04-09",14,0),  lines:[{sku:"ELC-002",qty:12},{sku:"ELC-003",qty:5}] },
+      { br:NB1, emp:NC2, cust:"seed-nc-2",type:"RETAIL",    pay:"CREDIT", disc:200, date:d("2026-04-12",10,0),  lines:[{sku:"HAR-003",qty:3},{sku:"HAR-005",qty:4}] },
+      { br:NB1, emp:NM,  cust:null,       type:"RETAIL",    pay:"PAID",   disc:0,   date:d("2026-04-14",13,0),  lines:[{sku:"PAI-003",qty:3},{sku:"ELC-004",qty:20}] },
+    ];
+
+    nSpecs.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    for (const spec of nSpecs) {
+      const rcpNum = rcp(spec.date);
+      const { ll, total, taxAmt } = ncalc(spec.lines, spec.type, spec.disc);
+
+      const sale = await prisma.sale.upsert({
+        where:  { receiptNumber_organizationId: { receiptNumber: rcpNum, organizationId: org2.id } },
+        update: {},
+        create: {
+          receiptNumber: rcpNum,
+          saleType: spec.type,
+          paymentStatus: spec.pay,
+          discountAmount: spec.disc,
+          taxAmount: taxAmt,
+          totalAmount: total,
+          isVoid: false,
+          customerId: spec.cust,
+          employeeId: spec.emp,
+          branchId: spec.br,
+          organizationId: org2.id,
+          createdAt: spec.date,
+          items: { create: ll.map(l => ({ itemId: l.itemId, quantity: l.qty, unitPrice: l.unitPrice, subtotal: l.subtotal })) },
+        },
+      });
+
+      for (const l of ll) {
+        await prisma.stockLog.create({
+          data: { itemId: l.itemId, branchId: spec.br, organizationId: org2.id, quantity: -l.qty, reason: StockMovementReason.SALE, referenceId: sale.id, recordedById: spec.emp, createdAt: spec.date },
+        });
+      }
+    }
+    console.log(`✓ ${nSpecs.length} sales + stock logs (Org 2)`);
+
+    for (const cust of nCustSpecs) {
+      const owed = nSpecs.filter(s => s.cust === cust.id && s.pay === "CREDIT")
+        .reduce((sum, s) => sum + ncalc(s.lines, s.type, s.disc).total, 0);
+      if (owed > 0)
+        await prisma.customer.update({ where: { id: cust.id }, data: { creditBalance: owed } });
+    }
+  }
+
+  const existNPOs = await prisma.purchaseOrder.count({ where: { id: { startsWith: "seed-npo-" } } });
+  if (existNPOs > 0) {
+    console.log(`✓ Purchase orders already seeded for Org 2 (${existNPOs}), skipping`);
+  } else {
+    type NPOS = { id: string; sup: string; sku: string; qty: number; cost: number; by: string; br: string; date: Date };
+    const nPoSpecs: NPOS[] = [
+      { id:"seed-npo-01", sup:nSup1.id, sku:"HAR-001", qty:200, cost:400, by:NM, br:NB1, date:d("2026-01-15",10,0) },
+      { id:"seed-npo-02", sup:nSup1.id, sku:"PLM-001", qty:500, cost:100, by:NM, br:NB1, date:d("2026-01-20",10,0) },
+      { id:"seed-npo-03", sup:nSup2.id, sku:"ELC-001", qty:500, cost:65,  by:NM, br:NB1, date:d("2026-02-01",10,0) },
+      { id:"seed-npo-04", sup:nSup2.id, sku:"PAI-001", qty:100, cost:800, by:NM, br:NB1, date:d("2026-02-10",10,0) },
+    ];
+
+    for (const po of nPoSpecs) {
+      const createdPO = await prisma.purchaseOrder.create({
+        data: {
+          id: po.id,
+          poNumber: poNum(po.date),
+          supplierId: po.sup,
+          status: PurchaseOrderStatus.RECEIVED,
+          organizationId: org2.id,
+          branchId: po.br,
+          createdById: po.by,
+          deliveredAt: po.date,
+          createdAt: po.date,
+          items: { create: [{ itemId: nIMap[po.sku].id, quantity: po.qty, costPrice: po.cost, receivedQty: po.qty }] },
+        },
+      });
+      await prisma.stockLog.create({
+        data: { itemId: nIMap[po.sku].id, branchId: po.br, organizationId: org2.id, quantity: po.qty, reason: StockMovementReason.PURCHASE_RECEIVED, referenceId: createdPO.id, recordedById: po.by, createdAt: po.date },
+      });
+    }
+    console.log(`✓ ${nPoSpecs.length} purchase orders + stock logs (Org 2)`);
   }
 
   console.log("\n✅ Seed complete!\n");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS");
+  console.log(" LOGIN CREDENTIALS — JSH Auto Spares (jsh)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
   console.log("   admin@jsh.co.ke              admin123");
@@ -471,6 +804,19 @@ async function main() {
   console.log("   david.mwangi@jsh.co.ke        cashier123");
   console.log("   faith.njoroge@jsh.co.ke       cashier123");
   console.log("   kevin.njoroge@jsh.co.ke       cashier123");
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log(" LOGIN CREDENTIALS — Ngumo General Supplies (ngumo)");
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log(" ADMIN");
+  console.log("   admin@ngumo.co.ke             admin123");
+  console.log("");
+  console.log(" MANAGER — CBD Branch");
+  console.log("   manager@ngumo.co.ke           manager123");
+  console.log("");
+  console.log(" CASHIERS");
+  console.log("   cashier1@ngumo.co.ke          cashier123   (CBD Branch)");
+  console.log("   cashier2@ngumo.co.ke          cashier123   (CBD Branch)");
+  console.log("   cashier3@ngumo.co.ke          cashier123   (Westlands Branch)");
   console.log("═══════════════════════════════════════════════════════════");
 }
 
