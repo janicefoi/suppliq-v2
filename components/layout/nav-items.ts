@@ -85,6 +85,9 @@ export const PAGE_TITLES: Record<string, string> = {
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",
+  "/settings/profile": "Settings",
+  "/settings/organization": "Settings",
+  "/settings/billing": "Settings",
 };
 
 export const ROLE_LABELS: Record<string, string> = {

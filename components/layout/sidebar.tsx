@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -124,6 +124,14 @@ function SidebarContent({
             </span>
           </div>
         </div>
+
+        <Link
+          href="/settings/profile"
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <Settings className="h-4 w-4" />
+          Settings
+        </Link>
 
         <Button
           variant="ghost"
