@@ -59,17 +59,23 @@ export type CustomerStats = {
 
 export async function getCustomerStats(branchId?: string | null): Promise<CustomerStats> {
   const session = await auth();
-  const effectiveBranchId = branchId !== undefined ? branchId : session?.user?.branchId ?? null;
-  const branchFilter = effectiveBranchId ? { branchId: effectiveBranchId } : {};
+  if (!session?.user?.id) return { total: 0, withCredit: 0, totalOutstanding: 0, newThisMonth: 0 };
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId !== undefined ? branchId : session.user.branchId ?? null;
 
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
+  const baseWhere = {
+    organizationId: orgId,
+    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+  };
+
   const [total, withCredit, creditAgg, newThisMonth] = await Promise.all([
-    db.customer.count({ where: branchFilter }),
-    db.customer.count({ where: { ...branchFilter, creditBalance: { gt: 0 } } }),
-    db.customer.aggregate({ _sum: { creditBalance: true }, where: { ...branchFilter, creditBalance: { gt: 0 } } }),
-    db.customer.count({ where: { ...branchFilter, createdAt: { gte: monthStart } } }),
+    db.customer.count({ where: baseWhere }),
+    db.customer.count({ where: { ...baseWhere, creditBalance: { gt: 0 } } }),
+    db.customer.aggregate({ _sum: { creditBalance: true }, where: { ...baseWhere, creditBalance: { gt: 0 } } }),
+    db.customer.count({ where: { ...baseWhere, createdAt: { gte: monthStart } } }),
   ]);
 
   return {
@@ -87,9 +93,12 @@ export async function getCustomers(
   branchId?: string | null
 ): Promise<CustomerRow[]> {
   const session = await auth();
-  const effectiveBranchId = branchId !== undefined ? branchId : session?.user?.branchId ?? null;
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId !== undefined ? branchId : session.user.branchId ?? null;
 
   const where = {
+    organizationId: orgId,
     ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
     ...(filter === "HAS_CREDIT" ? { creditBalance: { gt: 0 } } : {}),
     ...(filter === "NO_CREDIT" ? { creditBalance: { lte: 0 } } : {}),
@@ -121,18 +130,19 @@ export async function createCustomer(
 ): Promise<{ success: true } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  const orgId = session.user.organizationId;
 
   const parsed = CustomerSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
+  // Phone uniqueness is scoped per organisation
   const existing = await db.customer.findFirst({
-    where: { phone: parsed.data.phone },
+    where: { phone: parsed.data.phone, organizationId: orgId },
   });
   if (existing) {
     return { success: false, error: "A customer with this phone number already exists." };
   }
 
-  // Use explicitly-selected branchId (admin only), otherwise fall back to session branch
   const branchId = parsed.data.branchId ?? session.user.branchId ?? null;
 
   await db.customer.create({
@@ -141,6 +151,7 @@ export async function createCustomer(
       phone: parsed.data.phone,
       address: parsed.data.address ?? null,
       branchId,
+      organizationId: orgId,
     },
   });
 
@@ -158,12 +169,19 @@ export async function updateCustomer(
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
   if (session.user.role === "CASHIER") return { success: false, error: "You don't have permission to edit customers." };
+  const orgId = session.user.organizationId;
 
   const parsed = CustomerSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
+  // Verify customer belongs to this org
+  const customer = await db.customer.findUnique({ where: { id }, select: { organizationId: true } });
+  if (!customer || customer.organizationId !== orgId) {
+    return { success: false, error: "Customer not found." };
+  }
+
   const existing = await db.customer.findFirst({
-    where: { phone: parsed.data.phone, NOT: { id } },
+    where: { phone: parsed.data.phone, organizationId: orgId, NOT: { id } },
   });
   if (existing) {
     return { success: false, error: "Another customer already uses this phone number." };
@@ -194,6 +212,7 @@ export async function recordCreditPayment(
 ): Promise<{ success: true } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  const orgId = session.user.organizationId;
 
   if (amount <= 0) return { success: false, error: "Amount must be greater than zero." };
 
@@ -201,9 +220,9 @@ export async function recordCreditPayment(
     await db.$transaction(async (tx) => {
       const customer = await tx.customer.findUnique({
         where: { id: customerId },
-        select: { creditBalance: true, name: true },
+        select: { creditBalance: true, name: true, organizationId: true },
       });
-      if (!customer) throw new Error("Customer not found.");
+      if (!customer || customer.organizationId !== orgId) throw new Error("Customer not found.");
 
       const balance = Number(customer.creditBalance);
       if (amount > balance) {
@@ -241,8 +260,12 @@ export async function recordCreditPayment(
 // ── Get customer detail ───────────────────────────────────────────────────
 
 export async function getCustomerDetail(id: string): Promise<CustomerDetail | null> {
-  const customer = await db.customer.findUnique({
-    where: { id },
+  const session = await auth();
+  if (!session?.user?.id) return null;
+  const orgId = session.user.organizationId;
+
+  const customer = await db.customer.findFirst({
+    where: { id, organizationId: orgId },
     include: {
       branch: { select: { name: true, address: true, phone: true, paybill: true } },
       sales: {

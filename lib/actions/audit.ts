@@ -9,8 +9,11 @@ export async function getAuditLogs() {
     throw new Error("Unauthorized");
   }
 
+  const orgId = session.user.organizationId;
+
   const [creditPayments, stockLogs] = await Promise.all([
     db.creditPayment.findMany({
+      where: { customer: { organizationId: orgId } },
       orderBy: { createdAt: "desc" },
       include: {
         customer: { select: { name: true, branchId: true } },
@@ -18,6 +21,7 @@ export async function getAuditLogs() {
       },
     }),
     db.stockLog.findMany({
+      where: { organizationId: orgId },
       orderBy: { createdAt: "desc" },
       include: {
         item: { select: { name: true, sku: true } },

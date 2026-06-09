@@ -37,7 +37,10 @@ export type BranchRow = {
 };
 
 export async function getBranches(): Promise<BranchRow[]> {
+  const admin = await requireAdmin();
+
   const rows = await db.branch.findMany({
+    where: { organizationId: admin.organizationId },
     orderBy: { name: "asc" },
     select: {
       id: true,
@@ -55,11 +58,15 @@ export async function getBranches(): Promise<BranchRow[]> {
 }
 
 export async function createBranch(data: BranchInput): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const orgId = admin.organizationId;
+
   const parsed = BranchSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
-  const exists = await db.branch.findFirst({ where: { name: { equals: parsed.data.name, mode: "insensitive" } } });
+  const exists = await db.branch.findFirst({
+    where: { name: { equals: parsed.data.name, mode: "insensitive" }, organizationId: orgId },
+  });
   if (exists) return { success: false, error: "A branch with this name already exists." };
 
   await db.branch.create({
@@ -69,6 +76,7 @@ export async function createBranch(data: BranchInput): Promise<ActionResult> {
       phone: parsed.data.phone || null,
       paybill: parsed.data.paybill || null,
       pin: parsed.data.pin || null,
+      organizationId: orgId,
     },
   });
 
@@ -77,12 +85,20 @@ export async function createBranch(data: BranchInput): Promise<ActionResult> {
 }
 
 export async function updateBranch(id: string, data: BranchInput): Promise<ActionResult> {
-  await requireAdmin();
+  const admin = await requireAdmin();
+  const orgId = admin.organizationId;
+
   const parsed = BranchSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
+  // Verify branch belongs to this org
+  const branch = await db.branch.findUnique({ where: { id }, select: { organizationId: true } });
+  if (!branch || branch.organizationId !== orgId) {
+    return { success: false, error: "Branch not found." };
+  }
+
   const exists = await db.branch.findFirst({
-    where: { name: { equals: parsed.data.name, mode: "insensitive" }, NOT: { id } },
+    where: { name: { equals: parsed.data.name, mode: "insensitive" }, organizationId: orgId, NOT: { id } },
   });
   if (exists) return { success: false, error: "Another branch already uses this name." };
 
@@ -102,9 +118,11 @@ export async function updateBranch(id: string, data: BranchInput): Promise<Actio
 }
 
 export async function toggleBranchActive(id: string): Promise<ActionResult> {
-  await requireAdmin();
-  const branch = await db.branch.findUnique({ where: { id }, select: { isActive: true } });
-  if (!branch) return { success: false, error: "Branch not found." };
+  const admin = await requireAdmin();
+  const orgId = admin.organizationId;
+
+  const branch = await db.branch.findUnique({ where: { id }, select: { isActive: true, organizationId: true } });
+  if (!branch || branch.organizationId !== orgId) return { success: false, error: "Branch not found." };
 
   await db.branch.update({ where: { id }, data: { isActive: !branch.isActive } });
   revalidatePath("/admin/branches");

@@ -1,6 +1,7 @@
 "use server";
 
 import { startOfDay, endOfDay, subDays, startOfMonth, format } from "date-fns";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -59,28 +60,35 @@ export type LowStockAlert = {
 // ── Actions ────────────────────────────────────────────────────────────────
 
 export async function getDashboardMetrics(branchId?: string | null): Promise<DashboardMetrics> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { todayRevenue: 0, todaySalesCount: 0, yesterdayRevenue: 0, yesterdaySalesCount: 0, mtdRevenue: 0, mtdSalesCount: 0, lowStockCount: 0, totalOutstandingCredit: 0 };
+  }
+  const orgId = session.user.organizationId;
   const now = new Date();
-  const branchFilter = branchId ? { branchId } : {};
+  const orgBranchFilter = { organizationId: orgId, ...(branchId ? { branchId } : {}) };
 
   const [todaySales, yesterdaySales, mtdSales, creditAgg, branchStocks] = await Promise.all([
     db.sale.findMany({
-      where: { createdAt: { gte: startOfDay(now), lte: endOfDay(now) }, isVoid: false, ...branchFilter },
+      where: { createdAt: { gte: startOfDay(now), lte: endOfDay(now) }, isVoid: false, ...orgBranchFilter },
       select: { totalAmount: true },
     }),
     db.sale.findMany({
-      where: { createdAt: { gte: startOfDay(subDays(now, 1)), lte: endOfDay(subDays(now, 1)) }, isVoid: false, ...branchFilter },
+      where: { createdAt: { gte: startOfDay(subDays(now, 1)), lte: endOfDay(subDays(now, 1)) }, isVoid: false, ...orgBranchFilter },
       select: { totalAmount: true },
     }),
     db.sale.findMany({
-      where: { createdAt: { gte: startOfMonth(now), lte: endOfDay(now) }, isVoid: false, ...branchFilter },
+      where: { createdAt: { gte: startOfMonth(now), lte: endOfDay(now) }, isVoid: false, ...orgBranchFilter },
       select: { totalAmount: true },
     }),
     db.customer.aggregate({
       _sum: { creditBalance: true },
-      where: { creditBalance: { gt: 0 }, ...branchFilter },
+      where: { creditBalance: { gt: 0 }, organizationId: orgId, ...(branchId ? { branchId } : {}) },
     }),
     db.branchStock.findMany({
-      where: branchId ? { branchId, item: { isActive: true } } : { item: { isActive: true } },
+      where: branchId
+        ? { branchId, item: { isActive: true, organizationId: orgId } }
+        : { item: { isActive: true, organizationId: orgId } },
       select: { stockQty: true, lowStockThreshold: true },
     }),
   ]);
@@ -98,15 +106,18 @@ export async function getDashboardMetrics(branchId?: string | null): Promise<Das
 }
 
 export async function getRevenueChart(branchId?: string | null): Promise<DailyRevenue[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
   const now = new Date();
   const days = Array.from({ length: 7 }, (_, i) => subDays(now, 6 - i));
-  const branchFilter = branchId ? { branchId } : {};
+  const orgBranchFilter = { organizationId: orgId, ...(branchId ? { branchId } : {}) };
 
   const sales = await db.sale.findMany({
     where: {
       createdAt: { gte: startOfDay(days[0]), lte: endOfDay(now) },
       isVoid: false,
-      ...branchFilter,
+      ...orgBranchFilter,
     },
     select: { totalAmount: true, createdAt: true },
   });
@@ -122,11 +133,14 @@ export async function getRevenueChart(branchId?: string | null): Promise<DailyRe
 }
 
 export async function getTopSellingItems(branchId?: string | null): Promise<TopItem[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
   const since = subDays(new Date(), 7);
-  const branchFilter = branchId ? { branchId } : {};
+  const orgBranchFilter = { organizationId: orgId, ...(branchId ? { branchId } : {}) };
 
   const rows = await db.saleItem.findMany({
-    where: { sale: { createdAt: { gte: since }, isVoid: false, ...branchFilter } },
+    where: { sale: { createdAt: { gte: since }, isVoid: false, ...orgBranchFilter } },
     select: {
       itemId: true,
       quantity: true,
@@ -150,8 +164,12 @@ export async function getTopSellingItems(branchId?: string | null): Promise<TopI
 }
 
 export async function getTopDebtors(branchId?: string | null): Promise<TopDebtor[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+
   const rows = await db.customer.findMany({
-    where: { creditBalance: { gt: 0 }, ...(branchId ? { branchId } : {}) },
+    where: { creditBalance: { gt: 0 }, organizationId: orgId, ...(branchId ? { branchId } : {}) },
     orderBy: { creditBalance: "desc" },
     take: 5,
     select: { id: true, name: true, phone: true, creditBalance: true },
@@ -160,11 +178,15 @@ export async function getTopDebtors(branchId?: string | null): Promise<TopDebtor
 }
 
 export async function getRecentSales(branchId?: string | null): Promise<RecentSale[]> {
-  const branchFilter = branchId ? { branchId } : {};
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+  const orgBranchFilter = { organizationId: orgId, ...(branchId ? { branchId } : {}) };
+
   const sales = await db.sale.findMany({
     take: 8,
     orderBy: { createdAt: "desc" },
-    where: { ...branchFilter },
+    where: { ...orgBranchFilter },
     select: {
       id: true, receiptNumber: true, createdAt: true, paymentStatus: true,
       saleType: true, totalAmount: true, isVoid: true,
@@ -176,8 +198,14 @@ export async function getRecentSales(branchId?: string | null): Promise<RecentSa
 }
 
 export async function getLowStockAlerts(branchId?: string | null): Promise<LowStockAlert[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+
   const stocks = await db.branchStock.findMany({
-    where: branchId ? { branchId, item: { isActive: true } } : { item: { isActive: true } },
+    where: branchId
+      ? { branchId, item: { isActive: true, organizationId: orgId } }
+      : { item: { isActive: true, organizationId: orgId } },
     select: { stockQty: true, lowStockThreshold: true, item: { select: { id: true, sku: true, name: true } } },
     orderBy: { stockQty: "asc" },
   });
@@ -188,5 +216,11 @@ export async function getLowStockAlerts(branchId?: string | null): Promise<LowSt
 }
 
 export async function getBranches() {
-  return db.branch.findMany({ where: { isActive: true }, select: { id: true, name: true }, orderBy: { name: "asc" } });
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  return db.branch.findMany({
+    where: { isActive: true, organizationId: session.user.organizationId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 }

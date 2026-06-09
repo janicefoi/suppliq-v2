@@ -24,6 +24,8 @@ export type SupplierRow = {
   _count: { items: number; purchaseOrders: number };
 };
 
+// purchaseOrders are flattened: one row per PurchaseOrderItem so the UI table
+// works unchanged (shows item name, qty, cost/unit, recorded-by per row).
 export type SupplierDetail = {
   id: string;
   name: string;
@@ -53,6 +55,20 @@ export type SupplierDetail = {
   }>;
 };
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+async function generatePoNumber(orgId: string): Promise<string> {
+  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  const prefix = `PO-${dateStr}-`;
+  const last = await db.purchaseOrder.findFirst({
+    where: { organizationId: orgId, poNumber: { startsWith: prefix } },
+    orderBy: { poNumber: "desc" },
+    select: { poNumber: true },
+  });
+  const next = last ? parseInt(last.poNumber.slice(prefix.length)) + 1 : 1;
+  return `${prefix}${String(next).padStart(4, "0")}`;
+}
+
 // ── Supplier stats ────────────────────────────────────────────────────────
 
 export type SupplierStats = {
@@ -63,20 +79,33 @@ export type SupplierStats = {
 };
 
 export async function getSupplierStats(): Promise<SupplierStats> {
-  const [total, totalItems, totalOrders, orders] = await Promise.all([
-    db.supplier.count(),
-    db.item.count({ where: { supplierId: { not: null } } }),
-    db.purchaseOrder.count(),
-    db.purchaseOrder.findMany({ select: { quantity: true, costPrice: true } }),
+  const session = await auth();
+  if (!session?.user?.id) return { total: 0, totalItems: 0, totalOrders: 0, totalSpend: 0 };
+  const orgId = session.user.organizationId;
+
+  const [total, totalItems, totalOrders, poItems] = await Promise.all([
+    db.supplier.count({ where: { organizationId: orgId } }),
+    db.item.count({ where: { supplierId: { not: null }, organizationId: orgId } }),
+    db.purchaseOrder.count({ where: { organizationId: orgId } }),
+    db.purchaseOrderItem.findMany({
+      where: { purchaseOrder: { organizationId: orgId } },
+      select: { quantity: true, costPrice: true },
+    }),
   ]);
-  const totalSpend = orders.reduce((s, o) => s + o.quantity * Number(o.costPrice), 0);
+
+  const totalSpend = poItems.reduce((s, i) => s + i.quantity * Number(i.costPrice), 0);
   return { total, totalItems, totalOrders, totalSpend };
 }
 
 // ── Get suppliers list ────────────────────────────────────────────────────
 
 export async function getSuppliers(): Promise<SupplierRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+
   const rows = await db.supplier.findMany({
+    where: { organizationId: orgId },
     select: {
       id: true,
       name: true,
@@ -101,12 +130,13 @@ export async function createSupplier(
 ): Promise<{ success: true } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  const orgId = session.user.organizationId;
 
   const parsed = SupplierSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
   const existing = await db.supplier.findFirst({
-    where: { phone: parsed.data.phone },
+    where: { phone: parsed.data.phone, organizationId: orgId },
   });
   if (existing) {
     return { success: false, error: "A supplier with this phone number already exists." };
@@ -119,6 +149,7 @@ export async function createSupplier(
       email: parsed.data.email || null,
       address: parsed.data.address || null,
       notes: parsed.data.notes || null,
+      organizationId: orgId,
     },
   });
 
@@ -135,12 +166,19 @@ export async function updateSupplier(
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
   if (session.user.role === "CASHIER") return { success: false, error: "You don't have permission to edit suppliers." };
+  const orgId = session.user.organizationId;
 
   const parsed = SupplierSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
+  // Verify supplier belongs to this org
+  const supplier = await db.supplier.findUnique({ where: { id }, select: { organizationId: true } });
+  if (!supplier || supplier.organizationId !== orgId) {
+    return { success: false, error: "Supplier not found." };
+  }
+
   const existing = await db.supplier.findFirst({
-    where: { phone: parsed.data.phone, NOT: { id } },
+    where: { phone: parsed.data.phone, organizationId: orgId, NOT: { id } },
   });
   if (existing) {
     return { success: false, error: "Another supplier already uses this phone number." };
@@ -170,11 +208,11 @@ export async function recordPurchaseOrder(
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
   if (session.user.role === "CASHIER") return { success: false, error: "You don't have permission to record purchase orders." };
+  const orgId = session.user.organizationId;
 
   const parsed = PurchaseOrderSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
-  // Admin must explicitly provide a branchId; managers use their session branch
   const branchId = session.user.role === "ADMIN"
     ? (parsed.data.branchId ?? null)
     : session.user.branchId;
@@ -184,33 +222,61 @@ export async function recordPurchaseOrder(
   }
 
   try {
+    const poNumber = await generatePoNumber(orgId);
+
     await db.$transaction(async (tx) => {
+      // Validate all items before creating the PO
       for (const line of parsed.data.items) {
         const item = await tx.item.findUnique({
           where: { id: line.itemId },
-          select: { supplierId: true, name: true, isActive: true },
+          select: { supplierId: true, name: true, isActive: true, organizationId: true },
         });
-        if (!item) throw new Error(`Item not found.`);
+        if (!item || item.organizationId !== orgId) throw new Error(`Item not found.`);
         if (!item.isActive) throw new Error(`"${item.name}" is inactive and cannot be restocked.`);
         if (item.supplierId !== parsed.data.supplierId) {
           throw new Error(`"${item.name}" does not belong to this supplier.`);
         }
+      }
 
-        await tx.purchaseOrder.create({
-          data: {
-            supplierId: parsed.data.supplierId,
-            itemId: line.itemId,
-            quantity: line.quantity,
-            costPrice: line.costPrice,
-            recordedById: session.user.id,
-            branchId,
+      // Create the PO with all line items
+      const po = await tx.purchaseOrder.create({
+        data: {
+          poNumber,
+          supplierId: parsed.data.supplierId,
+          status: "RECEIVED",
+          organizationId: orgId,
+          branchId,
+          createdById: session.user.id,
+          deliveredAt: new Date(),
+          items: {
+            create: parsed.data.items.map((line) => ({
+              itemId: line.itemId,
+              quantity: line.quantity,
+              costPrice: line.costPrice,
+              receivedQty: line.quantity,
+            })),
           },
-        });
+        },
+      });
 
+      // Update branch stock and write StockLog for each line
+      for (const line of parsed.data.items) {
         await tx.branchStock.upsert({
           where: { itemId_branchId: { itemId: line.itemId, branchId } },
           update: { stockQty: { increment: line.quantity } },
           create: { itemId: line.itemId, branchId, stockQty: line.quantity, lowStockThreshold: 5 },
+        });
+
+        await tx.stockLog.create({
+          data: {
+            itemId: line.itemId,
+            branchId,
+            organizationId: orgId,
+            quantity: line.quantity,
+            reason: "PURCHASE_RECEIVED",
+            referenceId: po.id,
+            recordedById: session.user.id,
+          },
         });
       }
     });
@@ -231,17 +297,19 @@ export async function recordPurchaseOrder(
 
 export async function getSupplierDetail(id: string): Promise<SupplierDetail | null> {
   const session = await auth();
-  const branchId = session?.user?.branchId ?? null;
+  if (!session?.user?.id) return null;
+  const orgId = session.user.organizationId;
+  const branchId = session.user.branchId ?? null;
 
-  const supplier = await db.supplier.findUnique({
-    where: { id },
+  const supplier = await db.supplier.findFirst({
+    where: { id, organizationId: orgId },
     include: {
       items: {
         select: {
           id: true,
           sku: true,
           name: true,
-          category: true,
+          category: { select: { name: true } },
           retailPrice: true,
           wholesalePrice: true,
           isActive: true,
@@ -252,13 +320,13 @@ export async function getSupplierDetail(id: string): Promise<SupplierDetail | nu
         orderBy: { name: "asc" },
       },
       purchaseOrders: {
-        select: {
-          id: true,
-          quantity: true,
-          costPrice: true,
-          createdAt: true,
-          item: { select: { id: true, name: true, sku: true } },
-          recordedBy: { select: { name: true } },
+        include: {
+          items: {
+            include: {
+              item: { select: { id: true, name: true, sku: true } },
+            },
+          },
+          createdBy: { select: { name: true } },
         },
         orderBy: { createdAt: "desc" },
       },
@@ -267,25 +335,38 @@ export async function getSupplierDetail(id: string): Promise<SupplierDetail | nu
 
   if (!supplier) return null;
 
+  // Flatten PO line items so each row has: item, qty, cost, createdAt, recordedBy
+  const flatPOs: SupplierDetail["purchaseOrders"] = supplier.purchaseOrders.flatMap((po) =>
+    po.items.map((line) => ({
+      id: line.id,
+      quantity: line.quantity,
+      costPrice: line.costPrice.toString(),
+      createdAt: po.createdAt.toISOString(),
+      item: line.item,
+      recordedBy: { name: po.createdBy.name },
+    }))
+  );
+
   const result: SupplierDetail = {
-    ...supplier,
+    id: supplier.id,
+    name: supplier.name,
+    phone: supplier.phone,
+    email: supplier.email,
+    address: supplier.address,
+    notes: supplier.notes,
     createdAt: supplier.createdAt.toISOString(),
     updatedAt: supplier.updatedAt.toISOString(),
     items: supplier.items.map((item) => ({
       id: item.id,
       sku: item.sku,
       name: item.name,
-      category: item.category,
+      category: item.category?.name ?? "",
       retailPrice: item.retailPrice.toString(),
       wholesalePrice: item.wholesalePrice.toString(),
       isActive: item.isActive,
       stockQty: item.branchStocks.reduce((sum, bs) => sum + bs.stockQty, 0),
     })),
-    purchaseOrders: supplier.purchaseOrders.map((po) => ({
-      ...po,
-      costPrice: po.costPrice.toString(),
-      createdAt: po.createdAt.toISOString(),
-    })),
+    purchaseOrders: flatPOs,
   };
 
   return JSON.parse(JSON.stringify(result));

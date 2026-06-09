@@ -6,17 +6,15 @@ import { db } from "@/lib/db";
 import { CompleteSaleSchema, type CompleteSaleInput } from "@/lib/validations/pos";
 import { VAT_EXTRACT } from "@/lib/constants/tax";
 
-// ── Receipt number: RCP-YYYYMMDD-XXXX ────────────────────────────────────
+// ── Receipt number: RCP-YYYYMMDD-XXXX (org-scoped) ────────────────────────
 
-async function generateReceiptNumber(): Promise<string> {
+async function generateReceiptNumber(orgId: string): Promise<string> {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, "");
   const prefix = `RCP-${dateStr}-`;
 
-  // Use the highest existing sequence for today rather than a count — safe
-  // against gaps caused by voided sales, test data, or manual DB edits.
   const last = await db.sale.findFirst({
-    where: { receiptNumber: { startsWith: prefix } },
+    where: { receiptNumber: { startsWith: prefix }, organizationId: orgId },
     orderBy: { receiptNumber: "desc" },
     select: { receiptNumber: true },
   });
@@ -43,11 +41,14 @@ export async function searchItems(query: string): Promise<SearchedItem[]> {
   if (!q) return [];
 
   const session = await auth();
-  const branchId = session?.user?.branchId ?? null;
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+  const branchId = session.user.branchId ?? null;
 
   const rows = await db.item.findMany({
     where: {
       isActive: true,
+      organizationId: orgId,
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { sku: { contains: q, mode: "insensitive" } },
@@ -57,7 +58,7 @@ export async function searchItems(query: string): Promise<SearchedItem[]> {
       id: true,
       name: true,
       sku: true,
-      category: true,
+      category: { select: { name: true } },
       retailPrice: true,
       wholesalePrice: true,
       specialPrice: true,
@@ -69,12 +70,17 @@ export async function searchItems(query: string): Promise<SearchedItem[]> {
 
   return JSON.parse(JSON.stringify(
     rows.map((r) => ({
-      ...r,
+      id: r.id,
+      name: r.name,
+      sku: r.sku,
+      category: r.category?.name ?? "",
+      retailPrice: r.retailPrice,
+      wholesalePrice: r.wholesalePrice,
+      specialPrice: r.specialPrice,
       stockQty: (branchId
         ? r.branchStocks.find((bs: { branchId: string; stockQty: number }) => bs.branchId === branchId)
         : r.branchStocks[0]
       )?.stockQty ?? 0,
-      branchStocks: undefined,
     }))
   ));
 }
@@ -92,8 +98,13 @@ export async function searchCustomers(query: string): Promise<SearchedCustomer[]
   const q = query.trim();
   if (!q) return [];
 
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+
   const rows = await db.customer.findMany({
     where: {
+      organizationId: orgId,
       OR: [
         { name: { contains: q, mode: "insensitive" } },
         { phone: { contains: q } },
@@ -136,6 +147,7 @@ export async function completeSale(
 ): Promise<{ success: true; sale: SaleResult } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  const orgId = session.user.organizationId;
 
   const parsed = CompleteSaleSchema.safeParse(data);
   if (!parsed.success) {
@@ -146,7 +158,6 @@ export async function completeSale(
     return { success: false, error: "Credit payment requires a customer to be selected." };
   }
 
-  // Sanity-check: totalAmount must equal itemsTotal − discount (VAT is inclusive in prices)
   const itemsTotal = parsed.data.items.reduce((sum, i) => sum + i.subtotal, 0);
   if (parsed.data.discountAmount > itemsTotal) {
     return { success: false, error: "Discount cannot exceed the total item value." };
@@ -159,23 +170,24 @@ export async function completeSale(
     return { success: false, error: "Total amount mismatch — please try again." };
   }
 
-  // Compute taxAmount server-side: extract the VAT already contained in the total
   const computedTax = Math.round(parsed.data.totalAmount * VAT_EXTRACT * 100) / 100;
 
   const branchId = session.user.branchId;
   if (!branchId) return { success: false, error: "Your account has no branch assigned. Please contact the admin." };
 
-  const receiptNumber = await generateReceiptNumber();
+  const receiptNumber = await generateReceiptNumber(orgId);
 
   try {
     const sale = await db.$transaction(async (tx) => {
-      // 1. Verify stock availability at this branch
+      // 1. Verify stock availability (items must belong to this org)
       for (const line of parsed.data.items) {
         const item = await tx.item.findUnique({
           where: { id: line.itemId },
-          select: { name: true, isActive: true },
+          select: { name: true, isActive: true, organizationId: true },
         });
-        if (!item || !item.isActive) throw new Error(`Item not found or has been deactivated.`);
+        if (!item || !item.isActive || item.organizationId !== orgId) {
+          throw new Error(`Item not found or has been deactivated.`);
+        }
 
         const branchStock = await tx.branchStock.findUnique({
           where: { itemId_branchId: { itemId: line.itemId, branchId } },
@@ -201,6 +213,7 @@ export async function completeSale(
           customerId: parsed.data.customerId,
           employeeId: session.user.id,
           branchId,
+          organizationId: orgId,
           items: {
             create: parsed.data.items.map((i) => ({
               itemId: i.itemId,
@@ -218,15 +231,27 @@ export async function completeSale(
         },
       });
 
-      // 3. Decrement branch stock
+      // 3. Decrement branch stock + write StockLog (AI demand signal)
       for (const line of parsed.data.items) {
         await tx.branchStock.update({
           where: { itemId_branchId: { itemId: line.itemId, branchId } },
           data: { stockQty: { decrement: line.quantity } },
         });
+
+        await tx.stockLog.create({
+          data: {
+            itemId: line.itemId,
+            branchId,
+            organizationId: orgId,
+            quantity: -line.quantity,
+            reason: "SALE",
+            referenceId: created.id,
+            recordedById: session.user.id,
+          },
+        });
       }
 
-      // 4. Add to customer credit balance and return updated balance
+      // 4. Update customer credit balance
       if (parsed.data.paymentStatus === "CREDIT" && parsed.data.customerId) {
         await tx.customer.update({
           where: { id: parsed.data.customerId },
@@ -256,9 +281,10 @@ export async function completeSale(
 export async function getSaleById(id: string): Promise<SaleResult | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
+  const orgId = session.user.organizationId;
 
-  const sale = await db.sale.findUnique({
-    where: { id },
+  const sale = await db.sale.findFirst({
+    where: { id, organizationId: orgId },
     include: {
       items: { include: { item: { select: { name: true, sku: true } } } },
       branch: { select: { name: true, address: true, phone: true, paybill: true, pin: true } },

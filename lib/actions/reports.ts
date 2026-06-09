@@ -48,6 +48,7 @@ export async function getReportData(
   const where = {
     createdAt: { gte: start, lte: end },
     isVoid: false,
+    organizationId: session.user.organizationId,
     ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
   };
 

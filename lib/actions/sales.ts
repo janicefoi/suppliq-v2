@@ -23,6 +23,7 @@ export async function voidSale(
       });
 
       if (!sale) throw new Error("Receipt not found.");
+      if (sale.organizationId !== session.user.organizationId) throw new Error("Receipt not found.");
       if (sale.isVoid) throw new Error("This receipt is already voided.");
 
       await tx.sale.update({

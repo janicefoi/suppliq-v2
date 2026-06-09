@@ -37,9 +37,10 @@ async function requireAdmin() {
 // ── Get employees ─────────────────────────────────────────────────────────
 
 export async function getEmployees(): Promise<EmployeeRow[]> {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const employees = await db.user.findMany({
+    where: { organizationId: admin.organizationId },
     select: {
       id: true,
       name: true,
@@ -62,7 +63,7 @@ export async function createEmployee(
   data: CreateEmployeeInput
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
 
     const parsed = CreateEmployeeSchema.safeParse(data);
     if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
@@ -81,6 +82,7 @@ export async function createEmployee(
         role: parsed.data.role as "ADMIN" | "MANAGER" | "CASHIER",
         passwordHash,
         branchId: parsed.data.branchId ?? null,
+        organizationId: admin.organizationId,
       },
     });
 
@@ -104,9 +106,14 @@ export async function updateEmployee(
     const parsed = UpdateEmployeeSchema.safeParse(data);
     if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
 
-    // Prevent admin from changing their own role
     if (id === admin.id) {
       return { success: false, error: "You cannot edit your own account here." };
+    }
+
+    // Verify employee belongs to the same org
+    const target = await db.user.findUnique({ where: { id }, select: { organizationId: true } });
+    if (!target || target.organizationId !== admin.organizationId) {
+      return { success: false, error: "Employee not found." };
     }
 
     const duplicate = await db.user.findFirst({
@@ -148,15 +155,13 @@ export async function toggleEmployeeActive(
 
     const employee = await db.user.findUnique({
       where: { id },
-      select: { isActive: true },
+      select: { isActive: true, organizationId: true },
     });
-    if (!employee) return { success: false, error: "Employee not found." };
+    if (!employee || employee.organizationId !== admin.organizationId) {
+      return { success: false, error: "Employee not found." };
+    }
 
-    await db.user.update({
-      where: { id },
-      data: { isActive: !employee.isActive },
-    });
-
+    await db.user.update({ where: { id }, data: { isActive: !employee.isActive } });
     revalidatePath("/admin/employees");
     return { success: true };
   } catch (err) {
@@ -171,14 +176,19 @@ export async function resetEmployeePassword(
   newPassword: string
 ): Promise<{ success: true } | { success: false; error: string }> {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
 
     if (!newPassword || newPassword.length < 8) {
       return { success: false, error: "Password must be at least 8 characters." };
     }
 
-    const passwordHash = await bcrypt.hash(newPassword, 12);
+    // Verify employee belongs to same org
+    const target = await db.user.findUnique({ where: { id }, select: { organizationId: true } });
+    if (!target || target.organizationId !== admin.organizationId) {
+      return { success: false, error: "Employee not found." };
+    }
 
+    const passwordHash = await bcrypt.hash(newPassword, 12);
     await db.user.update({ where: { id }, data: { passwordHash } });
 
     revalidatePath("/admin/employees");
