@@ -1,21 +1,21 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: jsh_erp_db
+    container_name: suppliq_v2_db
     environment:
-      POSTGRES_DB: jsh_erp
+      POSTGRES_DB: suppliq_dev
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5434:5432"
+      - "5435:5432"
     volumes:
-      - jsh_erp_pgdata:/var/lib/postgresql/data
+      - suppliq_v2_pgdata:/var/lib/postgresql/data
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d jsh_erp"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d suppliq_dev"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  jsh_erp_pgdata:
+  suppliq_v2_pgdata:
