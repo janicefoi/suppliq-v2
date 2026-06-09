@@ -1,5 +1,6 @@
 import { Building2, Users, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { BillingActions } from "@/components/settings/billing-actions";
 import type { OrgDetail } from "@/lib/actions/settings";
 
 const PLAN_CONFIG = {
@@ -7,6 +8,14 @@ const PLAN_CONFIG = {
   GROWTH:     { label: "Growth",     style: "bg-blue-50 text-blue-700 border-blue-200" },
   ENTERPRISE: { label: "Enterprise", style: "bg-violet-50 text-violet-700 border-violet-200" },
 } as const;
+
+const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
+  active:     { label: "Active",     style: "bg-green-50 text-green-700 border-green-200" },
+  trialing:   { label: "Trial",      style: "bg-teal-50 text-teal-700 border-teal-200" },
+  past_due:   { label: "Past due",   style: "bg-amber-50 text-amber-700 border-amber-200" },
+  canceled:   { label: "Canceled",   style: "bg-red-50 text-red-700 border-red-200" },
+  incomplete: { label: "Incomplete", style: "bg-slate-50 text-slate-600 border-slate-200" },
+};
 
 const PLAN_FEATURES: Record<string, string[]> = {
   FREE: [
@@ -18,7 +27,7 @@ const PLAN_FEATURES: Record<string, string[]> = {
   ],
   GROWTH: [
     "Up to 10 branches",
-    "Unlimited users",
+    "Up to 25 users",
     "AI-powered demand forecasting",
     "Advanced reports & analytics",
     "Priority email support",
@@ -40,6 +49,16 @@ export function BillingCard({ org }: { org: OrgDetail }) {
     day: "2-digit", month: "long", year: "numeric",
   });
 
+  const statusCfg = org.subscriptionStatus
+    ? (STATUS_CONFIG[org.subscriptionStatus] ?? null)
+    : null;
+
+  const renewsOn = org.currentPeriodEnd
+    ? new Date(org.currentPeriodEnd).toLocaleDateString("en-KE", {
+        day: "2-digit", month: "long", year: "numeric",
+      })
+    : null;
+
   return (
     <div className="space-y-4">
       {/* Plan card */}
@@ -48,10 +67,22 @@ export function BillingCard({ org }: { org: OrgDetail }) {
           <div>
             <h2 className="text-base font-semibold text-slate-900">Current plan</h2>
             <p className="text-sm text-slate-500 mt-0.5">Member since {memberSince}</p>
+            {renewsOn && (
+              <p className="text-xs text-slate-400 mt-0.5">
+                {org.subscriptionStatus === "canceled" ? "Expires" : "Renews"} {renewsOn}
+              </p>
+            )}
           </div>
-          <Badge className={`shrink-0 text-sm font-semibold px-3 py-1 border ${config.style}`}>
-            {config.label}
-          </Badge>
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <Badge className={`text-sm font-semibold px-3 py-1 border ${config.style}`}>
+              {config.label}
+            </Badge>
+            {statusCfg && (
+              <Badge variant="outline" className={`text-xs px-2 py-0.5 border ${statusCfg.style}`}>
+                {statusCfg.label}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <ul className="space-y-2">
@@ -63,17 +94,11 @@ export function BillingCard({ org }: { org: OrgDetail }) {
           ))}
         </ul>
 
-        {org.plan === "FREE" && (
-          <div className="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 space-y-1">
-            <p className="text-sm font-semibold text-blue-800">Upgrade to Growth or Enterprise</p>
-            <p className="text-xs text-blue-600">
-              Unlock AI demand forecasting, unlimited users, and advanced analytics.
-            </p>
-            <p className="text-xs text-blue-500 mt-1">
-              Email <span className="font-medium">sales@suppliq.ai</span> to upgrade.
-            </p>
-          </div>
-        )}
+        <BillingActions
+          plan={org.plan}
+          subscriptionStatus={org.subscriptionStatus}
+          stripeCustomerId={org.stripeCustomerId}
+        />
       </div>
 
       {/* Usage stats */}

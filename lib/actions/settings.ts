@@ -28,6 +28,11 @@ export type OrgDetail = {
   plan: string;
   createdAt: string;
   _counts: { users: number; branches: number; items: number };
+  // Stripe billing (may be null on free plan)
+  stripeCustomerId: string | null;
+  stripeSubscriptionId: string | null;
+  subscriptionStatus: string | null;
+  currentPeriodEnd: string | null;
 };
 
 export async function getOrgDetail(): Promise<OrgDetail | null> {
@@ -54,6 +59,10 @@ export async function getOrgDetail(): Promise<OrgDetail | null> {
     plan: org.plan,
     createdAt: org.createdAt.toISOString(),
     _counts: org._count,
+    stripeCustomerId: org.stripeCustomerId ?? null,
+    stripeSubscriptionId: org.stripeSubscriptionId ?? null,
+    subscriptionStatus: org.subscriptionStatus ?? null,
+    currentPeriodEnd: org.currentPeriodEnd?.toISOString() ?? null,
   };
 }
 

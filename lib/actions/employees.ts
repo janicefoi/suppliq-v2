@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { checkUserLimit } from "@/lib/plan-limits";
 import {
   CreateEmployeeSchema,
   UpdateEmployeeSchema,
@@ -67,6 +68,14 @@ export async function createEmployee(
 
     const parsed = CreateEmployeeSchema.safeParse(data);
     if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
+
+    // Plan limit check
+    const org = await db.organization.findUnique({
+      where: { id: admin.organizationId },
+      select: { plan: true },
+    });
+    const limit = await checkUserLimit(admin.organizationId, org?.plan ?? "FREE");
+    if (!limit.allowed) return { success: false, error: limit.error };
 
     const existing = await db.user.findUnique({ where: { email: parsed.data.email } });
     if (existing) {

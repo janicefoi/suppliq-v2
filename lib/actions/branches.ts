@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { checkBranchLimit } from "@/lib/plan-limits";
 
 const BranchSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -63,6 +64,11 @@ export async function createBranch(data: BranchInput): Promise<ActionResult> {
 
   const parsed = BranchSchema.safeParse(data);
   if (!parsed.success) return { success: false, error: parsed.error.errors[0].message };
+
+  // Plan limit check
+  const org = await db.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
+  const limit = await checkBranchLimit(orgId, org?.plan ?? "FREE");
+  if (!limit.allowed) return { success: false, error: limit.error };
 
   const exists = await db.branch.findFirst({
     where: { name: { equals: parsed.data.name, mode: "insensitive" }, organizationId: orgId },
