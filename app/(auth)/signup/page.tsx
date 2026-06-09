@@ -112,7 +112,7 @@ export default function SignupPage() {
     const result = await registerOrganization(fd);
 
     if ("error" in result) {
-      setError(result.error);
+      setError(result.error as string);
       setPending(false);
       return;
     }

@@ -1,6 +1,6 @@
 ﻿import { auth } from "@/auth";
-import { db } from "@/lib/db";
-import { getItems, getInventoryStats } from "@/lib/actions/inventory";
+import { getItems, getInventoryStats, getCategories } from "@/lib/actions/inventory";
+import { getSuppliers } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/branches";
 import { InventoryClient } from "@/components/inventory/inventory-client";
 
@@ -13,8 +13,8 @@ export default async function InventoryPage() {
 
   const [items, suppliers, categories, branches, stats] = await Promise.all([
     getItems(undefined, isAdmin ? null : undefined),
-    db.supplier.findMany({ select: { id: true, name: true }, orderBy: { name: "asc" } }),
-    db.category.findMany({ orderBy: { name: "asc" } }),
+    getSuppliers(),
+    getCategories(),
     isAdmin ? getBranches() : Promise.resolve([]),
     getInventoryStats(isAdmin ? null : undefined),
   ]);

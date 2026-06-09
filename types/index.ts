@@ -1,4 +1,3 @@
-import type { DefaultSession } from "next-auth";
 import type {
   User,
   Supplier,
@@ -87,11 +86,5 @@ export interface StatCard {
 declare module "next-auth" {
   interface User {
     role: string;
-  }
-  interface Session {
-    user: {
-      id: string;
-      role: string;
-    } & DefaultSession["user"];
   }
 }

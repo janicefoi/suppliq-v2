@@ -283,10 +283,9 @@ async function main() {
       disc: number; date: Date; lines: LS[];
     };
 
-    function p(sku: string, type: "RETAIL" | "WHOLESALE") {
-      return type === "RETAIL" ? iMap[sku].rp : iMap[sku].wp;
-    }
-    function calc(lines: LS[], type: "RETAIL" | "WHOLESALE", disc: number) {
+    const p = (sku: string, type: "RETAIL" | "WHOLESALE") =>
+      type === "RETAIL" ? iMap[sku].rp : iMap[sku].wp;
+    const calc = (lines: LS[], type: "RETAIL" | "WHOLESALE", disc: number) => {
       const ll = lines.map(l => ({
         itemId: iMap[l.sku].id,
         qty: l.qty,
@@ -678,14 +677,13 @@ async function main() {
     console.log(`✓ Sales already seeded for Org 2 (${existNSales}), skipping`);
   } else {
     type NLS = { sku: string; qty: number };
-    function np(sku: string, type: "RETAIL" | "WHOLESALE") {
-      return type === "RETAIL" ? nIMap[sku].rp : nIMap[sku].wp;
-    }
-    function ncalc(lines: NLS[], type: "RETAIL" | "WHOLESALE", disc: number) {
+    const np = (sku: string, type: "RETAIL" | "WHOLESALE") =>
+      type === "RETAIL" ? nIMap[sku].rp : nIMap[sku].wp;
+    const ncalc = (lines: NLS[], type: "RETAIL" | "WHOLESALE", disc: number) => {
       const ll = lines.map(l => ({ itemId: nIMap[l.sku].id, qty: l.qty, unitPrice: np(l.sku, type), subtotal: np(l.sku, type) * l.qty }));
       const total = ll.reduce((s, l) => s + l.subtotal, 0) - disc;
       return { ll, total, taxAmt: extractTax(total) };
-    }
+    };
     type NSS = { br: string; emp: string; cust: string | null; type: "RETAIL" | "WHOLESALE"; pay: "PAID" | "CREDIT"; disc: number; date: Date; lines: NLS[] };
     const nSpecs: NSS[] = [
       // March 2026

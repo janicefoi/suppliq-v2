@@ -39,7 +39,7 @@ export const authConfig: NextAuthConfig = {
         token.id = user.id;
         token.role = (user as { role: string }).role;
         token.branchId = (user as { branchId?: string | null }).branchId ?? null;
-        token.organizationId = (user as { organizationId: string }).organizationId;
+        token.organizationId = (user as unknown as { organizationId: string }).organizationId;
       }
       return token;
     },
