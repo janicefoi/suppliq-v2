@@ -29,6 +29,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
             role: true,
             isActive: true,
             branchId: true,
+            organizationId: true,
           },
         });
 
@@ -43,6 +44,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
           email: user.email,
           role: user.role,
           branchId: user.branchId,
+          organizationId: user.organizationId,
         };
       },
     }),
