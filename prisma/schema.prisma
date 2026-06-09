@@ -9,20 +9,14 @@ datasource db {
 }
 
 // ============================================================
-// CATEGORY
-// ============================================================
-
-model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-
-  @@map("categories")
-}
-
-// ============================================================
 // ENUMS
 // ============================================================
+
+enum OrgPlan {
+  FREE
+  GROWTH
+  ENTERPRISE
+}
 
 enum Role {
   ADMIN
@@ -41,96 +35,232 @@ enum PaymentStatus {
   CREDIT
 }
 
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  PARTIAL
+  RECEIVED
+  CANCELLED
+}
+
+enum StockTransferStatus {
+  PENDING
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  RENT
+  SALARIES
+  UTILITIES
+  TRANSPORT
+  MAINTENANCE
+  MARKETING
+  OTHER
+}
+
+enum StockMovementReason {
+  SALE
+  SALE_VOID
+  PURCHASE_RECEIVED
+  TRANSFER_OUT
+  TRANSFER_IN
+  MANUAL_ADJUSTMENT
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VOID
+  LOGIN
+  LOGOUT
+}
+
 // ============================================================
-// BRANCH
+// ORGANIZATION  (the tenant — every row in every table belongs to one)
 // ============================================================
 
-model Branch {
+model Organization {
   id        String   @id @default(cuid())
-  name      String   @unique
-  address   String?
-  phone     String?
-  paybill   String?
-  pin       String?
+  name      String
+  slug      String   @unique          // used in URLs / subdomains
+  industry  String?
+  country   String   @default("KE")
+  currency  String   @default("KES")
+  timezone  String   @default("Africa/Nairobi")
+  plan      OrgPlan  @default(FREE)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   users          User[]
+  branches       Branch[]
+  categories     Category[]
+  items          Item[]
+  suppliers      Supplier[]
   customers      Customer[]
   sales          Sale[]
-  stockLogs      StockLog[]
   purchaseOrders PurchaseOrder[]
-  branchStocks   BranchStock[]
+  stockTransfers StockTransfer[]
+  expenses       Expense[]
+  stockLogs      StockLog[]
+  forecasts      Forecast[]
+  auditLogs      AuditLog[]
 
-  @@map("branches")
+  @@map("organizations")
 }
 
 // ============================================================
-// MODELS
+// CATEGORY
+// ============================================================
+
+model Category {
+  id             String   @id @default(cuid())
+  name           String
+  organizationId String
+  createdAt      DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  items        Item[]
+
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@map("categories")
+}
+
+// ============================================================
+// USER
 // ============================================================
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  role         Role     @default(CASHIER)
-  isActive     Boolean  @default(true)
-  branchId     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String
+  role           Role     @default(CASHIER)
+  isActive       Boolean  @default(true)
+  organizationId String
+  branchId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  branch         Branch?         @relation(fields: [branchId], references: [id])
-  sales          Sale[]
-  creditPayments CreditPayment[]
-  purchaseOrders PurchaseOrder[]
-  stockLogs      StockLog[]
+  organization          Organization    @relation(fields: [organizationId], references: [id])
+  branch                Branch?         @relation(fields: [branchId], references: [id])
+  sales                 Sale[]
+  creditPayments        CreditPayment[]
+  purchaseOrders        PurchaseOrder[]
+  stockLogs             StockLog[]
+  stockTransfersCreated StockTransfer[] @relation("TransferCreatedBy")
+  expenses              Expense[]
+  auditLogs             AuditLog[]
 
+  @@index([organizationId])
   @@index([branchId])
   @@map("users")
 }
 
-model Supplier {
-  id        String   @id @default(cuid())
-  name      String
-  phone     String
-  email     String?
-  address   String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ============================================================
+// BRANCH
+// ============================================================
 
-  items          Item[]
-  purchaseOrders PurchaseOrder[]
-
-  @@map("suppliers")
-}
-
-model Item {
+model Branch {
   id             String   @id @default(cuid())
-  sku            String   @unique
   name           String
-  category       String
-  description    String?
-  retailPrice    Decimal  @db.Decimal(10, 2)
-  wholesalePrice Decimal  @db.Decimal(10, 2)
-  specialPrice   Decimal? @db.Decimal(10, 2)
+  address        String?
+  phone          String?
+  paybill        String?
+  pin            String?
   isActive       Boolean  @default(true)
-  supplierId     String?
+  organizationId String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  supplier       Supplier?     @relation(fields: [supplierId], references: [id])
-  saleItems      SaleItem[]
-  purchaseOrders PurchaseOrder[]
-  stockLogs      StockLog[]
-  branchStocks   BranchStock[]
+  organization       Organization    @relation(fields: [organizationId], references: [id])
+  users              User[]
+  customers          Customer[]
+  sales              Sale[]
+  stockLogs          StockLog[]
+  purchaseOrders     PurchaseOrder[]
+  branchStocks       BranchStock[]
+  stockTransfersFrom StockTransfer[] @relation("TransferFrom")
+  stockTransfersTo   StockTransfer[] @relation("TransferTo")
+  expenses           Expense[]
+  forecasts          Forecast[]
 
+  @@unique([name, organizationId])
+  @@index([organizationId])
+  @@map("branches")
+}
+
+// ============================================================
+// SUPPLIER
+// ============================================================
+
+model Supplier {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String
+  email          String?
+  address        String?
+  notes          String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+  items          Item[]
+  purchaseOrders PurchaseOrder[]
+
+  @@index([organizationId])
+  @@map("suppliers")
+}
+
+// ============================================================
+// ITEM
+// ============================================================
+
+model Item {
+  id             String   @id @default(cuid())
+  sku            String
+  name           String
+  categoryId     String?
+  description    String?
+  unit           String   @default("pcs")      // pcs, kg, litres, boxes…
+  retailPrice    Decimal  @db.Decimal(10, 2)
+  wholesalePrice Decimal  @db.Decimal(10, 2)
+  specialPrice   Decimal? @db.Decimal(10, 2)
+  costPrice      Decimal? @db.Decimal(10, 2)   // latest purchase cost — SUPPLIQ uses for margin
+  leadTimeDays   Int      @default(7)           // avg days from order to delivery — SUPPLIQ reorder timing
+  reorderPoint   Int      @default(10)          // SUPPLIQ updates this dynamically
+  isActive       Boolean  @default(true)
+  supplierId     String?
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization       Organization        @relation(fields: [organizationId], references: [id])
+  category           Category?           @relation(fields: [categoryId], references: [id])
+  supplier           Supplier?           @relation(fields: [supplierId], references: [id])
+  saleItems          SaleItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  stockLogs          StockLog[]
+  branchStocks       BranchStock[]
+  stockTransferItems StockTransferItem[]
+  forecasts          Forecast[]
+
+  @@unique([sku, organizationId])
+  @@index([organizationId])
   @@index([supplierId])
-  @@index([sku])
+  @@index([categoryId])
   @@map("items")
 }
+
+// ============================================================
+// BRANCH STOCK
+// ============================================================
 
 model BranchStock {
   id                String @id @default(cuid())
@@ -147,27 +277,38 @@ model BranchStock {
   @@map("branch_stocks")
 }
 
-model Customer {
-  id            String   @id @default(cuid())
-  name          String
-  phone         String
-  address       String?
-  creditBalance Decimal  @db.Decimal(10, 2) @default(0)
-  branchId      String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// ============================================================
+// CUSTOMER
+// ============================================================
 
+model Customer {
+  id             String   @id @default(cuid())
+  name           String
+  phone          String
+  address        String?
+  creditBalance  Decimal  @db.Decimal(10, 2) @default(0)
+  organizationId String
+  branchId       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id])
   branch         Branch?         @relation(fields: [branchId], references: [id])
   sales          Sale[]
   creditPayments CreditPayment[]
 
+  @@index([organizationId])
   @@index([branchId])
   @@map("customers")
 }
 
+// ============================================================
+// SALE
+// ============================================================
+
 model Sale {
   id             String        @id @default(cuid())
-  receiptNumber  String        @unique
+  receiptNumber  String
   saleType       SaleType
   paymentStatus  PaymentStatus
   discountAmount Decimal       @db.Decimal(10, 2) @default(0)
@@ -179,19 +320,27 @@ model Sale {
   customerId     String?
   employeeId     String
   branchId       String?
+  organizationId String
   createdAt      DateTime      @default(now())
 
-  branch   Branch?   @relation(fields: [branchId], references: [id])
-  customer Customer? @relation(fields: [customerId], references: [id])
-  employee User      @relation(fields: [employeeId], references: [id])
-  items    SaleItem[]
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  customer     Customer?    @relation(fields: [customerId], references: [id])
+  employee     User         @relation(fields: [employeeId], references: [id])
+  items        SaleItem[]
 
+  @@unique([receiptNumber, organizationId])
+  @@index([organizationId])
   @@index([customerId])
   @@index([employeeId])
   @@index([branchId])
   @@index([createdAt])
   @@map("sales")
 }
+
+// ============================================================
+// SALE ITEM
+// ============================================================
 
 model SaleItem {
   id        String  @id @default(cuid())
@@ -209,6 +358,10 @@ model SaleItem {
   @@map("sale_items")
 }
 
+// ============================================================
+// CREDIT PAYMENT
+// ============================================================
+
 model CreditPayment {
   id           String   @id @default(cuid())
   customerId   String
@@ -224,40 +377,196 @@ model CreditPayment {
   @@map("credit_payments")
 }
 
+// ============================================================
+// PURCHASE ORDER  (proper PO with status lifecycle + line items)
+// ============================================================
+
 model PurchaseOrder {
-  id           String   @id @default(cuid())
-  supplierId   String
-  itemId       String
-  quantity     Int
-  costPrice    Decimal  @db.Decimal(10, 2)
-  recordedById String
-  branchId     String?
-  createdAt    DateTime @default(now())
+  id               String              @id @default(cuid())
+  poNumber         String              // e.g. PO-20260609-0001
+  supplierId       String
+  status           PurchaseOrderStatus @default(DRAFT)
+  expectedDelivery DateTime?
+  deliveredAt      DateTime?
+  notes            String?
+  organizationId   String
+  branchId         String?
+  createdById      String
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
 
-  branch     Branch?  @relation(fields: [branchId], references: [id])
-  supplier   Supplier @relation(fields: [supplierId], references: [id])
-  item       Item     @relation(fields: [itemId], references: [id])
-  recordedBy User     @relation(fields: [recordedById], references: [id])
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  branch       Branch?             @relation(fields: [branchId], references: [id])
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy    User                @relation(fields: [createdById], references: [id])
+  items        PurchaseOrderItem[]
 
+  @@unique([poNumber, organizationId])
+  @@index([organizationId])
   @@index([supplierId])
-  @@index([itemId])
   @@index([branchId])
   @@map("purchase_orders")
 }
 
+model PurchaseOrderItem {
+  id              String  @id @default(cuid())
+  purchaseOrderId String
+  itemId          String
+  quantity        Int
+  costPrice       Decimal @db.Decimal(10, 2)
+  receivedQty     Int     @default(0) // supports partial deliveries
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  item          Item          @relation(fields: [itemId], references: [id])
+
+  @@index([purchaseOrderId])
+  @@index([itemId])
+  @@map("purchase_order_items")
+}
+
+// ============================================================
+// STOCK TRANSFER  (branch → branch movement)
+// ============================================================
+
+model StockTransfer {
+  id             String              @id @default(cuid())
+  fromBranchId   String
+  toBranchId     String
+  status         StockTransferStatus @default(PENDING)
+  notes          String?
+  organizationId String
+  createdById    String
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  organization Organization        @relation(fields: [organizationId], references: [id])
+  fromBranch   Branch              @relation("TransferFrom", fields: [fromBranchId], references: [id])
+  toBranch     Branch              @relation("TransferTo", fields: [toBranchId], references: [id])
+  createdBy    User                @relation("TransferCreatedBy", fields: [createdById], references: [id])
+  items        StockTransferItem[]
+
+  @@index([organizationId])
+  @@index([fromBranchId])
+  @@index([toBranchId])
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id              String @id @default(cuid())
+  stockTransferId String
+  itemId          String
+  quantity        Int
+
+  stockTransfer StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  item          Item          @relation(fields: [itemId], references: [id])
+
+  @@index([stockTransferId])
+  @@index([itemId])
+  @@map("stock_transfer_items")
+}
+
+// ============================================================
+// EXPENSE
+// ============================================================
+
+model Expense {
+  id             String          @id @default(cuid())
+  description    String
+  amount         Decimal         @db.Decimal(10, 2)
+  category       ExpenseCategory @default(OTHER)
+  date           DateTime
+  organizationId String
+  branchId       String?
+  recordedById   String
+  createdAt      DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  recordedBy   User         @relation(fields: [recordedById], references: [id])
+
+  @@index([organizationId])
+  @@index([branchId])
+  @@index([date])
+  @@map("expenses")
+}
+
+// ============================================================
+// STOCK LOG  (immutable audit trail of every stock movement)
+// ============================================================
+
 model StockLog {
-  id           String   @id @default(cuid())
-  itemId       String
-  quantity     Int
-  recordedById String
-  branchId     String?
-  createdAt    DateTime @default(now())
+  id             String              @id @default(cuid())
+  itemId         String
+  branchId       String?
+  organizationId String
+  quantity       Int                 // positive = in, negative = out
+  reason         StockMovementReason
+  referenceId    String?             // saleId, purchaseOrderId, stockTransferId, etc.
+  recordedById   String
+  createdAt      DateTime            @default(now())
 
-  branch     Branch? @relation(fields: [branchId], references: [id])
-  item       Item    @relation(fields: [itemId], references: [id])
-  recordedBy User    @relation(fields: [recordedById], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch?      @relation(fields: [branchId], references: [id])
+  item         Item         @relation(fields: [itemId], references: [id])
+  recordedBy   User         @relation(fields: [recordedById], references: [id])
 
+  @@index([organizationId])
   @@index([itemId])
   @@index([branchId])
+  @@index([createdAt])
   @@map("stock_logs")
+}
+
+// ============================================================
+// FORECAST  (SUPPLIQ's prediction output — written by the AI engine)
+// ============================================================
+
+model Forecast {
+  id              String   @id @default(cuid())
+  itemId          String
+  branchId        String
+  organizationId  String
+  periodStart     DateTime // the forecast covers this date range
+  periodEnd       DateTime
+  predictedDemand Decimal  @db.Decimal(10, 2)
+  confidenceScore Decimal  @db.Decimal(5, 4)  // 0.0000 → 1.0000
+  reorderSuggested Boolean @default(false)
+  suggestedQty    Int?
+  modelVersion    String?
+  generatedAt     DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  branch       Branch       @relation(fields: [branchId], references: [id])
+  item         Item         @relation(fields: [itemId], references: [id])
+
+  @@index([organizationId])
+  @@index([itemId])
+  @@index([branchId])
+  @@index([periodStart])
+  @@map("forecasts")
+}
+
+// ============================================================
+// AUDIT LOG  (who did what and when — platform-wide accountability)
+// ============================================================
+
+model AuditLog {
+  id             String      @id @default(cuid())
+  organizationId String
+  userId         String
+  action         AuditAction
+  entity         String      // "Sale", "Item", "User", etc.
+  entityId       String?
+  description    String
+  metadata       Json?       // any extra context (before/after values)
+  createdAt      DateTime    @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
 }
