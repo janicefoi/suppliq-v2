@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/ui/logo";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -148,8 +149,15 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
-          JSH ERP &copy; {new Date().getFullYear()}
+        <p className="text-center text-sm text-slate-500 mt-6">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-sky-600 font-medium hover:underline">
+            Sign up
+          </Link>
+        </p>
+
+        <p className="text-center text-xs text-slate-400 mt-3">
+          SUPPLIQ &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>
