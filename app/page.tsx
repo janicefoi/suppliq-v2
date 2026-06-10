@@ -18,7 +18,7 @@ import {
 import { FadeIn } from "@/components/landing/fade-in";
 
 export const metadata = {
-  title: "Suppliq — ERP for wholesale & retail businesses",
+  title: "Suppliq: ERP for wholesale and retail businesses",
   description:
     "Manage inventory, sales, purchases, and suppliers across multiple branches. Built for wholesale and retail businesses.",
 };
@@ -132,8 +132,8 @@ function Hero() {
 
         {/* Sub */}
         <p className="anim-3 mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/50">
-          Suppliq connects inventory, purchasing, and sales across every branch
-          into one system that actually makes sense to use.
+          One platform for inventory, purchasing, and sales across every branch.
+          Fast to get started, built to grow with you.
         </p>
 
         {/* CTAs */}
@@ -191,7 +191,7 @@ function Hero() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 rounded-xl border border-white/5 bg-slate-800/80 p-4">
-                <p className="mb-3 text-[11px] font-medium text-slate-400">Revenue — last 30 days</p>
+                <p className="mb-3 text-[11px] font-medium text-slate-400">Revenue, last 30 days</p>
                 <div className="flex h-20 items-end gap-0.5">
                   {[40,65,45,80,55,90,70,85,60,95,75,88,65,100,78,92,68,84,72,96,80,88,74,90,82,95,86,98,88,100].map(
                     (h, i) => (
@@ -269,7 +269,7 @@ const PRIMARY_FEATURES = [
     tag: "Command center",
     title: "Everything across every branch, on one screen",
     description:
-      "Drill into revenue, stock, and operations across all your locations. Filter by branch, product, or date range. Spot problems before they cost you.",
+      "Get a real-time view across every location without switching tabs. Filter by branch, product, or date range and catch issues before they turn into expensive mistakes.",
     bullets: ["Real-time multi-branch view", "Branch-level breakdowns", "Custom date ranges"],
   },
   {
@@ -278,7 +278,7 @@ const PRIMARY_FEATURES = [
     tag: "AI-powered",
     title: "Know what to reorder before you run out",
     description:
-      "Demand forecasting built on your actual sales history, lead times, and seasonal patterns — so you get reorder suggestions before the gap hits.",
+      "Forecasting built on your real sales history, lead times, and seasonal patterns. You get reorder suggestions before stock runs out, not after.",
     bullets: ["Automated reorder suggestions", "Seasonality-aware predictions", "Supplier lead time built in"],
   },
   {
@@ -287,7 +287,7 @@ const PRIMARY_FEATURES = [
     tag: "Core operations",
     title: "Inventory and POS built to move fast",
     description:
-      "Real-time stock levels across every warehouse, low-stock alerts, and a POS that handles retail, wholesale, and credit sales in one flow.",
+      "Live stock levels across every warehouse with automatic low-stock alerts. The POS handles retail, wholesale, and credit sales all in one flow, no switching required.",
     bullets: ["Live stock across warehouses", "Offline-capable POS", "Wholesale & retail in one"],
   },
 ];
@@ -296,32 +296,32 @@ const SECONDARY_FEATURES = [
   {
     icon: Users,
     title: "Customer & Supplier CRM",
-    description: "Credit balances, payment history, and overdue invoice reminders managed in one place.",
+    description: "Credit balances, payment history, and overdue invoice reminders all in one place. No chasing down records across three systems.",
   },
   {
     icon: TrendingUp,
     title: "Reports & Analytics",
-    description: "P&L, stock movement, and branch comparison reports. One-click CSV export for your accountant.",
+    description: "P&L, stock movement, and branch comparison reports ready to run at any time. Export to CSV for your accountant in one click.",
   },
   {
     icon: ShoppingCart,
     title: "Purchase Orders",
-    description: "Raise POs, track deliveries, match supplier invoices, and reconcile received stock automatically.",
+    description: "Raise POs, track deliveries, match supplier invoices against received stock, and keep a clean audit trail throughout.",
   },
   {
     icon: Globe2,
     title: "Multi-currency",
-    description: "GBP, EUR, USD and 15+ currencies with locale-aware formatting. Works anywhere.",
+    description: "GBP, EUR, USD and 15+ currencies with locale-aware formatting. If your suppliers or customers are international, Suppliq keeps up.",
   },
   {
     icon: Building2,
     title: "Role-based Access",
-    description: "Admins, managers, and cashiers each see exactly what they need. Granular branch-level permissions.",
+    description: "Admins, managers, and cashiers each get the view they need. Permissions go down to branch level so nothing leaks across teams.",
   },
   {
     icon: BarChart3,
     title: "Full Audit Trail",
-    description: "Every transaction, edit, and adjustment is logged. Full accountability on every operation.",
+    description: "Every transaction, edit, and stock adjustment is logged with a timestamp and user. You always know who did what and when.",
   },
 ];
 
@@ -338,7 +338,7 @@ function Features() {
             Built for businesses that move stock.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
-            Not a generic platform bolted together. An operations system built from the ground up for wholesale and retail.
+            Not another generic dashboard. Every feature exists because someone running a warehouse or shop floor actually needed it.
           </p>
         </FadeIn>
 
@@ -562,14 +562,14 @@ function CtaBanner() {
             Ready to stop running your business in Excel?
           </h2>
           <p className="mb-10 text-lg text-white/45">
-            Set up in under 10 minutes. Import your existing stock data with our import tool. No consultant, no six-month rollout.
+            Get set up in under 10 minutes and import your existing stock data straight away. No consultant, no drawn-out rollout, no surprises.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/register"
               className="flex items-center gap-2 rounded-xl bg-blue-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-400 hover:shadow-xl hover:shadow-blue-500/30"
             >
-              Start free — no card needed
+              Start free, no card needed
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
@@ -600,7 +600,7 @@ function Footer() {
               <span className="font-bold text-gray-900">Suppliq</span>
             </Link>
             <p className="text-sm text-gray-400">
-              Supply chain ERP for wholesale and retail businesses that are serious about running tight operations.
+              A proper operations platform for wholesale and retail businesses. Inventory, purchasing, and sales, all connected.
             </p>
           </div>
 
