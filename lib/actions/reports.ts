@@ -241,3 +241,82 @@ export async function getPLData(
     expenseCount: expenseRows.length,
   };
 }
+
+// ── Stock movement types ───────────────────────────────────────────────────
+
+export type StockMovementRow = {
+  id: string;
+  createdAt: string;
+  item: { id: string; name: string; sku: string };
+  branch: { name: string } | null;
+  quantity: number;
+  reason: string;
+  referenceId: string | null;
+  recordedBy: { name: string };
+};
+
+// ── Stock movements action ─────────────────────────────────────────────────
+
+export async function getStockMovements(
+  startDate: string,
+  endDate: string,
+  branchId?: string | null,
+  itemId?: string | null,
+  reason?: string | null
+): Promise<StockMovementRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  if (!["ADMIN", "MANAGER"].includes(session.user.role)) return [];
+
+  const orgId = session.user.organizationId;
+  // Managers are always scoped to their own branch
+  const effectiveBranchId =
+    session.user.role === "MANAGER"
+      ? (session.user.branchId ?? undefined)
+      : (branchId ?? undefined);
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const rows = await db.stockLog.findMany({
+    where: {
+      organizationId: orgId,
+      createdAt: { gte: start, lte: end },
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+      ...(itemId ? { itemId } : {}),
+      ...(reason ? { reason: reason as never } : {}),
+    },
+    select: {
+      id: true,
+      createdAt: true,
+      quantity: true,
+      reason: true,
+      referenceId: true,
+      item: { select: { id: true, name: true, sku: true } },
+      branch: { select: { name: true } },
+      recordedBy: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 500,
+  });
+
+  return JSON.parse(JSON.stringify(rows));
+}
+
+// ── Items for stock movement filter ───────────────────────────────────────
+
+export type ItemOption = { id: string; name: string; sku: string };
+
+export async function getItemOptions(): Promise<ItemOption[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  if (!["ADMIN", "MANAGER"].includes(session.user.role)) return [];
+
+  const rows = await db.item.findMany({
+    where: { organizationId: session.user.organizationId },
+    select: { id: true, name: true, sku: true },
+    orderBy: { name: "asc" },
+  });
+  return rows;
+}
