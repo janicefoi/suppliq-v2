@@ -14,7 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { createExpense, updateExpense, EXPENSE_CATEGORIES } from "@/lib/actions/expenses";
+import { createExpense, updateExpense } from "@/lib/actions/expenses";
+import { EXPENSE_CATEGORIES } from "@/lib/constants/expenses";
 import type { ExpenseInput, ExpenseRow } from "@/lib/actions/expenses";
 
 const ExpenseSchema = z.object({

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ExpenseDialog } from "@/components/expenses/expense-dialog";
-import { deleteExpense, EXPENSE_CATEGORIES } from "@/lib/actions/expenses";
+import { deleteExpense } from "@/lib/actions/expenses";
+import { EXPENSE_CATEGORIES } from "@/lib/constants/expenses";
 import type { ExpenseRow, ExpenseStats } from "@/lib/actions/expenses";
 
 type Branch = { id: string; name: string };
