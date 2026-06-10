@@ -177,10 +177,10 @@ function Hero() {
           <div className="bg-slate-900 px-6 py-8">
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "Revenue (30d)", value: "£84,230", change: "+12.4%", color: "text-emerald-400" },
+                { label: "Revenue (30d)", value: "€84,230", change: "+12.4%", color: "text-emerald-400" },
                 { label: "Active Items", value: "1,284", change: "+3 today", color: "text-blue-400" },
                 { label: "Customers", value: "347", change: "+8 this week", color: "text-violet-400" },
-                { label: "Pending POs", value: "12", change: "£23,400 value", color: "text-amber-400" },
+                { label: "Pending POs", value: "12", change: "€23,400 value", color: "text-amber-400" },
               ].map((stat) => (
                 <div key={stat.label} className="rounded-xl border border-white/5 bg-slate-800/80 p-4">
                   <p className="mb-1 text-[11px] text-slate-400">{stat.label}</p>
@@ -236,7 +236,7 @@ function Hero() {
 function StatsBar() {
   const stats = [
     { value: "500+", label: "Businesses on Suppliq", sub: "across 30+ countries" },
-    { value: "£2B+", label: "Stock tracked", sub: "total inventory value" },
+    { value: "€2B+", label: "Stock tracked", sub: "total inventory value" },
     { value: "2M+", label: "Transactions", sub: "processed last year" },
     { value: "99.9%", label: "Uptime SLA", sub: "guaranteed" },
   ];
@@ -392,7 +392,7 @@ function Features() {
 const PLANS = [
   {
     name: "Starter",
-    price: "£29",
+    price: "€29",
     period: "/month",
     description: "One location, getting started.",
     badge: null,
@@ -410,7 +410,7 @@ const PLANS = [
   },
   {
     name: "Growth",
-    price: "£79",
+    price: "€79",
     period: "/month",
     description: "Multiple sites, growing fast.",
     badge: "Most popular",
@@ -429,7 +429,7 @@ const PLANS = [
   },
   {
     name: "Enterprise",
-    price: "£199",
+    price: "€199",
     period: "/month",
     description: "Unlimited scale, AI included.",
     badge: null,
@@ -530,7 +530,7 @@ function Pricing() {
 
         <FadeIn delay={200}>
           <p className="mt-8 text-center text-sm text-gray-400">
-            All prices in GBP · Billed monthly · Annual billing saves 20%
+            All prices in EUR · Billed monthly · Annual billing saves 20%
           </p>
         </FadeIn>
       </div>
