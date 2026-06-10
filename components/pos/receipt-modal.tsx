@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, Printer, ShoppingCart } from "lucide-react";
 import type { SaleResult } from "@/lib/actions/pos";
+import { SHOP } from "@/lib/constants/shop";
 
 interface ReceiptModalProps {
   sale: SaleResult;
@@ -13,11 +14,11 @@ interface ReceiptModalProps {
 
 function fmt(v: string | number) {
   const n = Number(v);
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString("en-KE", {
+  return new Date(iso).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -48,7 +49,7 @@ export function ReceiptModal({ sale, onClose }: ReceiptModalProps) {
           {/* Branch header */}
           <div className="text-center space-y-0.5 pb-1">
             <p className="font-bold text-sm text-slate-900 uppercase tracking-wide">
-              JSH Motorcycle Spare Parts
+              {SHOP.name}
             </p>
             {branch?.name && (
               <p className="font-semibold text-slate-700">{branch.name}</p>
