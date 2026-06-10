@@ -461,3 +461,164 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     return { success: false, error: "Failed to delete category." };
   }
 }
+
+// ── CSV import ─────────────────────────────────────────────────────────────
+
+export type ImportItemRow = {
+  name: string;
+  sku?: string;
+  category?: string;
+  retailPrice: number;
+  wholesalePrice?: number;
+  costPrice?: number;
+  unit?: string;
+  reorderPoint?: number;
+  initialStock?: number;
+  description?: string;
+};
+
+export type ImportSummary = {
+  imported: number;
+  skipped: number;
+  errors: { row: number; name: string; message: string }[];
+};
+
+export async function importItems(
+  rows: ImportItemRow[]
+): Promise<{ success: true; summary: ImportSummary } | { success: false; error: string }> {
+  const adminResult = await requireAdmin();
+  if ("error" in adminResult) return { success: false, error: adminResult.error };
+  const orgId = adminResult.organizationId;
+  const userBranchId = adminResult.branchId;
+
+  const branches = await db.branch.findMany({
+    where: { isActive: true, organizationId: orgId },
+    select: { id: true },
+  });
+
+  const existingSkuRows = await db.item.findMany({
+    where: { organizationId: orgId },
+    select: { sku: true },
+  });
+  const existingSkus = new Set(existingSkuRows.map((r) => r.sku.toLowerCase()));
+
+  // Category name -> id cache; creates category if missing
+  const categoryCache: Record<string, string> = {};
+  async function resolveCategory(name: string): Promise<string> {
+    const key = name.trim().toLowerCase();
+    if (categoryCache[key]) return categoryCache[key];
+    const found = await db.category.findFirst({
+      where: { name: { equals: name.trim(), mode: "insensitive" }, organizationId: orgId },
+      select: { id: true },
+    });
+    if (found) { categoryCache[key] = found.id; return found.id; }
+    const created = await db.category.create({
+      data: { name: name.trim(), organizationId: orgId },
+    });
+    categoryCache[key] = created.id;
+    return created.id;
+  }
+
+  // Per-prefix SKU counter so batch imports get sequential numbers
+  const skuCounters: Record<string, number> = {};
+  async function autoSku(category?: string): Promise<string> {
+    const prefix = category?.trim() ? categoryToPrefix(category) : "ITM";
+    if (skuCounters[prefix] === undefined) {
+      const existing = await db.item.findMany({
+        where: { sku: { startsWith: `${prefix}-` }, organizationId: orgId },
+        select: { sku: true },
+      });
+      let max = 0;
+      for (const { sku } of existing) {
+        const n = parseInt(sku.slice(prefix.length + 1), 10);
+        if (!isNaN(n) && n > max) max = n;
+      }
+      skuCounters[prefix] = max;
+    }
+    skuCounters[prefix]++;
+    return `${prefix}-${String(skuCounters[prefix]).padStart(3, "0")}`;
+  }
+
+  const summary: ImportSummary = { imported: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+
+    if (!row.name?.trim()) {
+      summary.skipped++;
+      summary.errors.push({ row: rowNum, name: row.name ?? "(empty)", message: "Name is required" });
+      continue;
+    }
+    if (!row.retailPrice || row.retailPrice <= 0) {
+      summary.skipped++;
+      summary.errors.push({ row: rowNum, name: row.name, message: "Retail price must be greater than 0" });
+      continue;
+    }
+
+    const sku = row.sku?.trim() || (await autoSku(row.category));
+    if (existingSkus.has(sku.toLowerCase())) {
+      summary.skipped++;
+      summary.errors.push({ row: rowNum, name: row.name, message: `SKU "${sku}" already exists` });
+      continue;
+    }
+    existingSkus.add(sku.toLowerCase());
+
+    let categoryId: string | null = null;
+    if (row.category?.trim()) {
+      try { categoryId = await resolveCategory(row.category); }
+      catch {
+        summary.skipped++;
+        summary.errors.push({ row: rowNum, name: row.name, message: "Failed to create category" });
+        continue;
+      }
+    }
+
+    const retailPrice = row.retailPrice;
+    const wholesalePrice =
+      row.wholesalePrice && row.wholesalePrice > 0 && row.wholesalePrice <= retailPrice
+        ? row.wholesalePrice
+        : retailPrice;
+    const unit = row.unit?.trim() || "pcs";
+    const reorderPoint =
+      typeof row.reorderPoint === "number" && row.reorderPoint >= 0 ? Math.floor(row.reorderPoint) : 10;
+    const initialStock =
+      typeof row.initialStock === "number" && row.initialStock >= 0 ? Math.floor(row.initialStock) : 0;
+
+    try {
+      const item = await db.item.create({
+        data: {
+          sku,
+          name: row.name.trim(),
+          categoryId,
+          description: row.description?.trim() || null,
+          retailPrice,
+          wholesalePrice,
+          costPrice: row.costPrice && row.costPrice > 0 ? row.costPrice : null,
+          unit,
+          reorderPoint,
+          organizationId: orgId,
+        },
+      });
+
+      for (const branch of branches) {
+        await db.branchStock.create({
+          data: {
+            itemId: item.id,
+            branchId: branch.id,
+            stockQty: branch.id === userBranchId ? initialStock : 0,
+            lowStockThreshold: reorderPoint,
+          },
+        });
+      }
+
+      summary.imported++;
+    } catch {
+      summary.skipped++;
+      summary.errors.push({ row: rowNum, name: row.name, message: "Failed to save item" });
+    }
+  }
+
+  revalidatePath("/inventory");
+  return { success: true, summary };
+}

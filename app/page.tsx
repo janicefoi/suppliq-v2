@@ -177,7 +177,7 @@ function Hero() {
               <div className="rounded-xl bg-gray-800 p-4">
                 <p className="mb-3 text-xs font-medium text-gray-400">Top items</p>
                 <div className="space-y-2">
-                  {["Engine Oil 20W-50", "Brake Pad Set", "Timing Chain", "LED Bulb 9W"].map(
+                  {["Storage Unit Pro", "LED Panel 60x60", "Packing Tape 48mm", "Ergo Desk Chair"].map(
                     (item, i) => (
                       <div key={item} className="flex items-center justify-between">
                         <p className="text-xs text-gray-300 truncate">{item}</p>

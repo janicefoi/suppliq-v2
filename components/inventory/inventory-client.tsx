@@ -6,7 +6,7 @@ import { getItems, getItemBranchStocks, toggleItemActive, type ItemBranchStock, 
 import {
   Plus, Pencil, Power, AlertTriangle, Search, Package, Tag, Lock,
   PackagePlus, Download, ArrowUpDown, ChevronUp, ChevronDown,
-  ChevronRight, Loader2,
+  ChevronRight, Loader2, Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 import { ItemDialog, type DialogItem } from "@/components/inventory/item-dialog";
 import { CategoryDialog } from "@/components/inventory/category-dialog";
 import { StockInDialog } from "@/components/inventory/stock-in-dialog";
+import { ImportCsvDialog } from "@/components/inventory/import-csv-dialog";
 import { InventoryStats as InventoryStatsBar } from "@/components/inventory/inventory-stats";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -137,6 +138,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [stockInItem, setStockInItem] = useState<InventoryItem | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   function handleSort(field: SortField) {
     if (sortField === field) {
@@ -331,6 +333,10 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
 
           {canManage && (
             <>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportOpen(true)}>
+                <Upload className="h-3.5 w-3.5" />
+                Import CSV
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setCategoryDialogOpen(true)} className="gap-1.5">
                 <Tag className="h-3.5 w-3.5" />
                 Categories
@@ -578,6 +584,15 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
         open={categoryDialogOpen}
         onClose={() => setCategoryDialogOpen(false)}
         categories={categories}
+      />
+      <ImportCsvDialog
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={async () => {
+          const result = await getItems(undefined, isAdmin ? selectedBranchId : undefined);
+          setItems(result);
+          startTransition(() => router.refresh());
+        }}
       />
       <ItemDialog
         open={createOpen}
