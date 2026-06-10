@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { format, startOfMonth } from "date-fns";
-import { Download, Loader2, BarChart3, TrendingUp, ShoppingCart } from "lucide-react";
+import { Download, Loader2, BarChart3, TrendingUp, ShoppingCart, Ban } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -28,9 +28,9 @@ function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canV
   const headers = canViewRevenue
     ? [
         "Receipt #", "Date", "Cashier", "Customer",
-        `Sale Type`, `Total (${currency})`, `Tax (${currency})`, `Discount (${currency})`, "Payment",
+        "Sale Type", `Total (${currency})`, `Tax (${currency})`, `Discount (${currency})`, "Payment", "Status",
       ]
-    : ["Receipt #", "Date", "Cashier", "Customer", "Sale Type", "Payment"];
+    : ["Receipt #", "Date", "Cashier", "Customer", "Sale Type", "Payment", "Status"];
 
   const rows = sales.map((s) => {
     const row = [
@@ -50,6 +50,7 @@ function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canV
     }
 
     row.push(s.paymentStatus);
+    row.push(s.isVoid ? `VOID: ${s.voidReason ?? ""}` : "Active");
     return row;
   });
 
@@ -85,16 +86,17 @@ export function ReportsClient({ role, branches, currency }: Props) {
   const [data, setData] = useState<ReportData | null>(null);
   const [isPending, startTransition] = useTransition();
   const [voidTarget, setVoidTarget] = useState<{ saleId: string; receiptNumber: string } | null>(null);
+  const [showVoided, setShowVoided] = useState(false);
 
-  function fetchData(start: string, end: string, branchId: string | null = activeBranchId) {
+  function fetchData(start: string, end: string, branchId: string | null = activeBranchId, voided = showVoided) {
     startTransition(async () => {
-      const result = await getReportData(start, end, branchId);
+      const result = await getReportData(start, end, branchId, voided);
       setData(result);
     });
   }
 
   useEffect(() => {
-    fetchData(startDate, endDate, activeBranchId);
+    fetchData(startDate, endDate, activeBranchId, false);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleApply() {
@@ -105,6 +107,13 @@ export function ReportsClient({ role, branches, currency }: Props) {
     setActiveBranchId(branchId);
     fetchData(startDate, endDate, branchId);
   }
+
+  function handleToggleVoided(next: boolean) {
+    setShowVoided(next);
+    fetchData(startDate, endDate, activeBranchId, next);
+  }
+
+  const displayedSales = data?.sales ?? [];
 
   return (
     <div className="space-y-6">
@@ -164,7 +173,7 @@ export function ReportsClient({ role, branches, currency }: Props) {
             variant="outline"
             size="sm"
             className="gap-1.5 self-end ml-auto"
-            onClick={() => exportCSV(data.sales, startDate, endDate, data.canViewRevenue, currency)}
+            onClick={() => exportCSV(displayedSales, startDate, endDate, data.canViewRevenue, currency)}
           >
             <Download className="h-3.5 w-3.5" />
             Export CSV
@@ -220,9 +229,27 @@ export function ReportsClient({ role, branches, currency }: Props) {
 
           {/* ── Sales table ─────────────────────────────────────────────── */}
           <div>
-            <h2 className="text-sm font-semibold text-slate-700 mb-3">
-              Sales ({data.salesCount})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-slate-700">
+                Sales ({data.salesCount})
+                {data.voidedCount > 0 && !showVoided && (
+                  <span className="ml-2 text-xs font-normal text-slate-400">
+                    + {data.voidedCount} voided
+                  </span>
+                )}
+              </h2>
+              {isAdmin && (
+                <label className="flex items-center gap-1.5 text-xs text-slate-500 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={showVoided}
+                    onChange={(e) => handleToggleVoided(e.target.checked)}
+                    className="rounded"
+                  />
+                  Show voided
+                </label>
+              )}
+            </div>
             <div className="rounded-lg border border-slate-200 bg-white overflow-hidden [&_th]:h-8 [&_th]:py-2 [&_th]:text-[11px] [&_td]:py-2 [&_td]:align-middle">
               <Table>
                 <TableHeader>
@@ -240,17 +267,29 @@ export function ReportsClient({ role, branches, currency }: Props) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.sales.length === 0 ? (
+                  {displayedSales.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={(data.canViewRevenue ? 7 : 6) + (isAdmin ? 1 : 0)} className="py-10 text-center text-xs text-slate-400">
                         No sales found for the selected date range.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    data.sales.map((sale) => (
-                      <TableRow key={sale.id} className="hover:bg-slate-50/60">
-                        <TableCell className="font-mono text-[11px] text-slate-500">
+                    displayedSales.map((sale) => (
+                      <TableRow
+                        key={sale.id}
+                        className={cn(
+                          "hover:bg-slate-50/60",
+                          sale.isVoid && "opacity-50 bg-slate-50/80"
+                        )}
+                        title={sale.isVoid ? `Voided: ${sale.voidReason ?? ""}` : undefined}
+                      >
+                        <TableCell className={cn("font-mono text-[11px] text-slate-500", sale.isVoid && "line-through")}>
                           {sale.receiptNumber}
+                          {sale.isVoid && (
+                            <span className="ml-1.5 not-italic no-underline align-middle">
+                              <Ban className="inline h-3 w-3 text-red-400" />
+                            </span>
+                          )}
                         </TableCell>
                         <TableCell className="text-xs text-slate-600 whitespace-nowrap">
                           {fmtDateTime(sale.createdAt)}
@@ -269,32 +308,45 @@ export function ReportsClient({ role, branches, currency }: Props) {
                           </span>
                         </TableCell>
                         {data.canViewRevenue && (
-                          <TableCell className="text-right text-xs font-semibold tabular-nums text-slate-800">
+                          <TableCell className={cn("text-right text-xs font-semibold tabular-nums text-slate-800", sale.isVoid && "line-through text-slate-400")}>
                             {formatCurrency(Number(sale.totalAmount ?? 0), currency)}
                           </TableCell>
                         )}
                         <TableCell>
-                          <Badge
-                            className={cn(
-                              "text-[10px] font-medium border px-1.5 py-0",
-                              sale.paymentStatus === "PAID"
-                                ? "bg-green-50 text-green-700 border-green-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                            )}
-                          >
-                            {sale.paymentStatus}
-                          </Badge>
+                          {sale.isVoid ? (
+                            <Badge className="text-[10px] font-medium border px-1.5 py-0 bg-red-50 text-red-500 border-red-200">
+                              VOID
+                            </Badge>
+                          ) : (
+                            <Badge
+                              className={cn(
+                                "text-[10px] font-medium border px-1.5 py-0",
+                                sale.paymentStatus === "PAID"
+                                  ? "bg-green-50 text-green-700 border-green-200"
+                                  : "bg-amber-50 text-amber-700 border-amber-200"
+                              )}
+                            >
+                              {sale.paymentStatus}
+                            </Badge>
+                          )}
                         </TableCell>
                         {isAdmin && (
                           <TableCell>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-6 px-2 text-[10px] font-medium text-red-500 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => setVoidTarget({ saleId: sale.id, receiptNumber: sale.receiptNumber })}
-                            >
-                              Void
-                            </Button>
+                            {!sale.isVoid && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2 text-[10px] font-medium text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => setVoidTarget({ saleId: sale.id, receiptNumber: sale.receiptNumber })}
+                              >
+                                Void
+                              </Button>
+                            )}
+                            {sale.isVoid && sale.voidReason && (
+                              <span className="text-[10px] text-slate-400 italic block max-w-[120px] truncate" title={sale.voidReason}>
+                                {sale.voidReason}
+                              </span>
+                            )}
                           </TableCell>
                         )}
                       </TableRow>
@@ -320,7 +372,10 @@ export function ReportsClient({ role, branches, currency }: Props) {
           receiptNumber={voidTarget.receiptNumber}
           open={true}
           onOpenChange={(open) => { if (!open) setVoidTarget(null); }}
-          onSuccess={() => fetchData(startDate, endDate)}
+          onSuccess={() => {
+            setVoidTarget(null);
+            fetchData(startDate, endDate);
+          }}
         />
       )}
     </div>

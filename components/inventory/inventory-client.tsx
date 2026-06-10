@@ -6,7 +6,7 @@ import { getItems, getItemBranchStocks, toggleItemActive, type ItemBranchStock, 
 import {
   Plus, Pencil, Power, AlertTriangle, Search, Package, Tag, Lock,
   PackagePlus, Download, ArrowUpDown, ChevronUp, ChevronDown,
-  ChevronRight, Loader2, Upload,
+  ChevronRight, Loader2, Upload, SlidersHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import {
 import { ItemDialog, type DialogItem } from "@/components/inventory/item-dialog";
 import { CategoryDialog } from "@/components/inventory/category-dialog";
 import { StockInDialog } from "@/components/inventory/stock-in-dialog";
+import { StockAdjustDialog } from "@/components/inventory/stock-adjust-dialog";
 import { ImportCsvDialog } from "@/components/inventory/import-csv-dialog";
 import { InventoryStats as InventoryStatsBar } from "@/components/inventory/inventory-stats";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -137,6 +138,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   const [createOpen, setCreateOpen] = useState(false);
   const [editItem, setEditItem] = useState<InventoryItem | null>(null);
   const [stockInItem, setStockInItem] = useState<InventoryItem | null>(null);
+  const [adjustItem, setAdjustItem] = useState<InventoryItem | null>(null);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
@@ -469,6 +471,16 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                             <PackagePlus className="h-3 w-3" />
                           </Button>
                           {canManage && (
+                            <Button
+                              size="icon" variant="ghost"
+                              className="h-6 w-6 text-slate-400 hover:text-blue-600"
+                              onClick={() => setAdjustItem(item)}
+                              title="Adjust stock (stocktake)"
+                            >
+                              <SlidersHorizontal className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {canManage && (
                             <>
                               <Button
                                 size="icon" variant="ghost"
@@ -578,6 +590,19 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
           setStockInItem(null);
           const result = await getItems(undefined, isAdmin ? selectedBranchId : undefined);
           setItems(result);
+        }}
+      />
+      <StockAdjustDialog
+        open={!!adjustItem}
+        onClose={() => setAdjustItem(null)}
+        item={adjustItem}
+        branches={isAdmin ? branches : []}
+        selectedBranchId={isAdmin ? selectedBranchId : null}
+        onSuccess={async () => {
+          setAdjustItem(null);
+          const result = await getItems(undefined, isAdmin ? selectedBranchId : undefined);
+          setItems(result);
+          setExpandedStocks({});
         }}
       />
       <CategoryDialog

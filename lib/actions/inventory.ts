@@ -624,3 +624,73 @@ export async function importItems(
   revalidatePath("/inventory");
   return { success: true, summary };
 }
+
+// ── Stock adjustment ───────────────────────────────────────────────────────
+
+export type AdjustStockResult =
+  | { success: true; delta: number }
+  | { success: false; error: string };
+
+export async function adjustStock(
+  itemId: string,
+  branchId: string,
+  newQty: number,
+  reason: string
+): Promise<AdjustStockResult> {
+  const adminResult = await requireAdmin();
+  if ("error" in adminResult) return { success: false, error: adminResult.error };
+  const orgId = adminResult.organizationId;
+
+  if (!Number.isInteger(newQty) || newQty < 0) {
+    return { success: false, error: "Physical count must be a non-negative whole number." };
+  }
+  if (!reason.trim()) {
+    return { success: false, error: "Please select a reason for the adjustment." };
+  }
+
+  try {
+    const item = await db.item.findUnique({
+      where: { id: itemId },
+      select: { organizationId: true, isActive: true },
+    });
+    if (!item || item.organizationId !== orgId) return { success: false, error: "Item not found." };
+
+    const branch = await db.branch.findFirst({ where: { id: branchId, organizationId: orgId } });
+    if (!branch) return { success: false, error: "Branch not found." };
+
+    const current = await db.branchStock.findUnique({
+      where: { itemId_branchId: { itemId, branchId } },
+      select: { stockQty: true },
+    });
+    const currentQty = current?.stockQty ?? 0;
+    const delta = newQty - currentQty;
+
+    await db.$transaction([
+      db.branchStock.upsert({
+        where: { itemId_branchId: { itemId, branchId } },
+        update: { stockQty: newQty },
+        create: { itemId, branchId, stockQty: newQty, lowStockThreshold: 5 },
+      }),
+      ...(delta !== 0
+        ? [
+            db.stockLog.create({
+              data: {
+                itemId,
+                branchId,
+                organizationId: orgId,
+                quantity: delta,
+                reason: "MANUAL_ADJUSTMENT",
+                referenceId: reason.trim(),
+                recordedById: adminResult.id,
+              },
+            }),
+          ]
+        : []),
+    ]);
+
+    revalidatePath("/inventory");
+    return { success: true, delta };
+  } catch {
+    return { success: false, error: "Failed to adjust stock." };
+  }
+}

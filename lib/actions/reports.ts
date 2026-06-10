@@ -10,6 +10,9 @@ export type ReportSale = {
   receiptNumber: string;
   saleType: string;
   paymentStatus: string;
+  isVoid: boolean;
+  voidReason: string | null;
+  voidedAt: string | null;
   totalAmount?: string;
   taxAmount?: string;
   discountAmount?: string;
@@ -21,6 +24,7 @@ export type ReportSale = {
 export type ReportData = {
   sales: ReportSale[];
   salesCount: number;
+  voidedCount: number;
   canViewRevenue: boolean;
   totalRevenue?: number;
   revenueByType?: { RETAIL: number; WHOLESALE: number; SPECIAL: number };
@@ -31,13 +35,13 @@ export type ReportData = {
 export async function getReportData(
   startDate: string,
   endDate: string,
-  branchId?: string | null
+  branchId?: string | null,
+  includeVoided?: boolean
 ): Promise<ReportData> {
   const session = await auth();
   if (!session?.user?.id) return emptyReport();
   if (!["ADMIN", "MANAGER"].includes(session.user.role)) return emptyReport();
 
-  // Non-admins are always scoped to their own branch
   const effectiveBranchId = session.user.role === "ADMIN" ? (branchId ?? undefined) : session.user.branchId ?? undefined;
   const canViewRevenue = session.user.role === "ADMIN";
 
@@ -45,31 +49,40 @@ export async function getReportData(
   const end = new Date(endDate);
   end.setHours(23, 59, 59, 999);
 
-  const where = {
+  const baseWhere = {
     createdAt: { gte: start, lte: end },
-    isVoid: false,
     organizationId: session.user.organizationId,
     ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
   };
 
+  const where = includeVoided ? baseWhere : { ...baseWhere, isVoid: false };
+
+  const selectBase = {
+    id: true,
+    receiptNumber: true,
+    saleType: true,
+    paymentStatus: true,
+    isVoid: true,
+    voidReason: true,
+    voidedAt: true,
+    createdAt: true,
+    customer: { select: { name: true } },
+    employee: { select: { name: true } },
+  } as const;
+
   if (!canViewRevenue) {
     const sales = await db.sale.findMany({
       where,
-      select: {
-        id: true,
-        receiptNumber: true,
-        saleType: true,
-        paymentStatus: true,
-        createdAt: true,
-        customer: { select: { name: true } },
-        employee: { select: { name: true } },
-      },
+      select: selectBase,
       orderBy: { createdAt: "desc" },
     });
 
+    const voidedCount = sales.filter((s) => s.isVoid).length;
+
     return {
       sales: JSON.parse(JSON.stringify(sales)),
-      salesCount: sales.length,
+      salesCount: sales.filter((s) => !s.isVoid).length,
+      voidedCount,
       canViewRevenue,
     };
   }
@@ -77,16 +90,10 @@ export async function getReportData(
   const sales = await db.sale.findMany({
     where,
     select: {
-      id: true,
-      receiptNumber: true,
-      saleType: true,
-      paymentStatus: true,
+      ...selectBase,
       totalAmount: true,
       taxAmount: true,
       discountAmount: true,
-      createdAt: true,
-      customer: { select: { name: true } },
-      employee: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
   });
@@ -95,15 +102,19 @@ export async function getReportData(
   let totalRevenue = 0;
 
   for (const sale of sales) {
+    if (sale.isVoid) continue;
     const amount = Number(sale.totalAmount);
     totalRevenue += amount;
     const type = sale.saleType as keyof typeof revenueByType;
     if (type in revenueByType) revenueByType[type] += amount;
   }
 
+  const voidedCount = sales.filter((s) => s.isVoid).length;
+
   return {
     sales: JSON.parse(JSON.stringify(sales)),
-    salesCount: sales.length,
+    salesCount: sales.filter((s) => !s.isVoid).length,
+    voidedCount,
     canViewRevenue,
     totalRevenue,
     revenueByType,
@@ -111,5 +122,5 @@ export async function getReportData(
 }
 
 function emptyReport(): ReportData {
-  return { sales: [], salesCount: 0, canViewRevenue: false };
+  return { sales: [], salesCount: 0, voidedCount: 0, canViewRevenue: false };
 }
