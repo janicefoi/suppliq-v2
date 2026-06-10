@@ -6,6 +6,7 @@ import {
   Truck,
   ShoppingBag,
   ArrowLeftRight,
+  Receipt,
   BarChart3,
   UserCog,
   ClipboardList,
@@ -64,6 +65,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Expenses",
+    href: "/expenses",
+    icon: Receipt,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Reports",
     href: "/reports",
     icon: BarChart3,
@@ -97,6 +104,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/suppliers": "Suppliers",
   "/purchases": "Purchases",
   "/transfers": "Transfers",
+  "/expenses": "Expenses",
   "/reports": "Reports",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
