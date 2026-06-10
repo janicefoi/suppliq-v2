@@ -5,6 +5,7 @@ import {
   Users,
   Truck,
   ShoppingBag,
+  ArrowLeftRight,
   BarChart3,
   UserCog,
   ClipboardList,
@@ -57,6 +58,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Transfers",
+    href: "/transfers",
+    icon: ArrowLeftRight,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Reports",
     href: "/reports",
     icon: BarChart3,
@@ -89,6 +96,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/customers": "Customers",
   "/suppliers": "Suppliers",
   "/purchases": "Purchases",
+  "/transfers": "Transfers",
   "/reports": "Reports",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
