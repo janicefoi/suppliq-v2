@@ -1,17 +1,17 @@
-"""
+﻿"""
 SUPPLIQ AI Service
 ==================
 FastAPI microservice that powers the AI layer of the SUPPLIQ ERP platform.
 
 Capabilities:
-  /forecast/demand          — Demand forecasting (EMA → Prophet → LSTM)
-  /forecast/cash-flow       — 30-day cash flow projection with Claude commentary
-  /intelligence/news        — Supply chain news feed, scored & summarised by Claude
-  /intelligence/market-prices — Live commodity prices & FX rates (Alpha Vantage)
-  /intelligence/supplier-scores — Supplier risk scoring with Claude narrative
-  /optimize/reorder         — Reorder recommendations (ROP + EOQ) with Claude reasoning
-  /anomalies                — Sales, stock, and expense anomaly detection
-  /health                   — Liveness + readiness probe
+  /forecast/demand          - Demand forecasting (EMA → Prophet → LSTM)
+  /forecast/cash-flow       - 30-day cash flow projection with Claude commentary
+  /intelligence/news        - Supply chain news feed, scored & summarised by Claude
+  /intelligence/market-prices - Live commodity prices & FX rates (Alpha Vantage)
+  /intelligence/supplier-scores - Supplier risk scoring with Claude narrative
+  /optimize/reorder         - Reorder recommendations (ROP + EOQ) with Claude reasoning
+  /anomalies                - Sales, stock, and expense anomaly detection
+  /health                   - Liveness + readiness probe
 
 All endpoints are organisation-scoped.
 The service shares the same PostgreSQL DB as the Next.js app:

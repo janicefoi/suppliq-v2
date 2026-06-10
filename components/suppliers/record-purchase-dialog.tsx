@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
@@ -135,7 +135,7 @@ export function RecordPurchaseDialog({
                       onChange={(e) => field.onChange(e.target.value || null)}
                       className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      <option value="">— Select branch —</option>
+                      <option value="">- Select branch -</option>
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}
@@ -243,7 +243,7 @@ export function RecordPurchaseDialog({
                     {costExceedsRetail && (
                       <div className="flex items-center gap-1.5 text-[11px] text-amber-600 px-1">
                         <AlertTriangle className="h-3 w-3 shrink-0" />
-                        Cost exceeds retail price — item would be sold at a loss.
+                        Cost exceeds retail price - item would be sold at a loss.
                       </div>
                     )}
                   </div>

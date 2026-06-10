@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -143,7 +143,7 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
                   <p className="text-xs">
                     {search
                       ? "No suppliers match your search."
-                      : "No suppliers yet — click \"Add supplier\" to get started."}
+                      : "No suppliers yet - click \"Add supplier\" to get started."}
                   </p>
                 </TableCell>
               </TableRow>
@@ -180,13 +180,13 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
                         {s.email}
                       </span>
                     ) : (
-                      <span className="text-slate-300">—</span>
+                      <span className="text-slate-300">-</span>
                     )}
                   </TableCell>
 
                   <TableCell className="text-xs text-slate-500 max-w-0">
                     <span className="block truncate" title={s.address ?? undefined}>
-                      {s.address ?? <span className="text-slate-300">—</span>}
+                      {s.address ?? <span className="text-slate-300">-</span>}
                     </span>
                   </TableCell>
 

@@ -37,10 +37,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-block bg-sky-500 rounded-2xl px-5 py-3 mb-4">
-            <Logo width={230} height={80} />
-          </div>
+        <div className="flex flex-col items-center mb-8 gap-3">
+          <Logo iconSize={24} textSize="text-2xl" />
           <p className="text-sm text-slate-500">Sign in to continue</p>
         </div>
 

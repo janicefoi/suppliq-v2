@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -80,14 +80,14 @@ export function BranchesClient({ branches }: Props) {
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3 text-slate-300 shrink-0" />{b.address}
                         </span>
-                      ) : <span className="text-slate-300">—</span>}
+                      ) : <span className="text-slate-300">-</span>}
                     </TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {b.phone ? (
                         <span className="flex items-center gap-1">
                           <Phone className="h-3 w-3 text-slate-300 shrink-0" />{b.phone}
                         </span>
-                      ) : <span className="text-slate-300">—</span>}
+                      ) : <span className="text-slate-300">-</span>}
                     </TableCell>
                     <TableCell className="text-right">
                       <span className="flex items-center justify-end gap-1 text-xs text-slate-600">

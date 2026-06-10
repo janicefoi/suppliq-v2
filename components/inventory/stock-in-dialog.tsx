@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2, AlertCircle, PackagePlus } from "lucide-react";
@@ -95,7 +95,7 @@ export function StockInDialog({ open, onClose, item, onSuccess, branches = [], s
                   onChange={(e) => setBranchId(e.target.value)}
                   className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
                 >
-                  <option value="">— Select branch —</option>
+                  <option value="">- Select branch -</option>
                   {branches.map((b) => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}

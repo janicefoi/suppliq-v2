@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -116,7 +116,7 @@ export function CustomerDialog({ open, onClose, customer, onSuccess, branches = 
                 onChange={(e) => setValue("branchId", e.target.value || null)}
                 className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-400"
               >
-                <option value="">— No branch —</option>
+                <option value="">- No branch -</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}

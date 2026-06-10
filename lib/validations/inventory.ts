@@ -1,4 +1,4 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 
 const positiveDecimal = z.coerce
   .number({ invalid_type_error: "Must be a valid number" })
@@ -19,7 +19,7 @@ export const ItemSchema = z
       z.coerce.number().positive("Must be greater than 0").nullable()
     ),
 
-    // Per-branch stock fields — only used when creating/editing for a specific branch
+    // Per-branch stock fields - only used when creating/editing for a specific branch
     stockQty: z.coerce
       .number({ invalid_type_error: "Must be a valid number" })
       .int("Must be a whole number")

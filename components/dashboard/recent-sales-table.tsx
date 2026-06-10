@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -104,7 +104,7 @@ export function RecentSalesTable({ sales, isAdmin, currency }: Props) {
                         Void
                       </Button>
                     ) : (
-                      <span className="text-[10px] text-slate-300">—</span>
+                      <span className="text-[10px] text-slate-300">-</span>
                     )}
                   </TableCell>
                 </TableRow>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -83,14 +83,14 @@ export function BillingActions({ plan, subscriptionStatus, stripeCustomerId }: P
             disabled={loading}
             className="bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {loading ? "Loading..." : "Upgrade to Growth — Monthly"}
+            {loading ? "Loading..." : "Upgrade to Growth - Monthly"}
           </Button>
           <Button
             variant="outline"
             onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_GROWTH_YEARLY_PRICE_ID ?? "")}
             disabled={loading}
           >
-            {loading ? "Loading..." : "Upgrade to Growth — Yearly (save 20%)"}
+            {loading ? "Loading..." : "Upgrade to Growth - Yearly (save 20%)"}
           </Button>
         </div>
       )}

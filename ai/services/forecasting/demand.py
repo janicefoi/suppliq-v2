@@ -1,4 +1,4 @@
-"""
+﻿"""
 Demand Forecasting Service
 
 What this will do:
@@ -28,7 +28,7 @@ MODEL_VERSION = "v0.1-ema"
 
 
 def _exponential_moving_average(values: list[float], alpha: float = 0.3) -> float:
-    """Single exponential smoothing — returns the next-period forecast."""
+    """Single exponential smoothing - returns the next-period forecast."""
     if not values:
         return 0.0
     ema = values[0]
@@ -57,10 +57,10 @@ async def run_demand_forecast(
     Main entry point. Returns a list of forecast dicts ready for upsert_forecast().
 
     TODO (implementation phases):
-    Phase 1 — ship: EMA on raw daily qty per (item, branch)
-    Phase 2 — improve: add day-of-week seasonal index
-    Phase 3 — scale: switch to Facebook Prophet for automatic seasonality
-    Phase 4 — ML: LSTM for high-volume items with 1 year of history
+    Phase 1 - ship: EMA on raw daily qty per (item, branch)
+    Phase 2 - improve: add day-of-week seasonal index
+    Phase 3 - scale: switch to Facebook Prophet for automatic seasonality
+    Phase 4 - ML: LSTM for high-volume items with 1 year of history
     """
     rows = await get_sales_history(org_id, item_id, branch_id, days=90)
 
@@ -95,7 +95,7 @@ async def run_demand_forecast(
         confidence = _confidence_from_history(len(daily_qtys), cv)
 
         # Reorder suggestion: will stock out within horizon_days?
-        # (Actual stock lookup handled by optimization.reorder — this just flags it)
+        # (Actual stock lookup handled by optimization.reorder - this just flags it)
         reorder_suggested = confidence >= 0.5 and predicted_total > 0
 
         results.append({

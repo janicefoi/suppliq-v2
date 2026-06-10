@@ -1,6 +1,6 @@
-import type { NextAuthConfig } from "next-auth";
+﻿import type { NextAuthConfig } from "next-auth";
 
-// Edge-safe config — no Prisma, no Node-only modules.
+// Edge-safe config - no Prisma, no Node-only modules.
 // Used by middleware to verify JWT and enforce route guards.
 export const authConfig: NextAuthConfig = {
   pages: {
@@ -15,6 +15,9 @@ export const authConfig: NextAuthConfig = {
       // Always pass NextAuth API routes through
       if (path.startsWith("/api/auth")) return true;
 
+      // Public marketing pages - always accessible
+      if (path === "/" || path === "/register") return true;
+
       // Auth pages: bounce already-authenticated users to dashboard
       if (path === "/login" || path === "/signup") {
         return isLoggedIn
@@ -22,7 +25,7 @@ export const authConfig: NextAuthConfig = {
           : true;
       }
 
-      // Admin-only section — non-admins bounce to /dashboard
+      // Admin-only section - non-admins bounce to /dashboard
       if (path.startsWith("/admin")) {
         if (!isLoggedIn) return false; // → /login
         if (auth?.user?.role !== "ADMIN") {

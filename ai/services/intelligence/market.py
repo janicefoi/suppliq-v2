@@ -1,12 +1,12 @@
-"""
+﻿"""
 Market Price & Currency Intelligence Service
 
 What this will do:
   1. Fetch live commodity prices relevant to supply chain costs:
-       - Crude oil (Brent) — affects transport costs
-       - Steel, aluminium, copper — manufacturing inputs
-       - Wheat, maize, sugar — food & beverage businesses
-       - Diesel fuel — direct logistics cost
+       - Crude oil (Brent) - affects transport costs
+       - Steel, aluminium, copper - manufacturing inputs
+       - Wheat, maize, sugar - food & beverage businesses
+       - Diesel fuel - direct logistics cost
   2. Fetch live currency rates:
        - EUR/USD, GBP/USD, EUR/GBP, EUR/JPY
        (Critical for businesses importing goods priced in foreign currency)

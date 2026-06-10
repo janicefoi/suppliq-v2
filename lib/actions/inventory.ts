@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { ItemSchema, type ItemFormValues } from "@/lib/validations/inventory";
 
-// ── Auth guards — return the user on success, error object on failure ──────
+// ── Auth guards - return the user on success, error object on failure ──────
 
 async function requireAdmin() {
   const session = await auth();
@@ -35,7 +35,7 @@ function categoryToPrefix(category: string): string {
   return (alpha.length < 3 ? alpha.padEnd(3, "X") : alpha.slice(0, 3)).toUpperCase();
 }
 
-// ── Items — read ───────────────────────────────────────────────────────────
+// ── Items - read ───────────────────────────────────────────────────────────
 
 export type ItemFilters = {
   search?: string;
@@ -123,7 +123,7 @@ export async function getItems(filters?: ItemFilters, branchId?: string | null):
   return result;
 }
 
-// ── Items — write ──────────────────────────────────────────────────────────
+// ── Items - write ──────────────────────────────────────────────────────────
 
 export async function createItem(data: ItemFormValues): Promise<ActionResult> {
   const adminResult = await requireAdmin();
@@ -452,7 +452,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
 
     const usedBy = await db.item.count({ where: { categoryId: id } });
     if (usedBy > 0) {
-      return { success: false, error: `Cannot delete — ${usedBy} item${usedBy === 1 ? "" : "s"} use this category.` };
+      return { success: false, error: `Cannot delete - ${usedBy} item${usedBy === 1 ? "" : "s"} use this category.` };
     }
     await db.category.delete({ where: { id } });
     revalidatePath("/inventory");

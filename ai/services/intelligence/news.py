@@ -1,4 +1,4 @@
-"""
+﻿"""
 Supply Chain News Intelligence Service
 
 What this will do:
@@ -8,20 +8,20 @@ What this will do:
   4. Return ranked, de-duplicated news feed per org (filtered by their categories + industry)
 
 Data sources (all have free tiers):
-  - NewsAPI       — global headlines filtered by supply chain keywords
-  - Reuters RSS   — https://feeds.reuters.com/reuters/businessNews
-  - AP News RSS   — https://apnews.com/hub/business
-  - Supply Chain Dive RSS — https://www.supplychaindive.com/feeds/news/
-  - FreightWaves  — https://www.freightwaves.com/news/feed
-  - Logistics Manager — https://www.logisticsmanager.com/feed/ (UK/Europe)
-  - European Shipper — https://www.shippingeurope.news/feed (regional)
+  - NewsAPI       - global headlines filtered by supply chain keywords
+  - Reuters RSS   - https://feeds.reuters.com/reuters/businessNews
+  - AP News RSS   - https://apnews.com/hub/business
+  - Supply Chain Dive RSS - https://www.supplychaindive.com/feeds/news/
+  - FreightWaves  - https://www.freightwaves.com/news/feed
+  - Logistics Manager - https://www.logisticsmanager.com/feed/ (UK/Europe)
+  - European Shipper - https://www.shippingeurope.news/feed (regional)
 
 Keyword filter (Phase 1):
   supply chain, logistics, shipping, freight, commodity, inflation,
   port disruption, fuel price, currency, import, export, trade,
   manufacturing, shortage, tariff, EU, europe, customs, sanctions
 
-Phase 2 — personalised per org:
+Phase 2 - personalised per org:
   - Use org's item categories as additional keywords
   - Use org's supplier names for supplier-specific alerts
   - Use org's industry to boost sector-specific news
@@ -87,7 +87,7 @@ async def _fetch_rss_feed(name: str, url: str) -> list[dict]:
 
 async def _fetch_newsapi(query: str = "supply chain OR logistics OR commodity prices") -> list[dict]:
     """
-    NewsAPI.org — returns top headlines for the query.
+    NewsAPI.org - returns top headlines for the query.
     Requires NEWS_API_KEY. Falls back to empty list if not configured.
     """
     if not settings.news_api_key:
@@ -127,7 +127,7 @@ async def get_supply_chain_news(
     """
     Main entry point. Fetches, filters, and enriches news with Claude analysis.
 
-    org_context — short description of the org for personalised relevance scoring,
+    org_context - short description of the org for personalised relevance scoring,
     e.g. "European electronics distributor with warehouses in London and Berlin"
 
     Returns list of enriched NewsItem dicts sorted by relevance_score desc.
@@ -152,7 +152,7 @@ async def get_supply_chain_news(
     # Keyword pre-filter to avoid paying for irrelevant Claude calls
     relevant = [a for a in unique if _is_relevant(a["title"], a["content"])]
 
-    # Claude enrichment — run in batches of 5 to respect rate limits
+    # Claude enrichment - run in batches of 5 to respect rate limits
     enriched = []
     for article in relevant[:30]:  # cap at 30 enrichments per call
         try:

@@ -1,4 +1,4 @@
-import { Package } from "lucide-react";
+﻿import { Package } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { TopItem } from "@/lib/actions/dashboard";
 
@@ -7,7 +7,7 @@ export function TopItems({ items, currency }: { items: TopItem[]; currency: stri
 
   return (
     <div>
-      <h2 className="text-sm font-semibold text-slate-700 mb-3">Top selling items — last 7 days</h2>
+      <h2 className="text-sm font-semibold text-slate-700 mb-3">Top selling items - last 7 days</h2>
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         {items.length === 0 ? (
           <div className="py-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">

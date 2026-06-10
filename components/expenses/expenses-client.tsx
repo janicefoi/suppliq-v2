@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -244,7 +244,7 @@ export function ExpensesClient({
                       {formatCurrency(e.amount, currency)}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
-                      {e.branch?.name ?? <span className="text-slate-400 text-xs">—</span>}
+                      {e.branch?.name ?? <span className="text-slate-400 text-xs">-</span>}
                     </td>
                     <td className="px-4 py-3 text-slate-600">{e.recordedBy.name}</td>
                     <td className="px-4 py-3">

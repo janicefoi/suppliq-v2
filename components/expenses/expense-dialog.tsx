@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
@@ -188,7 +188,7 @@ export function ExpenseDialog({
                       onChange={(e) => field.onChange(e.target.value || null)}
                       className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      <option value="">— No branch —</option>
+                      <option value="">- No branch -</option>
                       {branches.map((b) => (
                         <option key={b.id} value={b.id}>{b.name}</option>
                       ))}

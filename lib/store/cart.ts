@@ -1,4 +1,4 @@
-import { create } from "zustand";
+﻿import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { VAT_EXTRACT } from "@/lib/constants/tax";
 
@@ -190,7 +190,7 @@ export const useCartStore = create<CartStore>()(
       // Skip auto-hydration on server render to avoid SSR/client mismatch.
       // POSClient calls rehydrate() manually after mount.
       skipHydration: true,
-      // Only persist the data fields — not the computed functions
+      // Only persist the data fields - not the computed functions
       partialize: (state) => ({
         items: state.items,
         saleType: state.saleType,

@@ -1,9 +1,9 @@
-"""
+﻿"""
 Async read/write access to the shared PostgreSQL database.
 
 The AI service shares the same DB as the Next.js app.
 Reads: sales, items, stock, expenses, purchase orders, forecasts.
-Writes: forecasts table only — the AI is the sole writer there.
+Writes: forecasts table only - the AI is the sole writer there.
 """
 
 from contextlib import asynccontextmanager
@@ -35,7 +35,7 @@ async def close_pool() -> None:
 
 @asynccontextmanager
 async def get_conn() -> AsyncGenerator[asyncpg.Connection, None]:
-    assert _pool is not None, "DB pool not initialised — call init_pool() first"
+    assert _pool is not None, "DB pool not initialised - call init_pool() first"
     async with _pool.acquire() as conn:
         yield conn
 

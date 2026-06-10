@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -153,7 +153,7 @@ export function EmployeesClient({ employees, currentUserId, branches }: Props) {
 
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-0.5">
-                        {/* Edit — disabled for self only */}
+                        {/* Edit - disabled for self only */}
                         <Button
                           size="icon"
                           variant="ghost"

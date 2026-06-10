@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo } from "react";
 import { ShoppingBag, TrendingUp, Download } from "lucide-react";
@@ -190,7 +190,7 @@ export function PurchasesClient({
                     </td>
                     <td className="px-4 py-3 text-slate-800 font-medium">{po.supplier.name}</td>
                     <td className="px-4 py-3 text-slate-600">
-                      {po.branch?.name ?? <span className="text-slate-400 text-xs">—</span>}
+                      {po.branch?.name ?? <span className="text-slate-400 text-xs">-</span>}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-600">{po.lineCount}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-800">

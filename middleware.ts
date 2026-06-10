@@ -1,7 +1,7 @@
-import NextAuth from "next-auth";
+﻿import NextAuth from "next-auth";
 import { authConfig } from "./auth.config";
 
-// Use the edge-safe config — Prisma never runs in middleware
+// Use the edge-safe config - Prisma never runs in middleware
 export default NextAuth(authConfig).auth;
 
 export const config = {

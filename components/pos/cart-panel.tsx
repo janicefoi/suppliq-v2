@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition, useEffect } from "react";
 import { Loader2, AlertCircle, RotateCcw, X, WifiOff } from "lucide-react";
@@ -95,7 +95,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
       if (!ping.ok) throw new Error("ping failed");
     } catch {
       setIsOnline(false);
-      setError("No connection to server — your cart is saved and will be ready when you reconnect.");
+      setError("No connection to server - your cart is saved and will be ready when you reconnect.");
       return;
     }
 
@@ -128,7 +128,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
         onSaleComplete(result.sale, amountGiven);
       } catch {
         setIsOnline(false);
-        setError("Connection lost during sale — your cart is saved. Please try again when reconnected.");
+        setError("Connection lost during sale - your cart is saved. Please try again when reconnected.");
       }
     });
   }
@@ -140,7 +140,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
       {!isOnline && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border-b border-red-200 text-red-800 text-xs">
           <WifiOff className="h-3.5 w-3.5 shrink-0 text-red-600" />
-          <span>No internet connection — sales cannot be processed until you reconnect.</span>
+          <span>No internet connection - sales cannot be processed until you reconnect.</span>
         </div>
       )}
 
@@ -261,7 +261,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
           )}
         </div>
 
-        {/* Amount given — only for cash/paid sales */}
+        {/* Amount given - only for cash/paid sales */}
         {paymentStatus === "PAID" && (
           <div className="space-y-1">
             <div className="flex items-center gap-2">

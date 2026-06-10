@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+﻿from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -20,16 +20,16 @@ class Settings(BaseSettings):
     nextjs_origin: str = "http://localhost:3000"
 
     # ── External data sources ─────────────────────────────────────────────
-    # Alpha Vantage — free commodity & FX rates (https://www.alphavantage.co)
+    # Alpha Vantage - free commodity & FX rates (https://www.alphavantage.co)
     alpha_vantage_api_key: str = ""
 
-    # NewsAPI — supply chain & industry headlines (https://newsapi.org)
+    # NewsAPI - supply chain & industry headlines (https://newsapi.org)
     news_api_key: str = ""
 
-    # OpenWeatherMap — weather-driven demand signals (https://openweathermap.org)
+    # OpenWeatherMap - weather-driven demand signals (https://openweathermap.org)
     openweather_api_key: str = ""
 
-    # Exchange Rates API — EUR/USD/GBP live rates (https://exchangeratesapi.io)
+    # Exchange Rates API - EUR/USD/GBP live rates (https://exchangeratesapi.io)
     exchange_rates_api_key: str = ""
 
     # ── Scheduler ─────────────────────────────────────────────────────────

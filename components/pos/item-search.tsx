@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import {
@@ -126,7 +126,7 @@ export function ItemSearch() {
       {/* ══ TOOLBAR ══════════════════════════════════════════════════════════ */}
       <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 space-y-2">
 
-        {/* Row 1 — search input */}
+        {/* Row 1 - search input */}
         <div ref={dropRef} className="relative">
           <div className="relative">
             {isFetching
@@ -204,7 +204,7 @@ export function ItemSearch() {
           )}
         </div>
 
-        {/* Row 2 — pending item + qty + add */}
+        {/* Row 2 - pending item + qty + add */}
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 min-h-[2rem]">
             {pending ? (

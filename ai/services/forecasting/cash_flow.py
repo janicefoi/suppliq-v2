@@ -1,4 +1,4 @@
-"""
+﻿"""
 Cash Flow Forecasting Service
 
 What this will do:
@@ -43,7 +43,7 @@ async def run_cash_flow_forecast(org_id: str) -> dict:
     total_revenue = sum(float(r["total_revenue"]) for r in sales)
     total_expenses = sum(float(e["total"]) for e in expenses)
 
-    # Placeholder — will be replaced with trend-based projection
+    # Placeholder - will be replaced with trend-based projection
     projected_revenue_30d = total_revenue
     projected_expenses_30d = total_expenses
     projected_purchases_30d = 0.0   # populated once reorder optimizer runs

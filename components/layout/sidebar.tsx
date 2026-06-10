@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
@@ -63,8 +63,8 @@ function SidebarContent({
   return (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="px-4 py-4">
-        <Logo width={188} height={65} />
+      <div className="px-4 py-5">
+        <Logo iconSize={20} textSize="text-xl" variant="dark" />
       </div>
 
       <Separator className="bg-[hsl(var(--sidebar-border))]" />
@@ -151,7 +151,7 @@ function SidebarContent({
 export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
-      {/* Desktop — fixed left */}
+      {/* Desktop - fixed left */}
       <aside
         className="hidden md:flex flex-col fixed inset-y-0 left-0 w-60 z-30"
         style={{ background: "hsl(var(--sidebar-background))" }}
@@ -159,7 +159,7 @@ export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
         <SidebarContent user={user} />
       </aside>
 
-      {/* Mobile — Sheet */}
+      {/* Mobile - Sheet */}
       <Sheet open={mobileOpen} onOpenChange={onMobileClose}>
         <SheetContent
           side="left"

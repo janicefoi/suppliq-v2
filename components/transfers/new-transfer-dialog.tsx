@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
@@ -141,7 +141,7 @@ export function NewTransferDialog({
                 {...register("fromBranchId")}
                 className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                <option value="">— Select branch —</option>
+                <option value="">- Select branch -</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -159,7 +159,7 @@ export function NewTransferDialog({
                 {...register("toBranchId")}
                 className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
-                <option value="">— Select branch —</option>
+                <option value="">- Select branch -</option>
                 {branches.map((b) => (
                   <option key={b.id} value={b.id}>{b.name}</option>
                 ))}
@@ -264,7 +264,7 @@ export function NewTransferDialog({
                               Available: <span className="font-medium text-slate-500">{selectedItem.stockQty}</span>
                             </span>
                             <span>
-                              Category: <span className="font-medium text-slate-500">{selectedItem.category || "—"}</span>
+                              Category: <span className="font-medium text-slate-500">{selectedItem.category || "-"}</span>
                             </span>
                             {(Number(watchedItems?.[idx]?.quantity) || 0) > selectedItem.stockQty && (
                               <span className="text-red-500 font-medium">Exceeds available stock</span>

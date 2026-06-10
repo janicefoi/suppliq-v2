@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import {
@@ -129,7 +129,7 @@ export function AuditLogClient({ data, currency }: Props) {
                       {formatCurrency(Number(p.amount), currency)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
-                      {p.notes ?? "—"}
+                      {p.notes ?? "-"}
                     </TableCell>
                     <TableCell>
                       <span className="inline-flex items-center gap-1.5 text-sm">
@@ -185,7 +185,7 @@ export function AuditLogClient({ data, currency }: Props) {
                     </TableCell>
                     <TableCell>
                       <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full whitespace-nowrap">
-                        {o.branch?.name ?? "—"}
+                        {o.branch?.name ?? "-"}
                       </span>
                     </TableCell>
                     <TableCell className="text-right font-semibold">+{o.quantity}</TableCell>

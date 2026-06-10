@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -220,7 +220,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
                   <p className="text-xs">
                     {search || filter !== "ALL"
                       ? "No customers match your filters."
-                      : "No customers yet — click \"Add customer\" to get started."}
+                      : "No customers yet - click \"Add customer\" to get started."}
                   </p>
                 </TableCell>
               </TableRow>
@@ -245,7 +245,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
 
                     <TableCell className="text-xs text-slate-500 max-w-0">
                       <span className="block truncate" title={c.address ?? undefined}>
-                        {c.address ?? <span className="text-slate-300">—</span>}
+                        {c.address ?? <span className="text-slate-300">-</span>}
                       </span>
                     </TableCell>
 
@@ -253,7 +253,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
                       <TableCell className="text-xs whitespace-nowrap">
                         {c.branch
                           ? <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{c.branch.name}</span>
-                          : <span className="text-slate-300">—</span>}
+                          : <span className="text-slate-300">-</span>}
                       </TableCell>
                     )}
 

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import {
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 export const metadata = {
-  title: "Suppliq — AI-powered supply chain ERP",
+  title: "Suppliq - AI-powered supply chain ERP",
   description:
     "Manage inventory, sales, purchases, and suppliers across multiple branches. Built for modern wholesale and retail businesses.",
 };
@@ -108,7 +108,7 @@ function Hero() {
         </h1>
 
         <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-gray-500">
-          Manage inventory, sales, purchases, and suppliers across multiple branches — all in one
+          Manage inventory, sales, purchases, and suppliers across multiple branches - all in one
           place. Built for wholesale and retail businesses that are serious about growth.
         </p>
 
@@ -161,7 +161,7 @@ function Hero() {
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2 rounded-xl bg-gray-800 p-4">
-                <p className="mb-3 text-xs font-medium text-gray-400">Revenue — last 30 days</p>
+                <p className="mb-3 text-xs font-medium text-gray-400">Revenue - last 30 days</p>
                 <div className="flex h-24 items-end gap-1">
                   {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 65, 100, 78, 92, 68, 84, 72, 96, 80, 88, 74, 90, 82, 95, 86, 98, 88, 100].map(
                     (h, i) => (
@@ -262,7 +262,7 @@ const FEATURES = [
     icon: Zap,
     title: "AI Demand Forecasting",
     description:
-      "Claude-powered predictions tell you what to reorder, when, and how much — before you run out of stock.",
+      "Claude-powered predictions tell you what to reorder, when, and how much - before you run out of stock.",
   },
   {
     icon: Globe2,
@@ -296,7 +296,7 @@ function Features() {
             One platform. Every workflow.
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-gray-500">
-            From the POS terminal to the boardroom dashboard — Suppliq covers the full supply chain
+            From the POS terminal to the boardroom dashboard - Suppliq covers the full supply chain
             without stitching together five different tools.
           </p>
         </div>

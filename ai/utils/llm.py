@@ -1,5 +1,5 @@
-"""
-Anthropic Claude client — the intelligence layer of SUPPLIQ AI.
+﻿"""
+Anthropic Claude client - the intelligence layer of SUPPLIQ AI.
 
 Claude is used for:
   - Summarising and scoring supply chain news articles

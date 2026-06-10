@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -110,7 +110,7 @@ export function ItemForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-      {/* Row 1 — SKU + Name */}
+      {/* Row 1 - SKU + Name */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="sku">
@@ -160,7 +160,7 @@ export function ItemForm({
         </div>
       </div>
 
-      {/* Row 2 — Category + Description */}
+      {/* Row 2 - Category + Description */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="category">
@@ -174,7 +174,7 @@ export function ItemForm({
           ) : (
             <>
               <select id="category" className={cn(selectClass, "mt-1.5")} {...register("category")}>
-                <option value="">— Select category —</option>
+                <option value="">- Select category -</option>
                 {categories.map((c) => (
                   <option key={c.id} value={c.name}>{c.name}</option>
                 ))}
@@ -195,7 +195,7 @@ export function ItemForm({
         </div>
       </div>
 
-      {/* Row 3 — Prices */}
+      {/* Row 3 - Prices */}
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="retailPrice">Retail Price *</Label>
@@ -223,7 +223,7 @@ export function ItemForm({
           />
           {wholesaleExceedsRetail && !errors.wholesalePrice && (
             <p className="text-xs text-amber-600 mt-1">
-              Wholesale is higher than retail — is this intentional?
+              Wholesale is higher than retail - is this intentional?
             </p>
           )}
           <FieldError message={errors.wholesalePrice?.message} />
@@ -249,7 +249,7 @@ export function ItemForm({
         </div>
       </div>
 
-      {/* Row 4 — Stock + Threshold + Supplier */}
+      {/* Row 4 - Stock + Threshold + Supplier */}
       <div className={`grid gap-4 ${isEditing || isAdmin ? "grid-cols-2" : "grid-cols-3"}`}>
         {!isEditing && !isAdmin && (
           <div>
@@ -289,7 +289,7 @@ export function ItemForm({
             className={cn(selectClass, "mt-1.5")}
             {...register("supplierId")}
           >
-            <option value="">— None —</option>
+            <option value="">- None -</option>
             {suppliers.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}

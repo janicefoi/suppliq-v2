@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Copy, Check, RefreshCw, Loader2, AlertCircle, KeyRound } from "lucide-react";
@@ -130,7 +130,7 @@ export function ResetPasswordDialog({
 
           {step === "success" && (
             <div className="rounded-md bg-green-50 border border-green-200 px-3 py-2 text-xs text-green-700">
-              Password reset successfully. Share the temporary password with the employee — it won&apos;t be shown again.
+              Password reset successfully. Share the temporary password with the employee - it won&apos;t be shown again.
             </div>
           )}
 

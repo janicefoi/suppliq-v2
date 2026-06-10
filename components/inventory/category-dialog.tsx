@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -106,7 +106,7 @@ export function CategoryDialog({ open, onClose, categories }: CategoryDialogProp
         <div className="space-y-1 max-h-60 overflow-y-auto -mx-1 px-1">
           {categories.length === 0 ? (
             <p className="text-sm text-slate-400 text-center py-6">
-              No categories yet — add one above.
+              No categories yet - add one above.
             </p>
           ) : (
             categories.map((cat) => (

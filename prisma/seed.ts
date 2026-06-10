@@ -1,4 +1,4 @@
-import {
+﻿import {
   PrismaClient,
   Role,
   PurchaseOrderStatus,
@@ -96,8 +96,8 @@ async function main() {
   console.log(`✓ ${catNames.length} categories`);
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
-  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Eurotech Components GmbH",    phone: "+49 30 1234 5678", email: "orders@eurotech-components.de", address: "Berliner Str. 42, 10115 Berlin, Germany",            notes: "Primary supplier — net 30 payment terms", organizationId: org.id } });
-  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Thames Auto Parts Ltd",       phone: "+44 20 7946 0100", email: "sales@thamesauto.co.uk",       address: "Park Royal Industrial Estate, London NW10 7LQ",      notes: "Local UK supplier — fast delivery",        organizationId: org.id } });
+  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Eurotech Components GmbH",    phone: "+49 30 1234 5678", email: "orders@eurotech-components.de", address: "Berliner Str. 42, 10115 Berlin, Germany",            notes: "Primary supplier - net 30 payment terms", organizationId: org.id } });
+  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Thames Auto Parts Ltd",       phone: "+44 20 7946 0100", email: "sales@thamesauto.co.uk",       address: "Park Royal Industrial Estate, London NW10 7LQ",      notes: "Local UK supplier - fast delivery",        organizationId: org.id } });
   const sup3 = await prisma.supplier.upsert({ where: { id: "seed-sup-3" }, update: {}, create: { id: "seed-sup-3", name: "Nordic Tyre Solutions AB",    phone: "+46 8 1234 5678",  email: "info@nordictyre.se",           address: "Industrivägen 12, 171 48 Solna, Sweden",             notes: "Tyres and tubes specialist",               organizationId: org.id } });
   const sup4 = await prisma.supplier.upsert({ where: { id: "seed-sup-4" }, update: {}, create: { id: "seed-sup-4", name: "Lubri-Tech Benelux BV",       phone: "+31 20 123 4567",  email: "gms@lubritech.nl",             address: "Industrieweg 55, 1043 BW Amsterdam, Netherlands",    notes: "Oils, filters, and consumables",           organizationId: org.id } });
   console.log("✓ 4 suppliers");
@@ -106,50 +106,50 @@ async function main() {
   type IS = { sku: string; name: string; cat: string; rp: number; wp: number; sp: number | null; sup: string; b1: number; b2: number; thr: number };
   const itemSeeds: IS[] = [
     // ENGINE PARTS
-    { sku:"ENG-001", name:"Piston Ring Set — Honda CG125",          cat:"Engine Parts",      rp:850,  wp:700,  sp:620,  sup:sup1.id, b1:80,  b2:40,  thr:15 },
-    { sku:"ENG-002", name:"Piston Ring Set — TVS Star City",         cat:"Engine Parts",      rp:820,  wp:680,  sp:null, sup:sup1.id, b1:80,  b2:40,  thr:15 },
-    { sku:"ENG-003", name:"Piston Ring Set — BM150",                 cat:"Engine Parts",      rp:880,  wp:720,  sp:650,  sup:sup1.id, b1:80,  b2:40,  thr:15 },
-    { sku:"ENG-004", name:"Piston Ring Set — HLX 125",               cat:"Engine Parts",      rp:800,  wp:660,  sp:null, sup:sup1.id, b1:70,  b2:35,  thr:12 },
-    { sku:"ENG-005", name:"Piston Ring Set — Bajaj Boxer",           cat:"Engine Parts",      rp:860,  wp:710,  sp:640,  sup:sup1.id, b1:70,  b2:35,  thr:12 },
-    { sku:"ENG-006", name:"Cylinder Head Gasket — Honda CG125",      cat:"Engine Parts",      rp:650,  wp:520,  sp:470,  sup:sup1.id, b1:70,  b2:35,  thr:10 },
-    { sku:"ENG-007", name:"Cylinder Head Gasket — TVS Star City",    cat:"Engine Parts",      rp:620,  wp:500,  sp:null, sup:sup1.id, b1:65,  b2:32,  thr:10 },
-    { sku:"ENG-008", name:"Cylinder Head Gasket — BM150",            cat:"Engine Parts",      rp:680,  wp:540,  sp:null, sup:sup1.id, b1:65,  b2:30,  thr:10 },
-    { sku:"ENG-009", name:"Cylinder Head Gasket — BM125",            cat:"Engine Parts",      rp:640,  wp:510,  sp:null, sup:sup1.id, b1:60,  b2:28,  thr:8  },
-    { sku:"ENG-010", name:"Full Engine Gasket Set — Honda CG125",    cat:"Engine Parts",      rp:1200, wp:950,  sp:null, sup:sup1.id, b1:45,  b2:22,  thr:8  },
-    { sku:"ENG-011", name:"Full Engine Gasket Set — BM150",          cat:"Engine Parts",      rp:1300, wp:1050, sp:null, sup:sup1.id, b1:40,  b2:20,  thr:8  },
+    { sku:"ENG-001", name:"Piston Ring Set - Honda CG125",          cat:"Engine Parts",      rp:850,  wp:700,  sp:620,  sup:sup1.id, b1:80,  b2:40,  thr:15 },
+    { sku:"ENG-002", name:"Piston Ring Set - TVS Star City",         cat:"Engine Parts",      rp:820,  wp:680,  sp:null, sup:sup1.id, b1:80,  b2:40,  thr:15 },
+    { sku:"ENG-003", name:"Piston Ring Set - BM150",                 cat:"Engine Parts",      rp:880,  wp:720,  sp:650,  sup:sup1.id, b1:80,  b2:40,  thr:15 },
+    { sku:"ENG-004", name:"Piston Ring Set - HLX 125",               cat:"Engine Parts",      rp:800,  wp:660,  sp:null, sup:sup1.id, b1:70,  b2:35,  thr:12 },
+    { sku:"ENG-005", name:"Piston Ring Set - Bajaj Boxer",           cat:"Engine Parts",      rp:860,  wp:710,  sp:640,  sup:sup1.id, b1:70,  b2:35,  thr:12 },
+    { sku:"ENG-006", name:"Cylinder Head Gasket - Honda CG125",      cat:"Engine Parts",      rp:650,  wp:520,  sp:470,  sup:sup1.id, b1:70,  b2:35,  thr:10 },
+    { sku:"ENG-007", name:"Cylinder Head Gasket - TVS Star City",    cat:"Engine Parts",      rp:620,  wp:500,  sp:null, sup:sup1.id, b1:65,  b2:32,  thr:10 },
+    { sku:"ENG-008", name:"Cylinder Head Gasket - BM150",            cat:"Engine Parts",      rp:680,  wp:540,  sp:null, sup:sup1.id, b1:65,  b2:30,  thr:10 },
+    { sku:"ENG-009", name:"Cylinder Head Gasket - BM125",            cat:"Engine Parts",      rp:640,  wp:510,  sp:null, sup:sup1.id, b1:60,  b2:28,  thr:8  },
+    { sku:"ENG-010", name:"Full Engine Gasket Set - Honda CG125",    cat:"Engine Parts",      rp:1200, wp:950,  sp:null, sup:sup1.id, b1:45,  b2:22,  thr:8  },
+    { sku:"ENG-011", name:"Full Engine Gasket Set - BM150",          cat:"Engine Parts",      rp:1300, wp:1050, sp:null, sup:sup1.id, b1:40,  b2:20,  thr:8  },
     { sku:"ENG-012", name:"Crankshaft Bearing Set (2 pcs)",          cat:"Engine Parts",      rp:480,  wp:380,  sp:null, sup:sup1.id, b1:60,  b2:30,  thr:10 },
-    { sku:"ENG-013", name:"Valve Set — TVS Star City",               cat:"Engine Parts",      rp:550,  wp:430,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
-    { sku:"ENG-014", name:"Valve Set — Honda CG125",                 cat:"Engine Parts",      rp:580,  wp:460,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
-    { sku:"ENG-015", name:"Camshaft — BM150",                        cat:"Engine Parts",      rp:2200, wp:1800, sp:null, sup:sup1.id, b1:28,  b2:14,  thr:5  },
-    { sku:"ENG-016", name:"Piston + Ring Set — BM150",               cat:"Engine Parts",      rp:1400, wp:1150, sp:1050, sup:sup1.id, b1:65,  b2:30,  thr:10 },
-    { sku:"ENG-017", name:"Piston + Ring Set — Bajaj Boxer",         cat:"Engine Parts",      rp:1350, wp:1100, sp:null, sup:sup1.id, b1:55,  b2:25,  thr:8  },
-    { sku:"ENG-018", name:"Con Rod — Honda CG125",                   cat:"Engine Parts",      rp:950,  wp:780,  sp:null, sup:sup1.id, b1:50,  b2:24,  thr:8  },
-    { sku:"ENG-019", name:"Oil Seal Set — Universal",                cat:"Engine Parts",      rp:320,  wp:250,  sp:null, sup:sup1.id, b1:90,  b2:45,  thr:15 },
-    { sku:"ENG-020", name:"Timing Chain — BM150 / BM100",            cat:"Engine Parts",      rp:380,  wp:300,  sp:null, sup:sup1.id, b1:85,  b2:42,  thr:15 },
-    { sku:"ENG-021", name:"Timing Chain — HLX 125 YOG",             cat:"Engine Parts",      rp:360,  wp:290,  sp:null, sup:sup1.id, b1:80,  b2:38,  thr:12 },
+    { sku:"ENG-013", name:"Valve Set - TVS Star City",               cat:"Engine Parts",      rp:550,  wp:430,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
+    { sku:"ENG-014", name:"Valve Set - Honda CG125",                 cat:"Engine Parts",      rp:580,  wp:460,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
+    { sku:"ENG-015", name:"Camshaft - BM150",                        cat:"Engine Parts",      rp:2200, wp:1800, sp:null, sup:sup1.id, b1:28,  b2:14,  thr:5  },
+    { sku:"ENG-016", name:"Piston + Ring Set - BM150",               cat:"Engine Parts",      rp:1400, wp:1150, sp:1050, sup:sup1.id, b1:65,  b2:30,  thr:10 },
+    { sku:"ENG-017", name:"Piston + Ring Set - Bajaj Boxer",         cat:"Engine Parts",      rp:1350, wp:1100, sp:null, sup:sup1.id, b1:55,  b2:25,  thr:8  },
+    { sku:"ENG-018", name:"Con Rod - Honda CG125",                   cat:"Engine Parts",      rp:950,  wp:780,  sp:null, sup:sup1.id, b1:50,  b2:24,  thr:8  },
+    { sku:"ENG-019", name:"Oil Seal Set - Universal",                cat:"Engine Parts",      rp:320,  wp:250,  sp:null, sup:sup1.id, b1:90,  b2:45,  thr:15 },
+    { sku:"ENG-020", name:"Timing Chain - BM150 / BM100",            cat:"Engine Parts",      rp:380,  wp:300,  sp:null, sup:sup1.id, b1:85,  b2:42,  thr:15 },
+    { sku:"ENG-021", name:"Timing Chain - HLX 125 YOG",             cat:"Engine Parts",      rp:360,  wp:290,  sp:null, sup:sup1.id, b1:80,  b2:38,  thr:12 },
     // ELECTRICAL
-    { sku:"ELE-001", name:"CDI Unit — Honda CB150",                  cat:"Electrical",        rp:1200, wp:980,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
-    { sku:"ELE-002", name:"CDI Unit — TVS Star City",                cat:"Electrical",        rp:1100, wp:900,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
-    { sku:"ELE-003", name:"CDI Unit — BM150",                        cat:"Electrical",        rp:1150, wp:940,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
-    { sku:"ELE-004", name:"CDI Unit — Yamaha YBR",                   cat:"Electrical",        rp:1050, wp:860,  sp:null, sup:sup1.id, b1:35,  b2:18,  thr:5  },
-    { sku:"ELE-005", name:"Ignition Coil — Universal 12V",           cat:"Electrical",        rp:850,  wp:680,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
-    { sku:"ELE-006", name:"Rectifier / Regulator — Yamaha YBR",     cat:"Electrical",        rp:750,  wp:600,  sp:null, sup:sup1.id, b1:45,  b2:22,  thr:6  },
-    { sku:"ELE-007", name:"Rectifier / Regulator — TVS Star",       cat:"Electrical",        rp:720,  wp:580,  sp:null, sup:sup1.id, b1:42,  b2:20,  thr:6  },
+    { sku:"ELE-001", name:"CDI Unit - Honda CB150",                  cat:"Electrical",        rp:1200, wp:980,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
+    { sku:"ELE-002", name:"CDI Unit - TVS Star City",                cat:"Electrical",        rp:1100, wp:900,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
+    { sku:"ELE-003", name:"CDI Unit - BM150",                        cat:"Electrical",        rp:1150, wp:940,  sp:null, sup:sup1.id, b1:40,  b2:20,  thr:6  },
+    { sku:"ELE-004", name:"CDI Unit - Yamaha YBR",                   cat:"Electrical",        rp:1050, wp:860,  sp:null, sup:sup1.id, b1:35,  b2:18,  thr:5  },
+    { sku:"ELE-005", name:"Ignition Coil - Universal 12V",           cat:"Electrical",        rp:850,  wp:680,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
+    { sku:"ELE-006", name:"Rectifier / Regulator - Yamaha YBR",     cat:"Electrical",        rp:750,  wp:600,  sp:null, sup:sup1.id, b1:45,  b2:22,  thr:6  },
+    { sku:"ELE-007", name:"Rectifier / Regulator - TVS Star",       cat:"Electrical",        rp:720,  wp:580,  sp:null, sup:sup1.id, b1:42,  b2:20,  thr:6  },
     { sku:"ELE-008", name:"Starter Motor Brush Set",                 cat:"Electrical",        rp:320,  wp:250,  sp:null, sup:sup2.id, b1:75,  b2:38,  thr:12 },
     { sku:"ELE-009", name:"Headlight Bulb 12V 35/35W",               cat:"Electrical",        rp:80,   wp:60,   sp:null, sup:sup2.id, b1:300, b2:150, thr:50 },
-    { sku:"ELE-010", name:"Horn — Universal 12V",                    cat:"Electrical",        rp:220,  wp:170,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:15 },
-    { sku:"ELE-011", name:"D/Switch Assembly — BM150",               cat:"Electrical",        rp:680,  wp:550,  sp:null, sup:sup2.id, b1:60,  b2:30,  thr:10 },
-    { sku:"ELE-012", name:"D/Switch Assembly — Honda CG125",         cat:"Electrical",        rp:650,  wp:520,  sp:null, sup:sup2.id, b1:55,  b2:28,  thr:10 },
+    { sku:"ELE-010", name:"Horn - Universal 12V",                    cat:"Electrical",        rp:220,  wp:170,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:15 },
+    { sku:"ELE-011", name:"D/Switch Assembly - BM150",               cat:"Electrical",        rp:680,  wp:550,  sp:null, sup:sup2.id, b1:60,  b2:30,  thr:10 },
+    { sku:"ELE-012", name:"D/Switch Assembly - Honda CG125",         cat:"Electrical",        rp:650,  wp:520,  sp:null, sup:sup2.id, b1:55,  b2:28,  thr:10 },
     // BRAKES
-    { sku:"BRA-001", name:"Brake Pad Set — TVS Star City",           cat:"Brakes",            rp:420,  wp:330,  sp:290,  sup:sup2.id, b1:160, b2:80,  thr:25 },
-    { sku:"BRA-002", name:"Brake Pad Set — BM150",                   cat:"Brakes",            rp:400,  wp:320,  sp:null, sup:sup2.id, b1:140, b2:70,  thr:20 },
-    { sku:"BRA-003", name:"Brake Pad Set — Honda CG125 / Universal", cat:"Brakes",            rp:420,  wp:330,  sp:290,  sup:sup2.id, b1:150, b2:75,  thr:25 },
-    { sku:"BRA-004", name:"Brake Shoes — Rear Universal",            cat:"Brakes",            rp:350,  wp:270,  sp:null, sup:sup2.id, b1:120, b2:60,  thr:20 },
-    { sku:"BRA-005", name:"Brake Shoes — TVS Star City",             cat:"Brakes",            rp:340,  wp:265,  sp:null, sup:sup2.id, b1:110, b2:55,  thr:18 },
-    { sku:"BRA-006", name:"Brake Cable — Front Honda CG125",         cat:"Brakes",            rp:180,  wp:140,  sp:null, sup:sup2.id, b1:130, b2:65,  thr:20 },
-    { sku:"BRA-007", name:"Brake Cable — Rear Universal",            cat:"Brakes",            rp:160,  wp:120,  sp:null, sup:sup2.id, b1:140, b2:70,  thr:20 },
-    { sku:"BRA-008", name:"Brake Disc — Honda CB150",                cat:"Brakes",            rp:1800, wp:1450, sp:null, sup:sup2.id, b1:22,  b2:10,  thr:4  },
-    { sku:"BRA-009", name:"Brake Lever Set — Universal",             cat:"Brakes",            rp:280,  wp:220,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
+    { sku:"BRA-001", name:"Brake Pad Set - TVS Star City",           cat:"Brakes",            rp:420,  wp:330,  sp:290,  sup:sup2.id, b1:160, b2:80,  thr:25 },
+    { sku:"BRA-002", name:"Brake Pad Set - BM150",                   cat:"Brakes",            rp:400,  wp:320,  sp:null, sup:sup2.id, b1:140, b2:70,  thr:20 },
+    { sku:"BRA-003", name:"Brake Pad Set - Honda CG125 / Universal", cat:"Brakes",            rp:420,  wp:330,  sp:290,  sup:sup2.id, b1:150, b2:75,  thr:25 },
+    { sku:"BRA-004", name:"Brake Shoes - Rear Universal",            cat:"Brakes",            rp:350,  wp:270,  sp:null, sup:sup2.id, b1:120, b2:60,  thr:20 },
+    { sku:"BRA-005", name:"Brake Shoes - TVS Star City",             cat:"Brakes",            rp:340,  wp:265,  sp:null, sup:sup2.id, b1:110, b2:55,  thr:18 },
+    { sku:"BRA-006", name:"Brake Cable - Front Honda CG125",         cat:"Brakes",            rp:180,  wp:140,  sp:null, sup:sup2.id, b1:130, b2:65,  thr:20 },
+    { sku:"BRA-007", name:"Brake Cable - Rear Universal",            cat:"Brakes",            rp:160,  wp:120,  sp:null, sup:sup2.id, b1:140, b2:70,  thr:20 },
+    { sku:"BRA-008", name:"Brake Disc - Honda CB150",                cat:"Brakes",            rp:1800, wp:1450, sp:null, sup:sup2.id, b1:22,  b2:10,  thr:4  },
+    { sku:"BRA-009", name:"Brake Lever Set - Universal",             cat:"Brakes",            rp:280,  wp:220,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
     // TYRES & TUBES
     { sku:"TYR-001", name:"Inner Tube 2.75-17",                      cat:"Tyres & Tubes",     rp:280,  wp:220,  sp:null, sup:sup3.id, b1:200, b2:100, thr:30 },
     { sku:"TYR-002", name:"Inner Tube 3.00-18",                      cat:"Tyres & Tubes",     rp:300,  wp:240,  sp:null, sup:sup3.id, b1:180, b2:90,  thr:28 },
@@ -159,43 +159,43 @@ async function main() {
     { sku:"TYR-006", name:"Tyre 3.00-18 Rear",                       cat:"Tyres & Tubes",     rp:1350, wp:1050, sp:null, sup:sup3.id, b1:48,  b2:24,  thr:8  },
     { sku:"TYR-007", name:"Tyre 2.50-18 Universal",                  cat:"Tyres & Tubes",     rp:1100, wp:880,  sp:null, sup:sup3.id, b1:40,  b2:20,  thr:8  },
     // OILS & LUBRICANTS
-    { sku:"OIL-001", name:"Engine Oil 20W-50 — 1 Litre",             cat:"Oils & Lubricants", rp:380,  wp:300,  sp:null, sup:sup4.id, b1:350, b2:180, thr:50 },
-    { sku:"OIL-002", name:"Engine Oil 10W-40 — 1 Litre",             cat:"Oils & Lubricants", rp:400,  wp:320,  sp:null, sup:sup4.id, b1:280, b2:140, thr:40 },
-    { sku:"OIL-003", name:"Gear Oil 80W-90 — 1 Litre",               cat:"Oils & Lubricants", rp:280,  wp:220,  sp:null, sup:sup4.id, b1:160, b2:80,  thr:25 },
+    { sku:"OIL-001", name:"Engine Oil 20W-50 - 1 Litre",             cat:"Oils & Lubricants", rp:380,  wp:300,  sp:null, sup:sup4.id, b1:350, b2:180, thr:50 },
+    { sku:"OIL-002", name:"Engine Oil 10W-40 - 1 Litre",             cat:"Oils & Lubricants", rp:400,  wp:320,  sp:null, sup:sup4.id, b1:280, b2:140, thr:40 },
+    { sku:"OIL-003", name:"Gear Oil 80W-90 - 1 Litre",               cat:"Oils & Lubricants", rp:280,  wp:220,  sp:null, sup:sup4.id, b1:160, b2:80,  thr:25 },
     { sku:"OIL-004", name:"Chain Lubricant Spray 400ml",              cat:"Oils & Lubricants", rp:320,  wp:250,  sp:null, sup:sup4.id, b1:100, b2:50,  thr:15 },
-    { sku:"OIL-005", name:"Brake Fluid DOT4 — 500ml",                cat:"Oils & Lubricants", rp:450,  wp:360,  sp:null, sup:sup4.id, b1:70,  b2:35,  thr:10 },
+    { sku:"OIL-005", name:"Brake Fluid DOT4 - 500ml",                cat:"Oils & Lubricants", rp:450,  wp:360,  sp:null, sup:sup4.id, b1:70,  b2:35,  thr:10 },
     // BODY PARTS
-    { sku:"BOD-001", name:"Side Mirror — Universal (Pair)",           cat:"Body Parts",        rp:350,  wp:270,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
-    { sku:"BOD-002", name:"Rear Mudguard — Honda CG125",              cat:"Body Parts",        rp:580,  wp:450,  sp:null, sup:sup2.id, b1:45,  b2:22,  thr:8  },
-    { sku:"BOD-003", name:"Rear Mudguard — TVS Star City",            cat:"Body Parts",        rp:550,  wp:420,  sp:null, sup:sup2.id, b1:42,  b2:20,  thr:8  },
+    { sku:"BOD-001", name:"Side Mirror - Universal (Pair)",           cat:"Body Parts",        rp:350,  wp:270,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
+    { sku:"BOD-002", name:"Rear Mudguard - Honda CG125",              cat:"Body Parts",        rp:580,  wp:450,  sp:null, sup:sup2.id, b1:45,  b2:22,  thr:8  },
+    { sku:"BOD-003", name:"Rear Mudguard - TVS Star City",            cat:"Body Parts",        rp:550,  wp:420,  sp:null, sup:sup2.id, b1:42,  b2:20,  thr:8  },
     { sku:"BOD-004", name:"Front Fork Seal Set",                      cat:"Body Parts",        rp:420,  wp:330,  sp:null, sup:sup2.id, b1:65,  b2:32,  thr:10 },
-    { sku:"BOD-005", name:"Footrest — Universal (Pair)",              cat:"Body Parts",        rp:480,  wp:380,  sp:null, sup:sup2.id, b1:55,  b2:28,  thr:8  },
-    { sku:"BOD-006", name:"Headlight Assembly — BM150",               cat:"Body Parts",        rp:1800, wp:1450, sp:null, sup:sup2.id, b1:35,  b2:18,  thr:6  },
-    { sku:"BOD-007", name:"Tail Light Assembly — Universal",          cat:"Body Parts",        rp:580,  wp:460,  sp:null, sup:sup2.id, b1:50,  b2:25,  thr:8  },
-    { sku:"BOD-008", name:"Side Panel Set — TVS Star City",           cat:"Body Parts",        rp:1200, wp:960,  sp:null, sup:sup2.id, b1:30,  b2:15,  thr:5  },
+    { sku:"BOD-005", name:"Footrest - Universal (Pair)",              cat:"Body Parts",        rp:480,  wp:380,  sp:null, sup:sup2.id, b1:55,  b2:28,  thr:8  },
+    { sku:"BOD-006", name:"Headlight Assembly - BM150",               cat:"Body Parts",        rp:1800, wp:1450, sp:null, sup:sup2.id, b1:35,  b2:18,  thr:6  },
+    { sku:"BOD-007", name:"Tail Light Assembly - Universal",          cat:"Body Parts",        rp:580,  wp:460,  sp:null, sup:sup2.id, b1:50,  b2:25,  thr:8  },
+    { sku:"BOD-008", name:"Side Panel Set - TVS Star City",           cat:"Body Parts",        rp:1200, wp:960,  sp:null, sup:sup2.id, b1:30,  b2:15,  thr:5  },
     // TRANSMISSION
     { sku:"TRN-001", name:"Drive Chain 428H-122L",                    cat:"Transmission",      rp:420,  wp:340,  sp:null, sup:sup2.id, b1:130, b2:65,  thr:20 },
     { sku:"TRN-002", name:"Drive Chain 420H-120L",                    cat:"Transmission",      rp:380,  wp:300,  sp:null, sup:sup2.id, b1:120, b2:60,  thr:18 },
-    { sku:"TRN-003", name:"Front Sprocket 14T — Honda CG125",         cat:"Transmission",      rp:280,  wp:220,  sp:null, sup:sup2.id, b1:100, b2:50,  thr:15 },
-    { sku:"TRN-004", name:"Front Sprocket 15T — BM150",               cat:"Transmission",      rp:300,  wp:240,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:12 },
-    { sku:"TRN-005", name:"Rear Sprocket 34T — Honda CG125",          cat:"Transmission",      rp:450,  wp:360,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:12 },
-    { sku:"TRN-006", name:"Rear Sprocket 36T — TVS Star",             cat:"Transmission",      rp:480,  wp:380,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
-    { sku:"TRN-007", name:"Clutch Plate Set — Bajaj Boxer",           cat:"Transmission",      rp:650,  wp:520,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
-    { sku:"TRN-008", name:"Clutch Plate Set — BM150",                 cat:"Transmission",      rp:700,  wp:560,  sp:null, sup:sup1.id, b1:50,  b2:25,  thr:8  },
-    { sku:"TRN-009", name:"Clutch Cable — Universal",                 cat:"Transmission",      rp:150,  wp:120,  sp:null, sup:sup2.id, b1:160, b2:80,  thr:25 },
-    { sku:"TRN-010", name:"Axle Rear — TVS Star City",                cat:"Transmission",      rp:350,  wp:280,  sp:null, sup:sup2.id, b1:70,  b2:35,  thr:10 },
-    { sku:"TRN-011", name:"Axle Rear — Honda CG150",                  cat:"Transmission",      rp:380,  wp:300,  sp:null, sup:sup2.id, b1:65,  b2:32,  thr:10 },
-    { sku:"TRN-012", name:"Axle Front — BM150",                       cat:"Transmission",      rp:320,  wp:255,  sp:null, sup:sup2.id, b1:60,  b2:30,  thr:10 },
-    { sku:"TRN-013", name:"Centre Stand — Universal",                 cat:"Transmission",      rp:580,  wp:460,  sp:null, sup:sup2.id, b1:45,  b2:22,  thr:8  },
-    { sku:"TRN-014", name:"Swing Arm — BM150",                        cat:"Transmission",      rp:3500, wp:2800, sp:null, sup:sup2.id, b1:40,  b2:20,  thr:5  },
-    { sku:"TRN-015", name:"Swing Arm Bar — WY125",                    cat:"Transmission",      rp:1800, wp:1450, sp:null, sup:sup2.id, b1:45,  b2:22,  thr:6  },
+    { sku:"TRN-003", name:"Front Sprocket 14T - Honda CG125",         cat:"Transmission",      rp:280,  wp:220,  sp:null, sup:sup2.id, b1:100, b2:50,  thr:15 },
+    { sku:"TRN-004", name:"Front Sprocket 15T - BM150",               cat:"Transmission",      rp:300,  wp:240,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:12 },
+    { sku:"TRN-005", name:"Rear Sprocket 34T - Honda CG125",          cat:"Transmission",      rp:450,  wp:360,  sp:null, sup:sup2.id, b1:90,  b2:45,  thr:12 },
+    { sku:"TRN-006", name:"Rear Sprocket 36T - TVS Star",             cat:"Transmission",      rp:480,  wp:380,  sp:null, sup:sup2.id, b1:80,  b2:40,  thr:12 },
+    { sku:"TRN-007", name:"Clutch Plate Set - Bajaj Boxer",           cat:"Transmission",      rp:650,  wp:520,  sp:null, sup:sup1.id, b1:55,  b2:28,  thr:8  },
+    { sku:"TRN-008", name:"Clutch Plate Set - BM150",                 cat:"Transmission",      rp:700,  wp:560,  sp:null, sup:sup1.id, b1:50,  b2:25,  thr:8  },
+    { sku:"TRN-009", name:"Clutch Cable - Universal",                 cat:"Transmission",      rp:150,  wp:120,  sp:null, sup:sup2.id, b1:160, b2:80,  thr:25 },
+    { sku:"TRN-010", name:"Axle Rear - TVS Star City",                cat:"Transmission",      rp:350,  wp:280,  sp:null, sup:sup2.id, b1:70,  b2:35,  thr:10 },
+    { sku:"TRN-011", name:"Axle Rear - Honda CG150",                  cat:"Transmission",      rp:380,  wp:300,  sp:null, sup:sup2.id, b1:65,  b2:32,  thr:10 },
+    { sku:"TRN-012", name:"Axle Front - BM150",                       cat:"Transmission",      rp:320,  wp:255,  sp:null, sup:sup2.id, b1:60,  b2:30,  thr:10 },
+    { sku:"TRN-013", name:"Centre Stand - Universal",                 cat:"Transmission",      rp:580,  wp:460,  sp:null, sup:sup2.id, b1:45,  b2:22,  thr:8  },
+    { sku:"TRN-014", name:"Swing Arm - BM150",                        cat:"Transmission",      rp:3500, wp:2800, sp:null, sup:sup2.id, b1:40,  b2:20,  thr:5  },
+    { sku:"TRN-015", name:"Swing Arm Bar - WY125",                    cat:"Transmission",      rp:1800, wp:1450, sp:null, sup:sup2.id, b1:45,  b2:22,  thr:6  },
     // FILTERS
-    { sku:"FIL-001", name:"Oil Filter — Honda CB150",                 cat:"Filters",           rp:280,  wp:220,  sp:null, sup:sup4.id, b1:120, b2:60,  thr:20 },
-    { sku:"FIL-002", name:"Air Filter — Honda CG125",                 cat:"Filters",           rp:320,  wp:250,  sp:null, sup:sup4.id, b1:110, b2:55,  thr:18 },
-    { sku:"FIL-003", name:"Air Filter — Yamaha YBR",                  cat:"Filters",           rp:350,  wp:270,  sp:null, sup:sup4.id, b1:100, b2:50,  thr:15 },
-    { sku:"FIL-004", name:"Air Filter — TVS Star City",               cat:"Filters",           rp:300,  wp:240,  sp:null, sup:sup4.id, b1:105, b2:52,  thr:18 },
-    { sku:"FIL-005", name:"Air Filter — BM150",                       cat:"Filters",           rp:330,  wp:260,  sp:null, sup:sup4.id, b1:100, b2:50,  thr:15 },
-    { sku:"FIL-006", name:"Oil Filter — Universal",                   cat:"Filters",           rp:260,  wp:200,  sp:null, sup:sup4.id, b1:130, b2:65,  thr:20 },
+    { sku:"FIL-001", name:"Oil Filter - Honda CB150",                 cat:"Filters",           rp:280,  wp:220,  sp:null, sup:sup4.id, b1:120, b2:60,  thr:20 },
+    { sku:"FIL-002", name:"Air Filter - Honda CG125",                 cat:"Filters",           rp:320,  wp:250,  sp:null, sup:sup4.id, b1:110, b2:55,  thr:18 },
+    { sku:"FIL-003", name:"Air Filter - Yamaha YBR",                  cat:"Filters",           rp:350,  wp:270,  sp:null, sup:sup4.id, b1:100, b2:50,  thr:15 },
+    { sku:"FIL-004", name:"Air Filter - TVS Star City",               cat:"Filters",           rp:300,  wp:240,  sp:null, sup:sup4.id, b1:105, b2:52,  thr:18 },
+    { sku:"FIL-005", name:"Air Filter - BM150",                       cat:"Filters",           rp:330,  wp:260,  sp:null, sup:sup4.id, b1:100, b2:50,  thr:15 },
+    { sku:"FIL-006", name:"Oil Filter - Universal",                   cat:"Filters",           rp:260,  wp:200,  sp:null, sup:sup4.id, b1:130, b2:65,  thr:20 },
   ];
 
   const iMap: Record<string, { id: string; rp: number; wp: number }> = {};
@@ -457,7 +457,7 @@ async function main() {
 
     // ── Credit Payments ──────────────────────────────────────────────────────
     const cpSpecs = [
-      { id:"seed-cp-01", cust:"seed-c-006", amt:50000, by:M1, date:d("2026-05-05",10,0),  notes:"BACS transfer — partial" },
+      { id:"seed-cp-01", cust:"seed-c-006", amt:50000, by:M1, date:d("2026-05-05",10,0),  notes:"BACS transfer - partial" },
       { id:"seed-cp-02", cust:"seed-c-006", amt:30000, by:M1, date:d("2026-05-20",9,0),   notes:"Bank transfer" },
       { id:"seed-cp-03", cust:"seed-c-002", amt:60000, by:M1, date:d("2026-05-10",10,0),  notes:"Bank transfer" },
       { id:"seed-cp-04", cust:"seed-c-002", amt:40000, by:C1, date:d("2026-05-26",9,30),  notes:"Cash settlement" },
@@ -567,7 +567,7 @@ async function main() {
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // ORGANISATION 2 — Ngumo General Supplies (Building & Hardware)
+  // ORGANISATION 2 - Ngumo General Supplies (Building & Hardware)
   // ═══════════════════════════════════════════════════════════════════════════
 
   const org2 = await prisma.organization.upsert({
@@ -783,7 +783,7 @@ async function main() {
 
   console.log("\n✅ Seed complete!\n");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS — Meridian Electronics Ltd (meridian)");
+  console.log(" LOGIN CREDENTIALS - Meridian Electronics Ltd (meridian)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
   console.log("   admin@meridian.co.uk              admin123");
@@ -792,23 +792,23 @@ async function main() {
   console.log("   sophie.harris@meridian.co.uk      manager123   (London Branch)");
   console.log("   james.walker@meridian.co.uk       manager123   (Manchester Branch)");
   console.log("");
-  console.log(" CASHIERS — London Branch");
+  console.log(" CASHIERS - London Branch");
   console.log("   emma.jones@meridian.co.uk         cashier123");
   console.log("   liam.smith@meridian.co.uk         cashier123");
   console.log("   olivia.brown@meridian.co.uk       cashier123");
   console.log("   noah.taylor@meridian.co.uk        cashier123");
   console.log("");
-  console.log(" CASHIERS — Manchester Branch");
+  console.log(" CASHIERS - Manchester Branch");
   console.log("   ava.wilson@meridian.co.uk         cashier123");
   console.log("   ethan.moore@meridian.co.uk        cashier123");
   console.log("   isabella.clark@meridian.co.uk     cashier123");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS — Bergmann Großhandel GmbH (bergmann)");
+  console.log(" LOGIN CREDENTIALS - Bergmann Großhandel GmbH (bergmann)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
   console.log("   admin@bergmann-handel.de          admin123");
   console.log("");
-  console.log(" MANAGER — Berlin Branch");
+  console.log(" MANAGER - Berlin Branch");
   console.log("   manager@bergmann-handel.de        manager123");
   console.log("");
   console.log(" CASHIERS");

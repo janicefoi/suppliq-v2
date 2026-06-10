@@ -1,4 +1,4 @@
-"use server";
+﻿"use server";
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
@@ -167,7 +167,7 @@ export async function completeSale(
     return { success: false, error: "Sale total must be greater than zero after discount." };
   }
   if (Math.abs(expectedTotal - parsed.data.totalAmount) > 0.02) {
-    return { success: false, error: "Total amount mismatch — please try again." };
+    return { success: false, error: "Total amount mismatch - please try again." };
   }
 
   const computedTax = Math.round(parsed.data.totalAmount * VAT_EXTRACT * 100) / 100;

@@ -1,4 +1,4 @@
-"""
+﻿"""
 Reorder Point Optimisation Service
 
 What this will do:
@@ -17,10 +17,10 @@ What this will do:
   5. Write suggested_qty back to the forecasts table
 
 Priority levels:
-  critical  — stockout in ≤3 days
-  high      — stockout in 4-7 days OR stock already 0
-  medium    — stockout in 8-14 days
-  low       — below ROP but >14 days of cover
+  critical  - stockout in ≤3 days
+  high      - stockout in 4-7 days OR stock already 0
+  medium    - stockout in 8-14 days
+  low       - below ROP but >14 days of cover
 
 Phase 2:
   - Use actual supplier lead times from PO history (not estimates)

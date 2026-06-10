@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useTransition } from "react";
 import { Search, X, User, Loader2 } from "lucide-react";
@@ -55,7 +55,7 @@ export function CustomerSearch({ selected, onSelect }: CustomerSearchProps) {
     setResults([]);
   }
 
-  // When selected — show chip
+  // When selected - show chip
   if (selected) {
     return (
       <div className="flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">

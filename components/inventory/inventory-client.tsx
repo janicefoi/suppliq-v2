@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useMemo, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -54,9 +54,9 @@ type SortField = "sku" | "name" | "category" | "retailPrice" | "stockQty";
 type SortDir = "asc" | "desc";
 
 function fmtPrice(value: string | number | null | undefined, currency: string): string {
-  if (value === null || value === undefined) return "—";
+  if (value === null || value === undefined) return "-";
   const num = Number(value);
-  if (isNaN(num)) return "—";
+  if (isNaN(num)) return "-";
   return formatCurrency(num, currency);
 }
 
@@ -96,7 +96,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   const [stats, setStats] = useState<InventoryStats>(initialStats);
   const [isSwitching, setIsSwitching] = useState(false);
 
-  // Expand row — per-branch stock
+  // Expand row - per-branch stock
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedStocks, setExpandedStocks] = useState<Record<string, ItemBranchStock[]>>({});
   const [loadingExpandId, setLoadingExpandId] = useState<string | null>(null);
@@ -369,7 +369,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                     {search || categoryFilter !== "all" || supplierFilter !== "all" || stockStatus !== "all"
                       ? "No items match your filters."
                       : canManage
-                      ? "No items yet — click \"Add item\" to get started."
+                      ? "No items yet - click \"Add item\" to get started."
                       : "No items yet."}
                   </p>
                 </TableCell>
@@ -388,7 +388,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                       {item.sku}
                     </TableCell>
 
-                    {/* Name + supplier — click to expand */}
+                    {/* Name + supplier - click to expand */}
                     <TableCell className="max-w-0">
                       <button
                         className="flex items-center gap-1 text-left w-full group"
@@ -485,7 +485,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                           )}
                         </div>
                       ) : (
-                        <span className="text-slate-200">—</span>
+                        <span className="text-slate-200">-</span>
                       )}
                     </TableCell>
                   </TableRow>

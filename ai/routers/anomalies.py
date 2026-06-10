@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+﻿from fastapi import APIRouter
 
 from services.anomaly.detection import detect_anomalies
 
@@ -11,9 +11,9 @@ async def anomalies(organization_id: str):
     Detects and returns all anomalies for an organisation.
 
     Runs three detectors in parallel:
-      1. Sales anomalies — unusual spikes or drops (>2σ from 30-day mean)
-      2. Stock discrepancies — zero stock but recent sales (implies shrinkage)
-      3. Expense anomalies — category spend >3× monthly average
+      1. Sales anomalies - unusual spikes or drops (>2σ from 30-day mean)
+      2. Stock discrepancies - zero stock but recent sales (implies shrinkage)
+      3. Expense anomalies - category spend >3× monthly average
 
     Each anomaly includes:
       - Severity: critical / warning / info

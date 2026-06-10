@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -227,7 +227,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
         <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
           <ShoppingBag className="h-4 w-4 text-slate-400" />
           Purchase history
-          {period !== "all" && <span className="text-slate-400 font-normal">— {monthLabel(period)}</span>}
+          {period !== "all" && <span className="text-slate-400 font-normal">- {monthLabel(period)}</span>}
         </h2>
         <div className="rounded-lg border border-slate-200 bg-white overflow-hidden [&_th]:h-8 [&_th]:py-2 [&_th]:text-[11px] [&_td]:py-2 [&_td]:align-middle">
           <Table>
@@ -283,7 +283,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
         <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-1.5">
           <Receipt className="h-4 w-4 text-slate-400" />
           Credit payment history
-          {period !== "all" && <span className="text-slate-400 font-normal">— {monthLabel(period)}</span>}
+          {period !== "all" && <span className="text-slate-400 font-normal">- {monthLabel(period)}</span>}
         </h2>
         <div className="rounded-lg border border-slate-200 bg-white overflow-hidden [&_th]:h-8 [&_th]:py-2 [&_th]:text-[11px] [&_td]:py-2 [&_td]:align-middle">
           <Table>
@@ -307,7 +307,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
                   <TableRow key={p.id} className="hover:bg-slate-50/60">
                     <TableCell className="text-xs text-slate-600">{fmtDateTime(p.createdAt)}</TableCell>
                     <TableCell className="text-right text-xs font-semibold tabular-nums text-green-700">{formatCurrency(p.amount, currency)}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{p.notes ?? <span className="text-slate-300">—</span>}</TableCell>
+                    <TableCell className="text-xs text-slate-500">{p.notes ?? <span className="text-slate-300">-</span>}</TableCell>
                     <TableCell className="text-xs text-slate-600">{p.recordedBy.name}</TableCell>
                   </TableRow>
                 ))
@@ -396,7 +396,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
                 <tr key={p.id} style={{ borderBottom: "1px solid #f1f5f9" }}>
                   <td style={{ padding: "4px 6px" }}>{fmtDateTime(p.createdAt)}</td>
                   <td style={{ padding: "4px 6px", textAlign: "right" }}>{Number(p.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td style={{ padding: "4px 6px" }}>{p.notes ?? "—"}</td>
+                  <td style={{ padding: "4px 6px" }}>{p.notes ?? "-"}</td>
                   <td style={{ padding: "4px 6px" }}>{p.recordedBy.name}</td>
                 </tr>
               ))

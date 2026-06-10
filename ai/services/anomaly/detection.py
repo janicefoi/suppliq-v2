@@ -1,17 +1,17 @@
-"""
+﻿"""
 Anomaly Detection Service
 
 What this will do:
-  1. Sales anomalies — flag (item, branch) pairs where today's sales
+  1. Sales anomalies - flag (item, branch) pairs where today's sales
      deviate >2σ from the 30-day rolling mean:
        - Spike: could mean data entry error, promotion not logged, or theft recovery
        - Drop: could mean stock issue, pricing problem, or competitor disruption
-  2. Stock discrepancies — items where reported stock and sales-implied stock
+  2. Stock discrepancies - items where reported stock and sales-implied stock
      differ significantly (suggests unrecorded shrinkage or data errors)
-  3. Unusual expenses — expenses >3× the category's rolling average
-  4. High-value single transactions — sales or expenses above a configurable threshold
-  5. Inactive-item sales — items marked inactive but still appearing in sales
-  6. Customer debt spikes — customers whose outstanding balance grew >50% this week
+  3. Unusual expenses - expenses >3× the category's rolling average
+  4. High-value single transactions - sales or expenses above a configurable threshold
+  5. Inactive-item sales - items marked inactive but still appearing in sales
+  6. Customer debt spikes - customers whose outstanding balance grew >50% this week
 
 For each anomaly:
   - Compute severity (info / warning / critical)

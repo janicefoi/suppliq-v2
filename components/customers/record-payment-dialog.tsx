@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -130,7 +130,7 @@ export function RecordPaymentDialog({
               )}>
                 {isFullPayment && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                 {isFullPayment
-                  ? "Full balance — account will be cleared"
+                  ? "Full balance - account will be cleared"
                   : <>Remaining balance: <span className="font-medium text-slate-700">{formatCurrency(remaining, currency)}</span></>
                 }
               </div>
