@@ -17,6 +17,7 @@ interface ShellUser {
 interface DashboardShellProps {
   user: ShellUser;
   isDemo?: boolean;
+  lowStockCount?: number;
   children: React.ReactNode;
 }
 
@@ -56,7 +57,7 @@ function DemoBanner() {
   );
 }
 
-export function DashboardShell({ user, isDemo, children }: DashboardShellProps) {
+export function DashboardShell({ user, isDemo, lowStockCount, children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -70,7 +71,11 @@ export function DashboardShell({ user, isDemo, children }: DashboardShellProps) 
       {/* Offset main content by sidebar width on desktop */}
       <div className="md:pl-60 flex flex-col min-h-screen">
         {isDemo && <DemoBanner />}
-        <TopBar user={user} onMenuClick={() => setMobileOpen(true)} />
+        <TopBar
+          user={user}
+          onMenuClick={() => setMobileOpen(true)}
+          lowStockCount={lowStockCount ?? 0}
+        />
         <main className="flex-1 p-6">{children}</main>
       </div>
     </div>

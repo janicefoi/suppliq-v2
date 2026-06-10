@@ -48,6 +48,7 @@
     "react-hot-toast": "^2.4.1",
     "react-qr-code": "^2.0.21",
     "recharts": "^2.13.3",
+    "resend": "^6.12.4",
     "sonner": "^1.7.1",
     "stripe": "^22.2.0",
     "tailwind-merge": "^2.5.4",

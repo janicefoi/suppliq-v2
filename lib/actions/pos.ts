@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { CompleteSaleSchema, type CompleteSaleInput } from "@/lib/validations/pos";
 import { VAT_EXTRACT } from "@/lib/constants/tax";
+import { sendLowStockAlert, type LowStockEmailItem } from "@/lib/email";
 
 // ── Receipt number: RCP-YYYYMMDD-XXXX (org-scoped) ────────────────────────
 
@@ -178,13 +179,21 @@ export async function completeSale(
 
   const receiptNumber = await generateReceiptNumber(orgId);
 
+  // Track items that cross the low-stock threshold during this sale
+  const newlyLowItems: LowStockEmailItem[] = [];
+
   try {
     const sale = await db.$transaction(async (tx) => {
-      // 1. Verify stock availability (items must belong to this org)
+      // 1. Verify stock availability and collect pre-sale stock levels
+      const lineStocks: Array<{
+        itemId: string; itemName: string; itemSku: string;
+        prevQty: number; threshold: number;
+      }> = [];
+
       for (const line of parsed.data.items) {
         const item = await tx.item.findUnique({
           where: { id: line.itemId },
-          select: { name: true, isActive: true, organizationId: true },
+          select: { name: true, sku: true, isActive: true, organizationId: true },
         });
         if (!item || !item.isActive || item.organizationId !== orgId) {
           throw new Error(`Item not found or has been deactivated.`);
@@ -199,6 +208,13 @@ export async function completeSale(
             `Insufficient stock for "${item.name}" at this branch. Available: ${available}, requested: ${line.quantity}.`
           );
         }
+        lineStocks.push({
+          itemId: line.itemId,
+          itemName: item.name,
+          itemSku: item.sku,
+          prevQty: available,
+          threshold: branchStock?.lowStockThreshold ?? 5,
+        });
       }
 
       // 2. Create Sale + SaleItems
@@ -232,7 +248,7 @@ export async function completeSale(
         },
       });
 
-      // 3. Decrement branch stock + write StockLog (AI demand signal)
+      // 3. Decrement branch stock + write StockLog, detect threshold crossings
       for (const line of parsed.data.items) {
         await tx.branchStock.update({
           where: { itemId_branchId: { itemId: line.itemId, branchId } },
@@ -250,6 +266,21 @@ export async function completeSale(
             recordedById: session.user.id,
           },
         });
+
+        // Check if this sale just pushed the item below its threshold
+        const ls = lineStocks.find((s) => s.itemId === line.itemId);
+        if (ls) {
+          const newQty = ls.prevQty - line.quantity;
+          if (ls.prevQty > ls.threshold && newQty <= ls.threshold) {
+            newlyLowItems.push({
+              name: ls.itemName,
+              sku: ls.itemSku,
+              stockQty: newQty,
+              lowStockThreshold: ls.threshold,
+              branchName: created.branch?.name ?? "Unknown branch",
+            });
+          }
+        }
       }
 
       // 4. Update customer credit balance
@@ -269,6 +300,21 @@ export async function completeSale(
     });
 
     revalidatePath("/inventory");
+
+    // Fire low-stock email in background after sale commits (never blocks the response)
+    if (newlyLowItems.length > 0) {
+      db.user.findMany({
+        where: { organizationId: orgId, role: "ADMIN", isActive: true },
+        select: { email: true },
+      }).then(async (admins) => {
+        const org = await db.organization.findUnique({
+          where: { id: orgId },
+          select: { name: true },
+        });
+        const emails = admins.map((u) => u.email);
+        await sendLowStockAlert(emails, org?.name ?? "Your organisation", newlyLowItems);
+      }).catch(() => {});
+    }
 
     return { success: true, sale: JSON.parse(JSON.stringify(sale)) };
   } catch (err) {

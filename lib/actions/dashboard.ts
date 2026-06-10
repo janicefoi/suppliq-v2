@@ -215,6 +215,20 @@ export async function getLowStockAlerts(branchId?: string | null): Promise<LowSt
     .map((bs) => ({ id: bs.item.id, sku: bs.item.sku, name: bs.item.name, stockQty: bs.stockQty, lowStockThreshold: bs.lowStockThreshold }));
 }
 
+export async function getLowStockCount(branchId?: string | null): Promise<number> {
+  const session = await auth();
+  if (!session?.user?.id) return 0;
+  const orgId = session.user.organizationId;
+
+  const stocks = await db.branchStock.findMany({
+    where: branchId
+      ? { branchId, item: { isActive: true, organizationId: orgId } }
+      : { item: { isActive: true, organizationId: orgId } },
+    select: { stockQty: true, lowStockThreshold: true },
+  });
+  return stocks.filter((bs) => bs.stockQty <= bs.lowStockThreshold).length;
+}
+
 export async function getBranches() {
   const session = await auth();
   if (!session?.user?.id) return [];
