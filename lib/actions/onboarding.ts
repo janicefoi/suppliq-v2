@@ -2,7 +2,24 @@
 
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { OnboardingSchema } from "@/lib/validations/onboarding";
+import { getCountry } from "@/lib/constants/countries";
+import { z } from "zod";
+
+const RegisterSchema = z
+  .object({
+    orgName: z.string().min(2, "Company name must be at least 2 characters"),
+    industry: z.string().optional(),
+    country: z.string().default("GB"),
+    branchName: z.string().min(2, "Branch name must be at least 2 characters"),
+    adminName: z.string().min(2, "Your name must be at least 2 characters"),
+    email: z.string().email("Invalid email address"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((d) => d.password === d.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
 
 function toSlug(name: string): string {
   const slug = name
@@ -19,7 +36,7 @@ export async function registerOrganization(formData: FormData) {
   const raw = {
     orgName: formData.get("orgName"),
     industry: (formData.get("industry") as string) || undefined,
-    country: (formData.get("country") as string) || "KE",
+    country: (formData.get("country") as string) || "GB",
     branchName: (formData.get("branchName") as string) || "Head Office",
     adminName: formData.get("adminName"),
     email: formData.get("email"),
@@ -27,7 +44,7 @@ export async function registerOrganization(formData: FormData) {
     confirmPassword: formData.get("confirmPassword"),
   };
 
-  const parsed = OnboardingSchema.safeParse(raw);
+  const parsed = RegisterSchema.safeParse(raw);
   if (!parsed.success) {
     return { error: parsed.error.errors[0].message };
   }
@@ -40,7 +57,10 @@ export async function registerOrganization(formData: FormData) {
     return { error: "An account with this email already exists." };
   }
 
-  // Ensure slug is unique
+  const countryData = getCountry(country);
+  const currency = countryData.currency;
+  const timezone = countryData.timezone;
+
   const baseSlug = toSlug(orgName);
   let slug = baseSlug;
   let suffix = 1;
@@ -52,7 +72,7 @@ export async function registerOrganization(formData: FormData) {
 
   await db.$transaction(async (tx) => {
     const org = await tx.organization.create({
-      data: { name: orgName, slug, industry, country },
+      data: { name: orgName, slug, industry, country, currency, timezone },
     });
 
     const branch = await tx.branch.create({
