@@ -124,3 +124,120 @@ export async function getReportData(
 function emptyReport(): ReportData {
   return { sales: [], salesCount: 0, voidedCount: 0, canViewRevenue: false };
 }
+
+// ── P&L types ──────────────────────────────────────────────────────────────
+
+export type PLData = {
+  revenue: number;
+  revenueByType: { RETAIL: number; WHOLESALE: number; SPECIAL: number };
+  cogs: number;
+  cogsKnownLines: number;
+  cogsTotalLines: number;
+  grossProfit: number;
+  grossMarginPct: number;
+  expenses: number;
+  expensesByCategory: Array<{ category: string; total: number }>;
+  netProfit: number;
+  salesCount: number;
+  expenseCount: number;
+};
+
+// ── P&L action ─────────────────────────────────────────────────────────────
+
+export async function getPLData(
+  startDate: string,
+  endDate: string,
+  branchId?: string | null
+): Promise<PLData | null> {
+  const session = await auth();
+  if (!session?.user?.id || session.user.role !== "ADMIN") return null;
+
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId ?? undefined;
+
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+
+  const saleWhere = {
+    organizationId: orgId,
+    isVoid: false,
+    createdAt: { gte: start, lte: end },
+    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+  };
+
+  const expenseWhere = {
+    organizationId: orgId,
+    date: { gte: start, lte: end },
+    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+  };
+
+  const [sales, saleItems, expenseRows] = await Promise.all([
+    db.sale.findMany({
+      where: saleWhere,
+      select: { totalAmount: true, saleType: true },
+    }),
+    db.saleItem.findMany({
+      where: { sale: saleWhere },
+      select: {
+        quantity: true,
+        item: { select: { costPrice: true } },
+      },
+    }),
+    db.expense.findMany({
+      where: expenseWhere,
+      select: { amount: true, category: true },
+    }),
+  ]);
+
+  // Revenue
+  const revenueByType = { RETAIL: 0, WHOLESALE: 0, SPECIAL: 0 };
+  let revenue = 0;
+  for (const s of sales) {
+    const amt = Number(s.totalAmount);
+    revenue += amt;
+    const t = s.saleType as keyof typeof revenueByType;
+    if (t in revenueByType) revenueByType[t] += amt;
+  }
+
+  // COGS: quantity * current costPrice where available
+  let cogs = 0;
+  let cogsKnownLines = 0;
+  const cogsTotalLines = saleItems.length;
+  for (const si of saleItems) {
+    if (si.item.costPrice !== null) {
+      cogs += si.quantity * Number(si.item.costPrice);
+      cogsKnownLines++;
+    }
+  }
+
+  const grossProfit = revenue - cogs;
+  const grossMarginPct = revenue > 0 ? (grossProfit / revenue) * 100 : 0;
+
+  // Expenses
+  let expenses = 0;
+  const catMap = new Map<string, number>();
+  for (const e of expenseRows) {
+    const amt = Number(e.amount);
+    expenses += amt;
+    catMap.set(e.category, (catMap.get(e.category) ?? 0) + amt);
+  }
+  const expensesByCategory = [...catMap.entries()]
+    .map(([category, total]) => ({ category, total }))
+    .sort((a, b) => b.total - a.total);
+
+  return {
+    revenue,
+    revenueByType,
+    cogs,
+    cogsKnownLines,
+    cogsTotalLines,
+    grossProfit,
+    grossMarginPct,
+    expenses,
+    expensesByCategory,
+    netProfit: grossProfit - expenses,
+    salesCount: sales.length,
+    expenseCount: expenseRows.length,
+  };
+}

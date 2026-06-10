@@ -1,7 +1,7 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getBranches } from "@/lib/actions/branches";
-import { ReportsClient } from "@/components/reports/reports-client";
+import { ReportTabs } from "@/components/reports/report-tabs";
 
 export const metadata = { title: "Reports | Suppliq" };
 
@@ -16,10 +16,9 @@ export default async function ReportsPage() {
     <div className="space-y-4">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Sales analysis by date range</p>
+        <p className="text-sm text-slate-500 mt-0.5">Sales history and profit &amp; loss</p>
       </div>
-      <ReportsClient role={role} branches={branches} currency={session?.user?.currency ?? "EUR"} />
+      <ReportTabs role={role} branches={branches} currency={session?.user?.currency ?? "EUR"} />
     </div>
   );
 }
-
