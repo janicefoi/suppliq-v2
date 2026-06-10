@@ -143,7 +143,7 @@ export function RecordPaymentDialog({
             </Label>
             <Textarea
               id="pay-notes"
-              placeholder="e.g. Paid via M-Pesa, ref XXXXX"
+              placeholder="e.g. Bank transfer ref TXN-12345, or paid by cheque"
               rows={2}
               {...register("notes")}
               className="resize-none"

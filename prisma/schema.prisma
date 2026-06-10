@@ -95,9 +95,9 @@ model Organization {
   name      String
   slug      String   @unique          // used in URLs / subdomains
   industry  String?
-  country   String   @default("KE")
-  currency  String   @default("KES")
-  timezone  String   @default("Africa/Nairobi")
+  country   String   @default("FR")
+  currency  String   @default("EUR")
+  timezone  String   @default("Europe/Paris")
   plan      OrgPlan  @default(FREE)
   isActive  Boolean  @default(true)
 

@@ -78,15 +78,15 @@ export function BranchDialog({ open, onClose, branch, onSuccess }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="b-phone">Phone <span className="text-slate-400 font-normal">(optional)</span></Label>
-            <Input id="b-phone" placeholder="e.g. 0712345678 / 0722345678" {...form.register("phone")} />
+            <Input id="b-phone" placeholder="e.g. +33 1 23 45 67 89" {...form.register("phone")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="b-paybill">Paybill no. <span className="text-slate-400 font-normal">(optional)</span></Label>
-            <Input id="b-paybill" placeholder="e.g. 315469" {...form.register("paybill")} />
+            <Label htmlFor="b-paybill">Payment ref. <span className="text-slate-400 font-normal">(optional)</span></Label>
+            <Input id="b-paybill" placeholder="e.g. REF-123456" {...form.register("paybill")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="b-pin">PIN <span className="text-slate-400 font-normal">(optional)</span></Label>
-            <Input id="b-pin" placeholder="e.g. P0S1656847U" {...form.register("pin")} />
+            <Label htmlFor="b-pin">Tax / Reg. No. <span className="text-slate-400 font-normal">(optional)</span></Label>
+            <Input id="b-pin" placeholder="e.g. FR12345678900 or GB123456789" {...form.register("pin")} />
           </div>
           {serverError && (
             <div className="flex items-start gap-2 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">

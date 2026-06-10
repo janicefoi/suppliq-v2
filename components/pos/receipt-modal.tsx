@@ -60,10 +60,10 @@ export function ReceiptModal({ sale, onClose }: ReceiptModalProps) {
               <p className="text-slate-500">Tel: {branch.phone}</p>
             )}
             {branch?.paybill && (
-              <p className="text-slate-500">Paybill: <span className="font-medium text-slate-700">{branch.paybill}</span></p>
+              <p className="text-slate-500">Pay ref: <span className="font-medium text-slate-700">{branch.paybill}</span></p>
             )}
             {branch?.pin && (
-              <p className="text-slate-500">PIN: <span className="font-medium text-slate-700">{branch.pin}</span></p>
+              <p className="text-slate-500">Tax ID: <span className="font-medium text-slate-700">{branch.pin}</span></p>
             )}
           </div>
 
@@ -144,7 +144,7 @@ export function ReceiptModal({ sale, onClose }: ReceiptModalProps) {
               </div>
             )}
             <div className="flex justify-between text-slate-500">
-              <span>VAT (16% incl.)</span>
+              <span>VAT (incl.)</span>
               <span className="tabular-nums">{fmt(tax)}</span>
             </div>
             <div className="flex justify-between font-bold text-slate-900 text-sm pt-1 border-t border-slate-200">

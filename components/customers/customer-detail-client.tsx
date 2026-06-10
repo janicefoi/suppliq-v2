@@ -326,7 +326,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
               <p style={{ margin: "2px 0", fontSize: 13 }}>{customer.branch.name}</p>
               {customer.branch.address && <p style={{ margin: "2px 0", fontSize: 12, color: "#475569" }}>{customer.branch.address}</p>}
               {customer.branch.phone && <p style={{ margin: "2px 0", fontSize: 12, color: "#475569" }}>Tel: {customer.branch.phone}</p>}
-              {customer.branch.paybill && <p style={{ margin: "2px 0", fontSize: 12, color: "#475569" }}>Paybill: {customer.branch.paybill}</p>}
+              {customer.branch.paybill && <p style={{ margin: "2px 0", fontSize: 12, color: "#475569" }}>Pay ref: {customer.branch.paybill}</p>}
             </>
           )}
         </div>

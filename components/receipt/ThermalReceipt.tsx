@@ -82,7 +82,7 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
 
       <div style={{ fontSize: "10px" }}>
         Phone:{shopPhone}
-        {shopPin ? `  PIN: ${shopPin}` : ""}
+        {shopPin ? `  Tax ID: ${shopPin}` : ""}
       </div>
 
       <div style={{ fontSize: "10px" }}>Date :{fullDate}</div>
@@ -96,7 +96,7 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       <div style={{ fontSize: "10px" }}>Served By :{sale.employee.name}</div>
 
       <div style={{ fontSize: "10px" }}>
-        {shopPaybill ? `PAYBILL NO: ${shopPaybill}  ` : ""}
+        {shopPaybill ? `Pay Ref: ${shopPaybill}  ` : ""}
         Ord No: {sale.receiptNumber}
       </div>
 
@@ -145,7 +145,7 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
 
       {/* ── Subtotals ─────────────────────────────────────────────────── */}
       <div style={row}>
-        <span>SUB-TOTAL (Ksh):</span>
+        <span>SUB-TOTAL:</span>
         <span>{money(subTotalExVat)}</span>
       </div>
       <div style={row}>
@@ -157,7 +157,7 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
 
       {/* ── Grand total ───────────────────────────────────────────────── */}
       <div style={{ ...row, fontWeight: "bold", fontSize: "13px" }}>
-        <span>TOTAL (Ksh):</span>
+        <span>TOTAL:</span>
         <span>{money(total)}</span>
       </div>
 
@@ -187,15 +187,9 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
 
       <Dashes />
 
-      {/* ── VAT codes footer ──────────────────────────────────────────── */}
-      <div style={{ ...row, marginBottom: "8px" }}>
-        <span>CODE V: VAT= 16%</span>
-        <span>CODE E: EXEMPT= 0%</span>
-      </div>
-
       {/* ── Thank you message ─────────────────────────────────────────── */}
       <div style={{ textAlign: "center", fontSize: "11px", fontWeight: "600", margin: "6px 0 4px" }}>
-        Thank you for choosing JSH Motorcycle Spare Parts!
+        Thank you for shopping with {shopName}!
       </div>
       <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginBottom: "6px" }}>
         We appreciate your business. See you again!

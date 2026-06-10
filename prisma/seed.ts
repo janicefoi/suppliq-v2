@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const VAT_EXTRACT = 16 / 116;
+const VAT_EXTRACT = 20 / 120;
 function extractTax(total: number) {
   return Math.round(total * VAT_EXTRACT * 100) / 100;
 }
