@@ -79,8 +79,9 @@ async function main() {
   const cs5   = await prisma.user.upsert({ where: { email: "ava.wilson@meridian.co.uk" },     update: {}, create: { id: "seed-u-cs5",   name: "Ava Wilson",     email: "ava.wilson@meridian.co.uk",     passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
   const cs6   = await prisma.user.upsert({ where: { email: "ethan.moore@meridian.co.uk" },    update: {}, create: { id: "seed-u-cs6",   name: "Ethan Moore",    email: "ethan.moore@meridian.co.uk",    passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
   const cs7   = await prisma.user.upsert({ where: { email: "isabella.clark@meridian.co.uk" }, update: {}, create: { id: "seed-u-cs7",   name: "Isabella Clark", email: "isabella.clark@meridian.co.uk", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
+  await prisma.user.upsert({             where: { email: "demo@suppliq.com" },               update: {}, create: { id: "seed-u-demo",  name: "Demo User",      email: "demo@suppliq.com",              passwordHash: await hw("demo1234"),   role: Role.ADMIN,   organizationId: org.id, branchId: b1.id } });
   void admin;
-  console.log("✓ 10 users");
+  console.log("✓ 11 users (including demo@suppliq.com)");
 
   // ── Categories (build id map for item FK) ─────────────────────────────────
   const catNames = ["Engine Parts", "Electrical", "Brakes", "Tyres & Tubes", "Oils & Lubricants", "Body Parts", "Transmission", "Filters"];
@@ -803,7 +804,11 @@ async function main() {
   console.log("   ethan.moore@meridian.co.uk        cashier123");
   console.log("   isabella.clark@meridian.co.uk     cashier123");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS - Bergmann Großhandel GmbH (bergmann)");
+  console.log(" DEMO ACCOUNT (read-only - landing page demo button)");
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log("   demo@suppliq.com                 demo1234");
+  console.log("═══════════════════════════════════════════════════════════");
+  console.log(" LOGIN CREDENTIALS - Bergmann Grosshandel GmbH (bergmann)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
   console.log("   admin@bergmann-handel.de          admin123");

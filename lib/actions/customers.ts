@@ -130,6 +130,7 @@ export async function createCustomer(
 ): Promise<{ success: true } | { success: false; error: string }> {
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  if (session.user.isDemo) return { success: false, error: "Demo accounts are read-only. Sign up to save your own data." };
   const orgId = session.user.organizationId;
 
   const parsed = CustomerSchema.safeParse(data);
@@ -169,6 +170,7 @@ export async function updateCustomer(
   const session = await auth();
   if (!session?.user?.id) return { success: false, error: "Unauthorized" };
   if (session.user.role === "CASHIER") return { success: false, error: "You don't have permission to edit customers." };
+  if (session.user.isDemo) return { success: false, error: "Demo accounts are read-only. Sign up to save your own data." };
   const orgId = session.user.organizationId;
 
   const parsed = CustomerSchema.safeParse(data);

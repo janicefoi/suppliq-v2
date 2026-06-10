@@ -47,6 +47,7 @@ async function requireManager() {
   if (!session?.user?.id || session.user.role === "CASHIER") {
     throw new Error("Unauthorized");
   }
+  if (session.user.isDemo) throw new Error("Demo accounts are read-only. Sign up to save your own data.");
   return session.user;
 }
 

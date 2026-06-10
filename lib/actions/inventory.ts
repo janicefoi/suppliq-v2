@@ -14,6 +14,7 @@ async function requireAdmin() {
   if (session.user.role !== "ADMIN") {
     return { success: false as const, error: "Only admins can modify item details." };
   }
+  if (session.user.isDemo) return { success: false as const, error: "Demo accounts are read-only. Sign up to save your own data." };
   return session.user;
 }
 
@@ -23,6 +24,7 @@ async function requireManager() {
   if (session.user.role === "CASHIER") {
     return { success: false as const, error: "You don't have permission to modify inventory." };
   }
+  if (session.user.isDemo) return { success: false as const, error: "Demo accounts are read-only. Sign up to save your own data." };
   return session.user;
 }
 

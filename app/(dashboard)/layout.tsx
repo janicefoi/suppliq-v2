@@ -9,5 +9,5 @@ export default async function DashboardGroupLayout({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  return <DashboardShell user={session.user}>{children}</DashboardShell>;
+  return <DashboardShell user={session.user} isDemo={session.user.isDemo}>{children}</DashboardShell>;
 }
