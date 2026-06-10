@@ -21,9 +21,7 @@ import type { SupplierDetail } from "@/lib/actions/suppliers";
 
 type SupplierItem = SupplierDetail["items"][number];
 
-function fmtKES(n: number) {
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 interface RecordPurchaseDialogProps {
   open: boolean;
@@ -35,6 +33,7 @@ interface RecordPurchaseDialogProps {
   isAdmin?: boolean;
   branches?: { id: string; name: string }[];
   defaultBranchId?: string | null;
+  currency?: string;
 }
 
 const emptyLine = { itemId: "", quantity: undefined as unknown as number, costPrice: undefined as unknown as number };
@@ -49,6 +48,7 @@ export function RecordPurchaseDialog({
   isAdmin = false,
   branches = [],
   defaultBranchId,
+  currency = "EUR",
 }: RecordPurchaseDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const activeItems = items.filter((i) => i.isActive);
@@ -231,10 +231,10 @@ export function RecordPurchaseDialog({
                       <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
                         <span>
                           Stock: <span className="font-medium text-slate-500">{selectedItem.stockQty}</span>
-                          {" · "}Retail: <span className="font-medium text-slate-500">{fmtKES(retailPrice)}</span>
+                          {" · "}Retail: <span className="font-medium text-slate-500">{formatCurrency(retailPrice, currency)}</span>
                         </span>
                         {lineCost > 0 && (
-                          <span className="font-medium text-slate-600">{fmtKES(lineCost)}</span>
+                          <span className="font-medium text-slate-600">{formatCurrency(lineCost, currency)}</span>
                         )}
                       </div>
                     )}
@@ -276,7 +276,7 @@ export function RecordPurchaseDialog({
                     Total purchase cost
                     <span className="ml-1.5 text-xs text-slate-400">({fields.length} line{fields.length !== 1 ? "s" : ""})</span>
                   </span>
-                  <span className="text-base font-bold tabular-nums text-slate-800">{fmtKES(grandTotal)}</span>
+                  <span className="text-base font-bold tabular-nums text-slate-800">{formatCurrency(grandTotal, currency)}</span>
                 </div>
               </>
             )}

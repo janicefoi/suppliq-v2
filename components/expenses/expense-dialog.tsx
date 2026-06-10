@@ -131,7 +131,7 @@ export function ExpenseDialog({
           {/* Amount + Category in a row */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Amount (KES) *</Label>
+              <Label>Amount *</Label>
               <Input
                 type="number"
                 min="0.01"

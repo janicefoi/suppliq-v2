@@ -18,7 +18,7 @@ import { ItemDialog, type DialogItem } from "@/components/inventory/item-dialog"
 import { CategoryDialog } from "@/components/inventory/category-dialog";
 import { StockInDialog } from "@/components/inventory/stock-in-dialog";
 import { InventoryStats as InventoryStatsBar } from "@/components/inventory/inventory-stats";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 export type InventoryItem = {
   id: string;
@@ -47,16 +47,17 @@ interface Props {
   categories: Category[];
   userRole: string;
   branches?: { id: string; name: string }[];
+  currency: string;
 }
 
 type SortField = "sku" | "name" | "category" | "retailPrice" | "stockQty";
 type SortDir = "asc" | "desc";
 
-function formatKES(value: string | number | null | undefined): string {
+function fmtPrice(value: string | number | null | undefined, currency: string): string {
   if (value === null || value === undefined) return "—";
   const num = Number(value);
   if (isNaN(num)) return "—";
-  return `KES ${num.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatCurrency(num, currency);
 }
 
 function SortHeader({
@@ -80,7 +81,7 @@ function SortHeader({
   );
 }
 
-export function InventoryClient({ initialItems, initialStats, suppliers, categories, userRole, branches = [] }: Props) {
+export function InventoryClient({ initialItems, initialStats, suppliers, categories, userRole, branches = [], currency }: Props) {
   const isAdmin = userRole === "ADMIN";
   const isManager = userRole === "MANAGER";
   const canStockIn = isAdmin || isManager;
@@ -201,7 +202,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   function handleExport() {
     const headers = [
       "SKU", "Name", "Category", "Supplier",
-      "Retail (KES)", "Wholesale (KES)", "Special (KES)",
+      `Retail (${currency})`, `Wholesale (${currency})`, `Special (${currency})`,
       "Stock", "Low Stock At", "Status",
     ];
     const rows = sortedItems.map((item) => [
@@ -416,13 +417,13 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                     </TableCell>
 
                     <TableCell className="text-right whitespace-nowrap text-xs tabular-nums">
-                      {formatKES(item.retailPrice)}
+                      {fmtPrice(item.retailPrice, currency)}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap text-xs tabular-nums">
-                      {formatKES(item.wholesalePrice)}
+                      {fmtPrice(item.wholesalePrice, currency)}
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap text-xs tabular-nums text-slate-400">
-                      {formatKES(item.specialPrice)}
+                      {fmtPrice(item.specialPrice, currency)}
                     </TableCell>
 
                     {/* Stock with threshold ratio */}

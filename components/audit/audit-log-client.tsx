@@ -11,19 +11,13 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import type { getAuditLogs } from "@/lib/actions/audit";
 
 type AuditData = Awaited<ReturnType<typeof getAuditLogs>>;
 
-function fmtKES(v: string | number) {
-  return `KES ${Number(v).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 function fmtDateTime(d: Date) {
-  return new Date(d).toLocaleString("en-KE", {
+  return new Date(d).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -34,11 +28,12 @@ function fmtDateTime(d: Date) {
 
 interface Props {
   data: AuditData;
+  currency: string;
 }
 
 type Tab = "payments" | "inventory";
 
-export function AuditLogClient({ data }: Props) {
+export function AuditLogClient({ data, currency }: Props) {
   const [tab, setTab] = useState<Tab>("payments");
   const [search, setSearch] = useState("");
 
@@ -131,7 +126,7 @@ export function AuditLogClient({ data }: Props) {
                     </TableCell>
                     <TableCell className="font-medium">{p.customer.name}</TableCell>
                     <TableCell className="text-right font-semibold text-green-600">
-                      {fmtKES(Number(p.amount))}
+                      {formatCurrency(Number(p.amount), currency)}
                     </TableCell>
                     <TableCell className="text-muted-foreground text-sm">
                       {p.notes ?? "—"}

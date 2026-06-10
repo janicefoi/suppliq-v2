@@ -10,18 +10,14 @@ import { completeSale, type SaleResult } from "@/lib/actions/pos";
 import { VAT_INCLUSIVE_LABEL } from "@/lib/constants/tax";
 import { cn } from "@/lib/utils";
 
-function fmt(v: number) {
-  return `KES ${v.toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 interface CartPanelProps {
   onSaleComplete: (sale: SaleResult, amountGiven: number) => void;
+  currency?: string;
 }
 
-export function CartPanel({ onSaleComplete }: CartPanelProps) {
+export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [amountGiven, setAmountGiven] = useState<number>(0);
@@ -71,7 +67,7 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
   const tot = total();
   const discountError =
     items.length > 0 && discountAmount > 0 && discountAmount >= sub
-      ? `Discount (${fmt(discountAmount)}) cannot equal or exceed the subtotal (${fmt(sub)})`
+      ? `Discount (${formatCurrency(discountAmount, currency)}) cannot equal or exceed the subtotal (${formatCurrency(sub, currency)})`
       : null;
 
   const SALE_TYPES: { value: SaleType; label: string }[] = [
@@ -242,7 +238,7 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
               Discount
             </label>
             <div className="ml-auto flex items-center gap-1">
-              <span className="text-xs text-slate-400">KES</span>
+              <span className="text-xs text-slate-400">{currency}</span>
               <input
                 type="number"
                 min="0"
@@ -273,7 +269,7 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
                 Amount Given
               </label>
               <div className="ml-auto flex items-center gap-1">
-                <span className="text-xs text-slate-400">KES</span>
+                <span className="text-xs text-slate-400">{currency}</span>
                 <input
                   type="number"
                   min="0"
@@ -298,7 +294,7 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
             {amountGiven >= tot && tot > 0 && (
               <div className="flex justify-between text-xs font-semibold text-green-700 bg-green-50 rounded-md px-2 py-1.5">
                 <span>Change</span>
-                <span className="tabular-nums">{fmt(amountGiven - tot)}</span>
+                <span className="tabular-nums">{formatCurrency(amountGiven - tot, currency)}</span>
               </div>
             )}
           </div>
@@ -310,21 +306,21 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
         <div className="space-y-1">
           <div className="flex justify-between text-xs text-slate-500">
             <span>Subtotal ({items.reduce((s, i) => s + i.quantity, 0)} units)</span>
-            <span className="tabular-nums">{fmt(sub)}</span>
+            <span className="tabular-nums">{formatCurrency(sub, currency)}</span>
           </div>
           {discountAmount > 0 && (
             <div className="flex justify-between text-xs text-red-500">
               <span>Discount</span>
-              <span className="tabular-nums">− {fmt(discountAmount)}</span>
+              <span className="tabular-nums">− {formatCurrency(discountAmount, currency)}</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-slate-900 pt-1">
             <span className="text-sm">Total</span>
-            <span className="text-sm tabular-nums">{fmt(tot)}</span>
+            <span className="text-sm tabular-nums">{formatCurrency(tot, currency)}</span>
           </div>
           <div className="flex justify-between text-xs text-slate-400 pt-0.5">
             <span>{VAT_INCLUSIVE_LABEL}</span>
-            <span className="tabular-nums">{fmt(tax)}</span>
+            <span className="tabular-nums">{formatCurrency(tax, currency)}</span>
           </div>
         </div>
 
@@ -348,7 +344,7 @@ export function CartPanel({ onSaleComplete }: CartPanelProps) {
               Processing…
             </>
           ) : (
-            `Complete Sale · ${fmt(tot)}`
+            `Complete Sale · ${formatCurrency(tot, currency)}`
           )}
         </Button>
       </div>

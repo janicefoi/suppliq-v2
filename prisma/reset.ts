@@ -63,18 +63,14 @@ async function main() {
   const suppliers        = await prisma.supplier.deleteMany();
   console.log(`✓ Deleted ${suppliers.count} suppliers`);
 
-  // Keep the admin user — delete everyone else
-  const users = await prisma.user.deleteMany({
-    where: { email: { not: "admin@jsh.co.ke" } },
-  });
-  console.log(`✓ Deleted ${users.count} users  (admin@jsh.co.ke kept)`);
+  const users = await prisma.user.deleteMany();
+  console.log(`✓ Deleted ${users.count} users`);
 
-  // Branches and organization are kept — they hold location/tenant data
-  const branchCount = await prisma.branch.count();
-  console.log(`✓ Branches kept (${branchCount})`);
+  const branches = await prisma.branch.deleteMany();
+  console.log(`✓ Deleted ${branches.count} branches`);
 
-  const orgCount = await prisma.organization.count();
-  console.log(`✓ Organizations kept (${orgCount})`);
+  const orgs = await prisma.organization.deleteMany();
+  console.log(`✓ Deleted ${orgs.count} organizations`);
 
   console.log("\n✅ Reset complete. Run  npm run db:seed  to re-populate.\n");
 }

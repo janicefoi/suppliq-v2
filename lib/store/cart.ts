@@ -175,7 +175,7 @@ export const useCartStore = create<CartStore>()(
 
       subtotal: () => get().items.reduce((sum, i) => sum + i.subtotal, 0),
 
-      // VAT is INCLUSIVE in Kenya: extract it from the total rather than adding it
+      // VAT is INCLUSIVE (extract it from the total rather than adding it)
       taxAmount: () => {
         const tot = Math.max(0, get().subtotal() - get().discountAmount);
         return Math.round(tot * VAT_EXTRACT * 100) / 100;
@@ -185,7 +185,7 @@ export const useCartStore = create<CartStore>()(
       total: () => Math.max(0, get().subtotal() - get().discountAmount),
     }),
     {
-      name: "jsh-pos-cart",
+      name: "suppliq-pos-cart",
       storage: createJSONStorage(() => localStorage),
       // Skip auto-hydration on server render to avoid SSR/client mismatch.
       // POSClient calls rehydrate() manually after mount.

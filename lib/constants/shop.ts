@@ -1,5 +1,5 @@
 export const SHOP = {
-  name: "JSH Motorcycle Spare Parts",
-  address: "Tom Mboya St, Nairobi",
-  phone: "+254 722 560 051",
+  name: "Suppliq",
+  address: "1 Business Park",
+  phone: "+44 20 0000 0000",
 } as const;

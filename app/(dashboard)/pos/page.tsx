@@ -2,11 +2,11 @@
 import { auth } from "@/auth";
 import { POSClient } from "@/components/pos/pos-client";
 
-export const metadata = { title: "Point of Sale | JSH ERP" };
+export const metadata = { title: "Point of Sale | Suppliq" };
 
 export default async function POSPage() {
   const session = await auth();
   if (session?.user?.role === "ADMIN") redirect("/dashboard");
-  return <POSClient />;
+  return <POSClient currency={session?.user?.currency ?? "EUR"} />;
 }
 

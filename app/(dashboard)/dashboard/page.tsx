@@ -8,13 +8,14 @@ import { MetricCard } from "@/components/dashboard/metric-card";
 import { LowStockList } from "@/components/dashboard/low-stock-list";
 import { BranchDashboard } from "@/components/dashboard/branch-dashboard";
 
-export const metadata = { title: "Dashboard | JSH ERP" };
+export const metadata = { title: "Dashboard | Suppliq" };
 
 export default async function DashboardPage() {
   const session = await auth();
   const role = session?.user?.role;
   const isAdmin = role === "ADMIN";
   const branchId = session?.user?.branchId ?? null;
+  const currency = session?.user?.currency ?? "EUR";
 
   if (isAdmin) {
     const branches = await getBranches();
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
           topDebtors: combinedTopDebtors,
         }}
         branchData={branchData}
+        currency={currency}
       />
     );
   }

@@ -158,9 +158,9 @@ async def _detect_expense_anomalies(org_id: str) -> list[dict]:
                 "entity_type": "expense",
                 "entity_id": cat,
                 "entity_name": cat,
-                "description": f"{cat} expenses this month (KES {recent_total:,.0f}) are "
+                "description": f"{cat} expenses this month ({recent_total:,.0f}) are "
                                f"{recent_total/monthly_avg:.1f}× the 3-month average "
-                               f"(KES {monthly_avg:,.0f}/month).",
+                               f"({monthly_avg:,.0f}/month).",
                 "suggested_action": "Review individual expense entries for this category.",
                 "detected_at": datetime.utcnow().isoformat(),
             })

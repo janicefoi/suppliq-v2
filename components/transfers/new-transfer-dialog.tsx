@@ -302,7 +302,7 @@ export function NewTransferDialog({
             <Label>Notes <span className="text-slate-400 font-normal">(optional)</span></Label>
             <Input
               {...register("notes")}
-              placeholder="e.g. Weekly restock for Mombasa branch"
+              placeholder="e.g. Weekly restock for north branch"
               className="text-sm"
             />
           </div>

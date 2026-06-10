@@ -7,6 +7,7 @@ declare module "next-auth" {
       role: string;
       branchId: string | null;
       organizationId: string;
+      currency: string;
     } & DefaultSession["user"];
   }
 }

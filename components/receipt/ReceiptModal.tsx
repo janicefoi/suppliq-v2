@@ -12,9 +12,10 @@ interface ReceiptModalProps {
   saleId: string;
   amountGiven?: number;
   onClose: () => void;
+  currency?: string;
 }
 
-export function ReceiptModal({ saleId, amountGiven = 0, onClose }: ReceiptModalProps) {
+export function ReceiptModal({ saleId, amountGiven = 0, onClose, currency = "EUR" }: ReceiptModalProps) {
   const [sale, setSale] = useState<SaleResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -73,7 +74,7 @@ export function ReceiptModal({ saleId, amountGiven = 0, onClose }: ReceiptModalP
               Failed to load receipt.
             </div>
           )}
-          {sale && <ThermalReceipt sale={sale} amountGiven={amountGiven} />}
+          {sale && <ThermalReceipt sale={sale} amountGiven={amountGiven} currency={currency} />}
         </div>
 
         <div className="px-4 py-3 border-t border-slate-100 flex gap-2">

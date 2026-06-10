@@ -6,13 +6,6 @@ function toWaNumber(phone: string) {
   return phone.replace(/\D/g, "");
 }
 
-function money(v: string | number) {
-  return Number(v).toLocaleString("en-KE", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
 function Dashes() {
   return <div style={{ borderTop: "1px dashed #000", margin: "5px 0" }} />;
 }
@@ -20,9 +13,16 @@ function Dashes() {
 interface ThermalReceiptProps {
   sale: SaleResult;
   amountGiven?: number;
+  currency?: string;
 }
 
-export function ThermalReceipt({ sale, amountGiven = 0 }: ThermalReceiptProps) {
+export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: ThermalReceiptProps) {
+  function money(v: string | number) {
+    return Number(v).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
   const shopName    = SHOP.name;
   const shopAddress = sale.branch?.address ?? SHOP.address;
   const shopPhone   = sale.branch?.phone   ?? SHOP.phone;
@@ -31,11 +31,11 @@ export function ThermalReceipt({ sale, amountGiven = 0 }: ThermalReceiptProps) {
   const waUrl       = `https://wa.me/${toWaNumber(shopPhone)}`;
 
   const createdAt = new Date(sale.createdAt);
-  const dayName   = createdAt.toLocaleDateString("en-KE", { weekday: "long" });
+  const dayName   = createdAt.toLocaleDateString(undefined, { weekday: "long" });
   const datePart  = createdAt.toLocaleDateString("en-GB", {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
-  const timePart  = createdAt.toLocaleTimeString("en-KE", {
+  const timePart  = createdAt.toLocaleTimeString(undefined, {
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
   });
   const fullDate  = `${dayName}, ${datePart} ${timePart}`;
@@ -176,7 +176,7 @@ export function ThermalReceipt({ sale, amountGiven = 0 }: ThermalReceiptProps) {
       {isCreditSale && sale.customer && (
         <div style={row}>
           <span>CREDIT BALANCE:</span>
-          <span>KES {money(sale.customer.creditBalance)}</span>
+          <span>{currency} {money(sale.customer.creditBalance)}</span>
         </div>
       )}
 

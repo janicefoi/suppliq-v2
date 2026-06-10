@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { CreditCard, CheckCircle2 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import type { TopDebtor } from "@/lib/actions/dashboard";
 
-function fmtKES(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-export function TopDebtors({ debtors }: { debtors: TopDebtor[] }) {
+export function TopDebtors({ debtors, currency }: { debtors: TopDebtor[]; currency: string }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -45,7 +42,7 @@ export function TopDebtors({ debtors }: { debtors: TopDebtor[] }) {
                   </div>
                 </div>
                 <p className="text-sm font-bold text-red-600 tabular-nums shrink-0">
-                  {fmtKES(Number(d.creditBalance))}
+                  {formatCurrency(Number(d.creditBalance), currency)}
                 </p>
               </li>
             ))}

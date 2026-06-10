@@ -116,7 +116,7 @@ export function EmployeeDialog({ open, onClose, employee, onSuccess, branches }:
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="e-email">Email</Label>
-              <Input id="e-email" type="email" placeholder="employee@jsh.co.ke" {...updateForm.register("email")} />
+              <Input id="e-email" type="email" placeholder="employee@company.com" {...updateForm.register("email")} />
               {updateForm.formState.errors.email && <p className="text-xs text-red-500">{updateForm.formState.errors.email.message}</p>}
             </div>
             <div className="space-y-1.5">
@@ -152,7 +152,7 @@ export function EmployeeDialog({ open, onClose, employee, onSuccess, branches }:
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ce-email">Email</Label>
-              <Input id="ce-email" type="email" placeholder="employee@jsh.co.ke" {...createForm.register("email")} />
+              <Input id="ce-email" type="email" placeholder="employee@company.com" {...createForm.register("email")} />
               {createForm.formState.errors.email && <p className="text-xs text-red-500">{createForm.formState.errors.email.message}</p>}
             </div>
             <div className="space-y-1.5">

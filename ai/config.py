@@ -29,7 +29,7 @@ class Settings(BaseSettings):
     # OpenWeatherMap — weather-driven demand signals (https://openweathermap.org)
     openweather_api_key: str = ""
 
-    # Exchange Rates API — KES/USD/EUR live rates (https://exchangeratesapi.io)
+    # Exchange Rates API — EUR/USD/GBP live rates (https://exchangeratesapi.io)
     exchange_rates_api_key: str = ""
 
     # ── Scheduler ─────────────────────────────────────────────────────────

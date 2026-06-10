@@ -66,7 +66,7 @@ async def get_sales_history(
     async with get_conn() as conn:
         query = """
             SELECT
-                DATE(s.created_at AT TIME ZONE 'Africa/Nairobi') AS date,
+                DATE(s.created_at AT TIME ZONE 'UTC') AS date,
                 si.item_id,
                 s.branch_id,
                 SUM(si.quantity)                                  AS total_qty,

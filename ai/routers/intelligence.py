@@ -11,7 +11,7 @@ router = APIRouter(prefix="/intelligence", tags=["Market Intelligence"])
 async def supply_chain_news(
     organization_id: str = Query(..., description="Org ID for personalised relevance scoring"),
     org_context: str = Query(
-        "A Kenyan business managing inventory and supply chain operations",
+        "A European business managing inventory and supply chain operations",
         description="Short description of the org used by Claude for relevance scoring",
     ),
     limit: int = Query(20, ge=1, le=50),
@@ -19,7 +19,7 @@ async def supply_chain_news(
     """
     Aggregated supply chain news feed, enriched by Claude.
 
-    Sources: Reuters, Supply Chain Dive, FreightWaves, NewsAPI, Business Daily Africa.
+    Sources: Reuters, Supply Chain Dive, FreightWaves, NewsAPI, Logistics Manager.
     Each article is scored for relevance, tagged, and summarised by Claude.
 
     Returns articles sorted by relevance score (highest first).
@@ -35,7 +35,7 @@ async def market_prices(
         description="Comma-separated commodity keys to fetch",
     ),
     fx_pairs: str = Query(
-        "KES/USD,KES/EUR,KES/CNY",
+        "EUR/USD,GBP/USD,EUR/GBP",
         description="Comma-separated FX pairs to fetch",
     ),
 ):

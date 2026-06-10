@@ -19,7 +19,7 @@ export default async function AuditLogPage() {
           Track all credit payment recordings and inventory stock-in entries
         </p>
       </div>
-      <AuditLogClient data={data} />
+      <AuditLogClient data={data} currency={session?.user?.currency ?? "EUR"} />
     </div>
   );
 }

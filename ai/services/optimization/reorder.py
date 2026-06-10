@@ -10,7 +10,7 @@ What this will do:
             - Reorder Point (ROP) = avg daily demand × lead time + safety stock
             - Safety stock = Z × σ_demand × √lead_time  (Z=1.65 for 95% service level)
             - Economic Order Quantity (EOQ) = √(2DS/H)
-               D = annual demand, S = order cost (est. KES 500), H = holding cost (est. 20% of item cost)
+               D = annual demand, S = order cost (est. 50 currency units), H = holding cost (est. 20% of item cost)
   2. Flag items where current_stock ≤ ROP as "needs reorder"
   3. Estimate days until stockout = current_stock / avg_daily_demand
   4. Generate reorder recommendation with Claude reasoning
@@ -37,7 +37,7 @@ from utils.llm import generate_reorder_reasoning
 
 
 DEFAULT_LEAD_TIME_DAYS = 5     # assumed if no PO history
-ORDER_COST = 500               # KES per order placed (admin cost)
+ORDER_COST = 50                # estimated admin cost per order placed (in org currency)
 HOLDING_COST_PCT = 0.20        # 20% of unit cost per year
 SERVICE_LEVEL_Z = 1.65         # 95% service level
 

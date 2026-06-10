@@ -147,7 +147,7 @@ async def generate_cash_flow_commentary(
 
 Revenue trend (last 30 days): {revenue_trend}
 Expense breakdown: {expense_summary}
-Upcoming purchase commitments: KES {projected_purchases:,.0f}
+Upcoming purchase commitments: {projected_purchases:,.0f} (in org currency)
 
 Focus on: trend direction, biggest cost driver, and one risk to watch.
 Be specific with numbers."""

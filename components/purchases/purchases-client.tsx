@@ -11,6 +11,8 @@ import type { SupplierRow } from "@/lib/actions/suppliers";
 
 type Branch = { id: string; name: string };
 
+import { formatCurrency } from "@/lib/utils";
+
 interface PurchasesClientProps {
   orders: PurchaseOrderRow[];
   stats: POStats;
@@ -18,14 +20,11 @@ interface PurchasesClientProps {
   branches: Branch[];
   isAdmin: boolean;
   defaultBranchId?: string | null;
-}
-
-function fmtKES(n: number) {
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  currency: string;
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-KE", {
+  return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -39,6 +38,7 @@ export function PurchasesClient({
   branches,
   isAdmin,
   defaultBranchId,
+  currency,
 }: PurchasesClientProps) {
   const [search, setSearch] = useState("");
   const [filterSupplier, setFilterSupplier] = useState("");
@@ -57,7 +57,7 @@ export function PurchasesClient({
   }, [orders, search, filterSupplier, filterBranch]);
 
   function downloadCSV() {
-    const header = "PO Number,Supplier,Branch,Lines,Total Cost (KES),Date,Recorded By,Status";
+    const header = `PO Number,Supplier,Branch,Lines,Total Cost (${currency}),Date,Recorded By,Status`;
     const rows = filtered.map((po) =>
       [
         po.poNumber,
@@ -93,6 +93,7 @@ export function PurchasesClient({
           branches={branches}
           isAdmin={isAdmin}
           defaultBranchId={defaultBranchId}
+          currency={currency}
         />
       </div>
 
@@ -100,9 +101,9 @@ export function PurchasesClient({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { icon: ShoppingBag, label: "Total orders", value: stats.totalOrders.toLocaleString() },
-          { icon: TrendingUp, label: "Total spend", value: fmtKES(stats.totalSpend) },
+          { icon: TrendingUp, label: "Total spend", value: formatCurrency(stats.totalSpend, currency) },
           { icon: ShoppingBag, label: "This month", value: stats.thisMonthOrders.toLocaleString() },
-          { icon: TrendingUp, label: "This month spend", value: fmtKES(stats.thisMonthSpend) },
+          { icon: TrendingUp, label: "This month spend", value: formatCurrency(stats.thisMonthSpend, currency) },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
             <div className="flex items-center gap-2 mb-1">
@@ -193,7 +194,7 @@ export function PurchasesClient({
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums text-slate-600">{po.lineCount}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-800">
-                      {fmtKES(po.totalCost)}
+                      {formatCurrency(po.totalCost, currency)}
                     </td>
                     <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDate(po.createdAt)}</td>
                     <td className="px-4 py-3 text-slate-600">{po.createdBy.name}</td>

@@ -7,7 +7,7 @@ import { ReceiptModal } from "@/components/receipt/ReceiptModal";
 import { useCartStore } from "@/lib/store/cart";
 import type { SaleResult } from "@/lib/actions/pos";
 
-export function POSClient() {
+export function POSClient({ currency = "EUR" }: { currency?: string }) {
   const [completedSale, setCompletedSale] = useState<SaleResult | null>(null);
   const [amountGiven, setAmountGiven] = useState<number>(0);
 
@@ -27,7 +27,7 @@ export function POSClient() {
 
       {/* ── Right: Active order ───────────────────────────────────── */}
       <div className="w-[380px] shrink-0 flex flex-col overflow-hidden bg-white">
-        <CartPanel onSaleComplete={(sale, given) => { setCompletedSale(sale); setAmountGiven(given); }} />
+        <CartPanel onSaleComplete={(sale, given) => { setCompletedSale(sale); setAmountGiven(given); }} currency={currency} />
       </div>
 
       {/* ── Receipt modal (shown after successful sale) ───────────── */}
@@ -36,6 +36,7 @@ export function POSClient() {
           saleId={completedSale.id}
           amountGiven={amountGiven}
           onClose={() => { setCompletedSale(null); setAmountGiven(0); }}
+          currency={currency}
         />
       )}
     </div>

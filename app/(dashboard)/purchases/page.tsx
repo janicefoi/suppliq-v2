@@ -26,6 +26,7 @@ export default async function PurchasesPage() {
         branches={branches}
         isAdmin={session.user.role === "ADMIN"}
         defaultBranchId={session.user.branchId ?? null}
+        currency={session.user.currency ?? "EUR"}
       />
     </div>
   );

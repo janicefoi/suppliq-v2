@@ -74,7 +74,7 @@ export function BranchDialog({ open, onClose, branch, onSuccess }: Props) {
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="b-address">Address <span className="text-slate-400 font-normal">(optional)</span></Label>
-            <Input id="b-address" placeholder="e.g. Main Street, Eldoret" {...form.register("address")} />
+            <Input id="b-address" placeholder="e.g. 123 High Street, London" {...form.register("address")} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="b-phone">Phone <span className="text-slate-400 font-normal">(optional)</span></Label>

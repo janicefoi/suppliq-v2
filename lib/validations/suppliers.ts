@@ -5,10 +5,8 @@ export const SupplierSchema = z.object({
   phone: z
     .string()
     .trim()
-    .regex(
-      /^(\+?254|0)[71]\d{8}$/,
-      "Enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678)"
-    ),
+    .min(5, "Phone number must be at least 5 characters")
+    .max(30, "Phone number is too long"),
   email: z
     .string()
     .trim()

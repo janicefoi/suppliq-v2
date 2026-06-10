@@ -27,6 +27,7 @@ export default async function InventoryPage() {
       categories={categories}
       userRole={role}
       branches={branches}
+      currency={session?.user?.currency ?? "EUR"}
     />
   );
 }

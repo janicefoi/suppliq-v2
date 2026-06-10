@@ -15,7 +15,7 @@ import { CustomerDialog } from "@/components/customers/customer-dialog";
 import { CustomerStats } from "@/components/customers/customer-stats";
 import { getCustomers, getCustomerStats } from "@/lib/actions/customers";
 import type { CustomerRow, CustomerStats as CustomerStatsType } from "@/lib/actions/customers";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 type Filter = "ALL" | "HAS_CREDIT" | "NO_CREDIT";
 type SortField = "name" | "creditBalance" | "sales";
@@ -27,18 +27,15 @@ const TABS: { value: Filter; label: string }[] = [
   { value: "NO_CREDIT", label: "No credit" },
 ];
 
-function fmtKES(v: string | number) {
-  return Number(v).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
 interface Props {
   customers: CustomerRow[];
   role: string;
   branches?: { id: string; name: string }[];
   initialStats: CustomerStatsType;
+  currency: string;
 }
 
-export function CustomersClient({ customers: initialCustomers, role, branches = [], initialStats }: Props) {
+export function CustomersClient({ customers: initialCustomers, role, branches = [], initialStats, currency }: Props) {
   const canEdit = role !== "CASHIER";
   const isAdmin = role === "ADMIN";
   const router = useRouter();
@@ -123,7 +120,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
     <div className="space-y-4">
 
       {/* ── Stats bar ────────────────────────────────────────────────────── */}
-      <CustomerStats stats={stats} />
+      <CustomerStats stats={stats} currency={currency} />
 
       {/* ── Branch tabs (admin only) ──────────────────────────────────────── */}
       {isAdmin && branches.length > 0 && (
@@ -262,7 +259,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
 
                     <TableCell className="text-right whitespace-nowrap">
                       <span className={cn("text-xs font-semibold tabular-nums", hasCredit ? "text-red-600" : "text-green-600")}>
-                        KES {fmtKES(balance)}
+                        {formatCurrency(balance, currency)}
                       </span>
                     </TableCell>
 

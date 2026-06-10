@@ -227,7 +227,7 @@ export async function recordCreditPayment(
       const balance = Number(customer.creditBalance);
       if (amount > balance) {
         throw new Error(
-          `Payment amount (KES ${amount.toFixed(2)}) exceeds credit balance (KES ${balance.toFixed(2)}).`
+          `Payment amount (${amount.toFixed(2)}) exceeds credit balance (${balance.toFixed(2)}).`
         );
       }
 

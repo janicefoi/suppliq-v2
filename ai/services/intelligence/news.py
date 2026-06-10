@@ -13,13 +13,13 @@ Data sources (all have free tiers):
   - AP News RSS   — https://apnews.com/hub/business
   - Supply Chain Dive RSS — https://www.supplychaindive.com/feeds/news/
   - FreightWaves  — https://www.freightwaves.com/news/feed
-  - Kenya Business Daily — https://businessdailyafrica.com/rss (local market)
-  - East African  — https://www.theeastafrican.co.ke/rss (regional)
+  - Logistics Manager — https://www.logisticsmanager.com/feed/ (UK/Europe)
+  - European Shipper — https://www.shippingeurope.news/feed (regional)
 
 Keyword filter (Phase 1):
   supply chain, logistics, shipping, freight, commodity, inflation,
-  port disruption, fuel price, currency, KES, import, export, trade,
-  manufacturing, drought, shortage, tariff
+  port disruption, fuel price, currency, import, export, trade,
+  manufacturing, shortage, tariff, EU, europe, customs, sanctions
 
 Phase 2 — personalised per org:
   - Use org's item categories as additional keywords
@@ -41,17 +41,17 @@ from utils.llm import analyse_news_article
 
 SUPPLY_CHAIN_KEYWORDS = [
     "supply chain", "logistics", "shipping", "freight", "commodity",
-    "inflation", "port", "disruption", "fuel price", "currency", "KES",
-    "import", "export", "trade", "manufacturing", "drought", "shortage",
+    "inflation", "port", "disruption", "fuel price", "currency",
+    "import", "export", "trade", "manufacturing", "shortage",
     "tariff", "wholesale", "retail", "inventory", "warehouse", "procurement",
-    "east africa", "kenya", "nairobi", "mombasa",
+    "europe", "EU", "customs", "sanctions", "euro", "sterling",
 ]
 
 RSS_FEEDS = [
     ("Reuters Business",    "https://feeds.reuters.com/reuters/businessNews"),
     ("Supply Chain Dive",   "https://www.supplychaindive.com/feeds/news/"),
     ("FreightWaves",        "https://www.freightwaves.com/news/feed"),
-    ("Business Daily Africa","https://businessdailyafrica.com/rss"),
+    ("Logistics Manager",   "https://www.logisticsmanager.com/feed/"),
 ]
 
 
@@ -128,7 +128,7 @@ async def get_supply_chain_news(
     Main entry point. Fetches, filters, and enriches news with Claude analysis.
 
     org_context — short description of the org for personalised relevance scoring,
-    e.g. "Kenyan electronics wholesaler with branches in Nairobi and Mombasa"
+    e.g. "European electronics distributor with warehouses in London and Berlin"
 
     Returns list of enriched NewsItem dicts sorted by relevance_score desc.
     """

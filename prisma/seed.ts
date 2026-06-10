@@ -41,44 +41,44 @@ async function main() {
 
   // ── Organization ───────────────────────────────────────────────────────────
   const org = await prisma.organization.upsert({
-    where: { slug: "jsh" },
+    where: { slug: "meridian" },
     update: {},
     create: {
-      id: "seed-org-jsh",
-      name: "JSH Auto Spares",
-      slug: "jsh",
-      industry: "Automotive Parts",
-      country: "KE",
-      currency: "KES",
+      id: "seed-org-meridian",
+      name: "Meridian Electronics Ltd",
+      slug: "meridian",
+      industry: "Electronics Distribution",
+      country: "GB",
+      currency: "GBP",
     },
   });
   console.log(`✓ Organization: ${org.name}`);
 
   // ── Branches ───────────────────────────────────────────────────────────────
   const b1 = await prisma.branch.upsert({
-    where: { name_organizationId: { name: "Mukai Branch", organizationId: org.id } },
-    update: { address: "PO BOX 4901 Eldoret Mukai", phone: "0722560051/0763560052", paybill: "315469", pin: "P0S1656847U" },
-    create: { name: "Mukai Branch", address: "PO BOX 4901 Eldoret Mukai", phone: "0722560051/0763560052", paybill: "315469", pin: "P0S1656847U", organizationId: org.id },
+    where: { name_organizationId: { name: "London Branch", organizationId: org.id } },
+    update: { address: "14 Finsbury Square, London EC2A 1BR", phone: "+44 20 7946 0300" },
+    create: { name: "London Branch", address: "14 Finsbury Square, London EC2A 1BR", phone: "+44 20 7946 0300", organizationId: org.id },
   });
   const b2 = await prisma.branch.upsert({
-    where: { name_organizationId: { name: "Zulu Arcade Branch", organizationId: org.id } },
-    update: { address: "PO BOX 30100 ELD Zulu Arcade", phone: "0712891212/0722560051", paybill: "858018", pin: "P0S1656847U" },
-    create: { name: "Zulu Arcade Branch", address: "PO BOX 30100 ELD Zulu Arcade", phone: "0712891212/0722560051", paybill: "858018", pin: "P0S1656847U", organizationId: org.id },
+    where: { name_organizationId: { name: "Manchester Branch", organizationId: org.id } },
+    update: { address: "8 Deansgate, Manchester M3 2QT", phone: "+44 161 946 0400" },
+    create: { name: "Manchester Branch", address: "8 Deansgate, Manchester M3 2QT", phone: "+44 161 946 0400", organizationId: org.id },
   });
   console.log(`✓ Branches: ${b1.name}, ${b2.name}`);
 
   // ── Users ─────────────────────────────────────────────────────────────────
   const hw = (p: string) => bcrypt.hash(p, 10);
-  const admin = await prisma.user.upsert({ where: { email: "admin@jsh.co.ke" },         update: {}, create: { id: "seed-u-admin", name: "JSH Admin",       email: "admin@jsh.co.ke",           passwordHash: await hw("admin123"),    role: Role.ADMIN,    organizationId: org.id } });
-  const mgr1  = await prisma.user.upsert({ where: { email: "lucy.wangare@jsh.co.ke" },  update: {}, create: { id: "seed-u-mgr1",  name: "Lucy Wangare",  email: "lucy.wangare@jsh.co.ke",  passwordHash: await hw("manager123"),  role: Role.MANAGER,  organizationId: org.id, branchId: b1.id } });
-  const mgr2  = await prisma.user.upsert({ where: { email: "peter.kamau@jsh.co.ke" },   update: {}, create: { id: "seed-u-mgr2",  name: "Peter Kamau",   email: "peter.kamau@jsh.co.ke",   passwordHash: await hw("manager123"),  role: Role.MANAGER,  organizationId: org.id, branchId: b2.id } });
-  const cs1   = await prisma.user.upsert({ where: { email: "mary.akinyi@jsh.co.ke" },   update: {}, create: { id: "seed-u-cs1",   name: "Mary Akinyi",   email: "mary.akinyi@jsh.co.ke",   passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
-  const cs2   = await prisma.user.upsert({ where: { email: "james.otieno@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs2",   name: "James Otieno",  email: "james.otieno@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
-  const cs3   = await prisma.user.upsert({ where: { email: "brian.kiptoo@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs3",   name: "Brian Kiptoo",  email: "brian.kiptoo@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
-  const cs4   = await prisma.user.upsert({ where: { email: "susan.chebet@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs4",   name: "Susan Chebet",  email: "susan.chebet@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b1.id } });
-  const cs5   = await prisma.user.upsert({ where: { email: "david.mwangi@jsh.co.ke" },  update: {}, create: { id: "seed-u-cs5",   name: "David Mwangi",  email: "david.mwangi@jsh.co.ke",  passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
-  const cs6   = await prisma.user.upsert({ where: { email: "faith.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs6",   name: "Faith Njoroge", email: "faith.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
-  const cs7   = await prisma.user.upsert({ where: { email: "kevin.njoroge@jsh.co.ke" }, update: {}, create: { id: "seed-u-cs7",   name: "Kevin Njoroge", email: "kevin.njoroge@jsh.co.ke", passwordHash: await hw("cashier123"),  role: Role.CASHIER,  organizationId: org.id, branchId: b2.id } });
+  const admin = await prisma.user.upsert({ where: { email: "admin@meridian.co.uk" },          update: {}, create: { id: "seed-u-admin", name: "Meridian Admin",  email: "admin@meridian.co.uk",           passwordHash: await hw("admin123"),   role: Role.ADMIN,   organizationId: org.id } });
+  const mgr1  = await prisma.user.upsert({ where: { email: "sophie.harris@meridian.co.uk" },  update: {}, create: { id: "seed-u-mgr1",  name: "Sophie Harris",  email: "sophie.harris@meridian.co.uk",  passwordHash: await hw("manager123"), role: Role.MANAGER, organizationId: org.id, branchId: b1.id } });
+  const mgr2  = await prisma.user.upsert({ where: { email: "james.walker@meridian.co.uk" },   update: {}, create: { id: "seed-u-mgr2",  name: "James Walker",   email: "james.walker@meridian.co.uk",   passwordHash: await hw("manager123"), role: Role.MANAGER, organizationId: org.id, branchId: b2.id } });
+  const cs1   = await prisma.user.upsert({ where: { email: "emma.jones@meridian.co.uk" },     update: {}, create: { id: "seed-u-cs1",   name: "Emma Jones",     email: "emma.jones@meridian.co.uk",     passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b1.id } });
+  const cs2   = await prisma.user.upsert({ where: { email: "liam.smith@meridian.co.uk" },     update: {}, create: { id: "seed-u-cs2",   name: "Liam Smith",     email: "liam.smith@meridian.co.uk",     passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b1.id } });
+  const cs3   = await prisma.user.upsert({ where: { email: "olivia.brown@meridian.co.uk" },   update: {}, create: { id: "seed-u-cs3",   name: "Olivia Brown",   email: "olivia.brown@meridian.co.uk",   passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b1.id } });
+  const cs4   = await prisma.user.upsert({ where: { email: "noah.taylor@meridian.co.uk" },    update: {}, create: { id: "seed-u-cs4",   name: "Noah Taylor",    email: "noah.taylor@meridian.co.uk",    passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b1.id } });
+  const cs5   = await prisma.user.upsert({ where: { email: "ava.wilson@meridian.co.uk" },     update: {}, create: { id: "seed-u-cs5",   name: "Ava Wilson",     email: "ava.wilson@meridian.co.uk",     passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
+  const cs6   = await prisma.user.upsert({ where: { email: "ethan.moore@meridian.co.uk" },    update: {}, create: { id: "seed-u-cs6",   name: "Ethan Moore",    email: "ethan.moore@meridian.co.uk",    passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
+  const cs7   = await prisma.user.upsert({ where: { email: "isabella.clark@meridian.co.uk" }, update: {}, create: { id: "seed-u-cs7",   name: "Isabella Clark", email: "isabella.clark@meridian.co.uk", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org.id, branchId: b2.id } });
   void admin;
   console.log("✓ 10 users");
 
@@ -96,10 +96,10 @@ async function main() {
   console.log(`✓ ${catNames.length} categories`);
 
   // ── Suppliers ─────────────────────────────────────────────────────────────
-  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Mombasa Auto Spares Ltd",   phone: "0712000001", email: "orders@mombasaauto.co.ke",  address: "Mombasa Road, Industrial Area, Nairobi", notes: "Primary supplier — net 30 payment terms", organizationId: org.id } });
-  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Eldoret Motor Accessories", phone: "0721000002", email: "sales@eldoretmoto.co.ke",   address: "Uganda Road, Eldoret",                   notes: "Local supplier — fast delivery",          organizationId: org.id } });
-  const sup3 = await prisma.supplier.upsert({ where: { id: "seed-sup-3" }, update: {}, create: { id: "seed-sup-3", name: "Nairobi Tyre & Tube Hub",   phone: "0733000003", email: "info@nairobityres.co.ke",   address: "Kirinyaga Road, Nairobi",                 notes: "Tyres and tubes specialist",              organizationId: org.id } });
-  const sup4 = await prisma.supplier.upsert({ where: { id: "seed-sup-4" }, update: {}, create: { id: "seed-sup-4", name: "General Moto Supplies",     phone: "0700000004", email: "gms@motosupplies.co.ke",    address: "Nakuru Town, Nakuru County",              notes: "Oils, filters, and consumables",          organizationId: org.id } });
+  const sup1 = await prisma.supplier.upsert({ where: { id: "seed-sup-1" }, update: {}, create: { id: "seed-sup-1", name: "Eurotech Components GmbH",    phone: "+49 30 1234 5678", email: "orders@eurotech-components.de", address: "Berliner Str. 42, 10115 Berlin, Germany",            notes: "Primary supplier — net 30 payment terms", organizationId: org.id } });
+  const sup2 = await prisma.supplier.upsert({ where: { id: "seed-sup-2" }, update: {}, create: { id: "seed-sup-2", name: "Thames Auto Parts Ltd",       phone: "+44 20 7946 0100", email: "sales@thamesauto.co.uk",       address: "Park Royal Industrial Estate, London NW10 7LQ",      notes: "Local UK supplier — fast delivery",        organizationId: org.id } });
+  const sup3 = await prisma.supplier.upsert({ where: { id: "seed-sup-3" }, update: {}, create: { id: "seed-sup-3", name: "Nordic Tyre Solutions AB",    phone: "+46 8 1234 5678",  email: "info@nordictyre.se",           address: "Industrivägen 12, 171 48 Solna, Sweden",             notes: "Tyres and tubes specialist",               organizationId: org.id } });
+  const sup4 = await prisma.supplier.upsert({ where: { id: "seed-sup-4" }, update: {}, create: { id: "seed-sup-4", name: "Lubri-Tech Benelux BV",       phone: "+31 20 123 4567",  email: "gms@lubritech.nl",             address: "Industrieweg 55, 1043 BW Amsterdam, Netherlands",    notes: "Oils, filters, and consumables",           organizationId: org.id } });
   console.log("✓ 4 suppliers");
 
   // ── Items ─────────────────────────────────────────────────────────────────
@@ -231,29 +231,29 @@ async function main() {
   // ── Customers ─────────────────────────────────────────────────────────────
   type CS = { id: string; name: string; phone: string; address: string; br: string };
   const custSpecs: CS[] = [
-    { id:"seed-c-001", name:"Charles Kiprop",    phone:"0722100001", address:"Eldoret Town, Uasin Gishu",  br:b1.id },
-    { id:"seed-c-002", name:"William Baloo",     phone:"0722100002", address:"Eldoret, Huruma Estate",     br:b1.id },
-    { id:"seed-c-003", name:"Joseph Mutai",      phone:"0722100003", address:"Turbo, Uasin Gishu",         br:b1.id },
-    { id:"seed-c-004", name:"Samuel Koech",      phone:"0722100004", address:"Eldoret, Langas Estate",     br:b1.id },
-    { id:"seed-c-005", name:"Alice Chepkemoi",   phone:"0722100005", address:"Moi's Bridge, Eldoret",      br:b1.id },
-    { id:"seed-c-006", name:"Daniel Kiprotich",  phone:"0722100006", address:"Eldoret, Kamukunji",         br:b1.id },
-    { id:"seed-c-007", name:"Grace Jepchirchir", phone:"0722100007", address:"Eldoret, Pioneer",           br:b1.id },
-    { id:"seed-c-008", name:"Robert Sang",       phone:"0722100008", address:"Ziwa, Uasin Gishu",          br:b1.id },
-    { id:"seed-c-009", name:"Moses Kibet",       phone:"0722100009", address:"Burnt Forest, Eldoret",      br:b1.id },
-    { id:"seed-c-010", name:"Esther Ngetich",    phone:"0722100010", address:"Eldoret, Kapsoya",           br:b1.id },
-    { id:"seed-c-011", name:"Francis Rutto",     phone:"0722100011", address:"Ainabkoi, Eldoret",          br:b1.id },
-    { id:"seed-c-012", name:"Ann Cherono",       phone:"0722100012", address:"Eldoret, Kipkaren",          br:b1.id },
-    { id:"seed-c-013", name:"Benson Cheruiyot",  phone:"0722100013", address:"Eldoret, Langas",            br:b1.id },
-    { id:"seed-c-014", name:"John Mwangi",       phone:"0712100001", address:"Eldoret CBD",                br:b2.id },
-    { id:"seed-c-015", name:"Mary Wanjiru",      phone:"0712100002", address:"Eldoret, Zulu",              br:b2.id },
-    { id:"seed-c-016", name:"Peter Njoroge",     phone:"0712100003", address:"Eldoret, Maili Tatu",        br:b2.id },
-    { id:"seed-c-017", name:"Sarah Kamau",       phone:"0712100004", address:"Eldoret, Section 58",        br:b2.id },
-    { id:"seed-c-018", name:"David Mutua",       phone:"0712100005", address:"Eldoret, Kerio Valley",      br:b2.id },
-    { id:"seed-c-019", name:"Elizabeth Njeri",   phone:"0712100006", address:"Eldoret, Annex",             br:b2.id },
-    { id:"seed-c-020", name:"Paul Kariuki",      phone:"0712100007", address:"Eldoret Town Centre",        br:b2.id },
-    { id:"seed-c-021", name:"Agnes Wairimu",     phone:"0712100008", address:"Eldoret, Kimumu",            br:b2.id },
-    { id:"seed-c-022", name:"Jackline Achieng",  phone:"0712100009", address:"Eldoret, Kapseret",          br:b2.id },
-    { id:"seed-c-023", name:"George Omondi",     phone:"0712100010", address:"Eldoret, Huruma",            br:b2.id },
+    { id:"seed-c-001", name:"Oliver Thompson",   phone:"+44 7700 100001", address:"12 Baker Street, London W1U 3BG",       br:b1.id },
+    { id:"seed-c-002", name:"Charlotte Davies",  phone:"+44 7700 100002", address:"5 Kings Road, London SW3 4NT",          br:b1.id },
+    { id:"seed-c-003", name:"Harry Evans",       phone:"+44 7700 100003", address:"23 High Street, Reading RG1 1LG",       br:b1.id },
+    { id:"seed-c-004", name:"Amelia Wilson",     phone:"+44 7700 100004", address:"78 Broad Lane, Birmingham B1 2JP",      br:b1.id },
+    { id:"seed-c-005", name:"George Taylor",     phone:"+44 7700 100005", address:"14 Church Street, Oxford OX1 1DL",      br:b1.id },
+    { id:"seed-c-006", name:"Jessica Brown",     phone:"+44 7700 100006", address:"9 Market Place, Leeds LS1 6DU",         br:b1.id },
+    { id:"seed-c-007", name:"William Martin",    phone:"+44 7700 100007", address:"31 Victoria Road, London N4 3SQ",       br:b1.id },
+    { id:"seed-c-008", name:"Sophie Anderson",   phone:"+44 7700 100008", address:"7 Castle Street, Edinburgh EH1 2DP",    br:b1.id },
+    { id:"seed-c-009", name:"Jack Thomas",       phone:"+44 7700 100009", address:"19 Mill Lane, Manchester M14 5RX",      br:b1.id },
+    { id:"seed-c-010", name:"Emily Jackson",     phone:"+44 7700 100010", address:"44 Park Avenue, Bristol BS1 4RN",       br:b1.id },
+    { id:"seed-c-011", name:"James White",       phone:"+44 7700 100011", address:"2 Station Road, Sheffield S1 2GG",      br:b1.id },
+    { id:"seed-c-012", name:"Lily Harris",       phone:"+44 7700 100012", address:"67 Grove Street, Liverpool L1 5DL",     br:b1.id },
+    { id:"seed-c-013", name:"Benjamin Clark",    phone:"+44 7700 100013", address:"11 Bridge Road, Cardiff CF10 2EF",      br:b1.id },
+    { id:"seed-c-014", name:"Grace Lewis",       phone:"+44 7711 100001", address:"5 Commercial Street, London E1 6LT",    br:b2.id },
+    { id:"seed-c-015", name:"Ethan Robinson",    phone:"+44 7711 100002", address:"88 Deansgate, Manchester M3 2ER",       br:b2.id },
+    { id:"seed-c-016", name:"Isabella Walker",   phone:"+44 7711 100003", address:"33 Princes Street, Edinburgh EH2 2BY",  br:b2.id },
+    { id:"seed-c-017", name:"Mason Hall",        phone:"+44 7711 100004", address:"16 Bold Street, Liverpool L1 4DS",      br:b2.id },
+    { id:"seed-c-018", name:"Ava Allen",         phone:"+44 7711 100005", address:"9 Regent Street, London W1B 4EA",       br:b2.id },
+    { id:"seed-c-019", name:"Lucas Young",       phone:"+44 7711 100006", address:"21 Corn Street, Bristol BS1 1HT",       br:b2.id },
+    { id:"seed-c-020", name:"Mia Hernandez",     phone:"+44 7711 100007", address:"12 Grey Street, Newcastle NE1 6EE",     br:b2.id },
+    { id:"seed-c-021", name:"Elijah Scott",      phone:"+44 7711 100008", address:"4 Leopold Square, Sheffield S1 2JG",    br:b2.id },
+    { id:"seed-c-022", name:"Harper King",       phone:"+44 7711 100009", address:"77 Castle Street, Manchester M3 4LZ",   br:b2.id },
+    { id:"seed-c-023", name:"Evelyn Wright",     phone:"+44 7711 100010", address:"3 Exchange Street, Norwich NR2 1AX",    br:b2.id },
   ];
   for (const c of custSpecs)
     await prisma.customer.upsert({
@@ -457,20 +457,20 @@ async function main() {
 
     // ── Credit Payments ──────────────────────────────────────────────────────
     const cpSpecs = [
-      { id:"seed-cp-01", cust:"seed-c-006", amt:50000, by:M1, date:d("2026-05-05",10,0),  notes:"Bank transfer — partial" },
-      { id:"seed-cp-02", cust:"seed-c-006", amt:30000, by:M1, date:d("2026-05-20",9,0),   notes:"M-Pesa" },
+      { id:"seed-cp-01", cust:"seed-c-006", amt:50000, by:M1, date:d("2026-05-05",10,0),  notes:"BACS transfer — partial" },
+      { id:"seed-cp-02", cust:"seed-c-006", amt:30000, by:M1, date:d("2026-05-20",9,0),   notes:"Bank transfer" },
       { id:"seed-cp-03", cust:"seed-c-002", amt:60000, by:M1, date:d("2026-05-10",10,0),  notes:"Bank transfer" },
       { id:"seed-cp-04", cust:"seed-c-002", amt:40000, by:C1, date:d("2026-05-26",9,30),  notes:"Cash settlement" },
-      { id:"seed-cp-05", cust:"seed-c-015", amt:40000, by:M2, date:d("2026-05-20",9,0),   notes:"Bank transfer" },
+      { id:"seed-cp-05", cust:"seed-c-015", amt:40000, by:M2, date:d("2026-05-20",9,0),   notes:"CHAPS payment" },
       { id:"seed-cp-06", cust:"seed-c-019", amt:50000, by:M2, date:d("2026-05-28",10,0),  notes:"Cheque payment" },
       { id:"seed-cp-07", cust:"seed-c-008", amt:8000,  by:C1, date:d("2026-05-01",10,0),  notes:"Cash" },
-      { id:"seed-cp-08", cust:"seed-c-004", amt:3500,  by:C2, date:d("2026-04-20",11,0),  notes:"M-Pesa" },
+      { id:"seed-cp-08", cust:"seed-c-004", amt:3500,  by:C2, date:d("2026-04-20",11,0),  notes:"Card payment" },
       { id:"seed-cp-09", cust:"seed-c-011", amt:12000, by:M1, date:d("2026-05-15",9,0),   notes:"Cash" },
-      { id:"seed-cp-10", cust:"seed-c-021", amt:5000,  by:M2, date:d("2026-06-01",10,0),  notes:"M-Pesa" },
+      { id:"seed-cp-10", cust:"seed-c-021", amt:5000,  by:M2, date:d("2026-06-01",10,0),  notes:"Bank transfer" },
       { id:"seed-cp-11", cust:"seed-c-017", amt:2500,  by:C5, date:d("2026-04-25",11,0),  notes:"Cash" },
-      { id:"seed-cp-12", cust:"seed-c-016", amt:6000,  by:C6, date:d("2026-05-19",10,0),  notes:"M-Pesa partial" },
+      { id:"seed-cp-12", cust:"seed-c-016", amt:6000,  by:C6, date:d("2026-05-19",10,0),  notes:"BACS partial" },
       { id:"seed-cp-13", cust:"seed-c-013", amt:4000,  by:C2, date:d("2026-05-18",9,0),   notes:"Cash" },
-      { id:"seed-cp-14", cust:"seed-c-001", amt:1500,  by:C1, date:d("2026-05-12",10,0),  notes:"M-Pesa" },
+      { id:"seed-cp-14", cust:"seed-c-001", amt:1500,  by:C1, date:d("2026-05-12",10,0),  notes:"Card payment" },
       { id:"seed-cp-15", cust:"seed-c-022", amt:2000,  by:C7, date:d("2026-05-20",14,0),  notes:"Cash" },
     ];
     for (const cp of cpSpecs)
@@ -571,29 +571,29 @@ async function main() {
   // ═══════════════════════════════════════════════════════════════════════════
 
   const org2 = await prisma.organization.upsert({
-    where: { slug: "ngumo" },
+    where: { slug: "bergmann" },
     update: {},
-    create: { id: "seed-org-ngumo", name: "Ngumo General Supplies", slug: "ngumo", industry: "Building & Hardware", country: "KE", currency: "KES" },
+    create: { id: "seed-org-bergmann", name: "Bergmann Großhandel GmbH", slug: "bergmann", industry: "Building & Hardware", country: "DE", currency: "EUR" },
   });
   console.log(`\n✓ Org 2: ${org2.name}`);
 
   const nb1 = await prisma.branch.upsert({
-    where: { name_organizationId: { name: "CBD Branch", organizationId: org2.id } },
+    where: { name_organizationId: { name: "Berlin Branch", organizationId: org2.id } },
     update: {},
-    create: { name: "CBD Branch", address: "Kirinyaga Road, Nairobi CBD", phone: "0712000101", organizationId: org2.id },
+    create: { name: "Berlin Branch", address: "Alexanderplatz 7, 10178 Berlin", phone: "+49 30 1234 5670", organizationId: org2.id },
   });
   const nb2 = await prisma.branch.upsert({
-    where: { name_organizationId: { name: "Westlands Branch", organizationId: org2.id } },
+    where: { name_organizationId: { name: "Hamburg Branch", organizationId: org2.id } },
     update: {},
-    create: { name: "Westlands Branch", address: "Westlands, Nairobi", phone: "0712000102", organizationId: org2.id },
+    create: { name: "Hamburg Branch", address: "Reeperbahn 22, 20359 Hamburg", phone: "+49 40 1234 5671", organizationId: org2.id },
   });
   console.log(`✓ Branches: ${nb1.name}, ${nb2.name}`);
 
-  const nAdmin = await prisma.user.upsert({ where: { email: "admin@ngumo.co.ke" },    update: {}, create: { id: "seed-n-admin", name: "Ngumo Admin",    email: "admin@ngumo.co.ke",    passwordHash: await hw("admin123"),   role: Role.ADMIN,   organizationId: org2.id } });
-  const nMgr   = await prisma.user.upsert({ where: { email: "manager@ngumo.co.ke" },  update: {}, create: { id: "seed-n-mgr",   name: "Store Manager", email: "manager@ngumo.co.ke",  passwordHash: await hw("manager123"), role: Role.MANAGER, organizationId: org2.id, branchId: nb1.id } });
-  const nCs1   = await prisma.user.upsert({ where: { email: "cashier1@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs1",   name: "Cashier One",   email: "cashier1@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
-  const nCs2   = await prisma.user.upsert({ where: { email: "cashier2@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs2",   name: "Cashier Two",   email: "cashier2@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
-  const nCs3   = await prisma.user.upsert({ where: { email: "cashier3@ngumo.co.ke" }, update: {}, create: { id: "seed-n-cs3",   name: "Cashier Three", email: "cashier3@ngumo.co.ke", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb2.id } });
+  const nAdmin = await prisma.user.upsert({ where: { email: "admin@bergmann-handel.de" },    update: {}, create: { id: "seed-n-admin", name: "Bergmann Admin", email: "admin@bergmann-handel.de",    passwordHash: await hw("admin123"),   role: Role.ADMIN,   organizationId: org2.id } });
+  const nMgr   = await prisma.user.upsert({ where: { email: "manager@bergmann-handel.de" },  update: {}, create: { id: "seed-n-mgr",   name: "Store Manager", email: "manager@bergmann-handel.de",  passwordHash: await hw("manager123"), role: Role.MANAGER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs1   = await prisma.user.upsert({ where: { email: "cashier1@bergmann-handel.de" }, update: {}, create: { id: "seed-n-cs1",   name: "Cashier One",   email: "cashier1@bergmann-handel.de", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs2   = await prisma.user.upsert({ where: { email: "cashier2@bergmann-handel.de" }, update: {}, create: { id: "seed-n-cs2",   name: "Cashier Two",   email: "cashier2@bergmann-handel.de", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb1.id } });
+  const nCs3   = await prisma.user.upsert({ where: { email: "cashier3@bergmann-handel.de" }, update: {}, create: { id: "seed-n-cs3",   name: "Cashier Three", email: "cashier3@bergmann-handel.de", passwordHash: await hw("cashier123"), role: Role.CASHIER, organizationId: org2.id, branchId: nb2.id } });
   void nAdmin;
   console.log("✓ 5 users (Org 2)");
 
@@ -609,8 +609,8 @@ async function main() {
   }
   console.log(`✓ ${nCatNames.length} categories (Org 2)`);
 
-  const nSup1 = await prisma.supplier.upsert({ where: { id: "seed-nsup-1" }, update: {}, create: { id: "seed-nsup-1", name: "Ngumo Buildmart Ltd",       phone: "0711000101", email: "orders@ngumobuild.co.ke", address: "Industrial Area, Nairobi",   organizationId: org2.id } });
-  const nSup2 = await prisma.supplier.upsert({ where: { id: "seed-nsup-2" }, update: {}, create: { id: "seed-nsup-2", name: "Kenya Electrical Supplies", phone: "0722000202", email: "sales@kenyaelec.co.ke",   address: "Tom Mboya Street, Nairobi", organizationId: org2.id } });
+  const nSup1 = await prisma.supplier.upsert({ where: { id: "seed-nsup-1" }, update: {}, create: { id: "seed-nsup-1", name: "Bau Depot GmbH",           phone: "+49 30 9876 5432", email: "orders@baudepot.de",     address: "Gewerbegebiet Nord, 12681 Berlin",        organizationId: org2.id } });
+  const nSup2 = await prisma.supplier.upsert({ where: { id: "seed-nsup-2" }, update: {}, create: { id: "seed-nsup-2", name: "ElektroFachhändler AG",    phone: "+49 30 9876 5433", email: "sales@elektrofach.de",   address: "Kurfürstendamm 12, 10719 Berlin",         organizationId: org2.id } });
   console.log("✓ 2 suppliers (Org 2)");
 
   type NIS = { sku: string; name: string; cat: string; rp: number; wp: number; sup: string; b1: number; b2: number; thr: number };
@@ -655,11 +655,11 @@ async function main() {
 
   type NCS2 = { id: string; name: string; phone: string; address: string; br: string };
   const nCustSpecs: NCS2[] = [
-    { id:"seed-nc-1", name:"Amos Njoroge",     phone:"0722200001", address:"Nairobi CBD",        br:nb1.id },
-    { id:"seed-nc-2", name:"Joyce Muthoni",    phone:"0722200002", address:"Westlands, Nairobi", br:nb1.id },
-    { id:"seed-nc-3", name:"Anthony Waweru",   phone:"0733200003", address:"Westlands, Nairobi", br:nb2.id },
-    { id:"seed-nc-4", name:"Caroline Achieng", phone:"0733200004", address:"Parklands, Nairobi", br:nb2.id },
-    { id:"seed-nc-5", name:"Hassan Omar",      phone:"0700200005", address:"Eastleigh, Nairobi", br:nb1.id },
+    { id:"seed-nc-1", name:"Lukas Becker",   phone:"+49 30 1234 5601", address:"Unter den Linden 12, 10117 Berlin",    br:nb1.id },
+    { id:"seed-nc-2", name:"Anna Schulz",    phone:"+49 30 1234 5602", address:"Alexanderplatz 3, 10178 Berlin",       br:nb1.id },
+    { id:"seed-nc-3", name:"Markus Fischer", phone:"+49 40 1234 5603", address:"Hamburger Straße 44, 22083 Hamburg",   br:nb2.id },
+    { id:"seed-nc-4", name:"Lena Wagner",    phone:"+49 40 1234 5604", address:"Reeperbahn 18, 20359 Hamburg",         br:nb2.id },
+    { id:"seed-nc-5", name:"Felix Müller",   phone:"+49 30 1234 5605", address:"Friedrichstraße 88, 10117 Berlin",     br:nb1.id },
   ];
   for (const c of nCustSpecs)
     await prisma.customer.upsert({
@@ -783,38 +783,38 @@ async function main() {
 
   console.log("\n✅ Seed complete!\n");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS — JSH Auto Spares (jsh)");
+  console.log(" LOGIN CREDENTIALS — Meridian Electronics Ltd (meridian)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
-  console.log("   admin@jsh.co.ke              admin123");
+  console.log("   admin@meridian.co.uk              admin123");
   console.log("");
   console.log(" MANAGERS");
-  console.log("   lucy.wangare@jsh.co.ke        manager123   (Mukai Branch)");
-  console.log("   peter.kamau@jsh.co.ke         manager123   (Zulu Arcade Branch)");
+  console.log("   sophie.harris@meridian.co.uk      manager123   (London Branch)");
+  console.log("   james.walker@meridian.co.uk       manager123   (Manchester Branch)");
   console.log("");
-  console.log(" CASHIERS — Mukai Branch");
-  console.log("   mary.akinyi@jsh.co.ke         cashier123");
-  console.log("   james.otieno@jsh.co.ke        cashier123");
-  console.log("   brian.kiptoo@jsh.co.ke        cashier123");
-  console.log("   susan.chebet@jsh.co.ke        cashier123");
+  console.log(" CASHIERS — London Branch");
+  console.log("   emma.jones@meridian.co.uk         cashier123");
+  console.log("   liam.smith@meridian.co.uk         cashier123");
+  console.log("   olivia.brown@meridian.co.uk       cashier123");
+  console.log("   noah.taylor@meridian.co.uk        cashier123");
   console.log("");
-  console.log(" CASHIERS — Zulu Arcade Branch");
-  console.log("   david.mwangi@jsh.co.ke        cashier123");
-  console.log("   faith.njoroge@jsh.co.ke       cashier123");
-  console.log("   kevin.njoroge@jsh.co.ke       cashier123");
+  console.log(" CASHIERS — Manchester Branch");
+  console.log("   ava.wilson@meridian.co.uk         cashier123");
+  console.log("   ethan.moore@meridian.co.uk        cashier123");
+  console.log("   isabella.clark@meridian.co.uk     cashier123");
   console.log("═══════════════════════════════════════════════════════════");
-  console.log(" LOGIN CREDENTIALS — Ngumo General Supplies (ngumo)");
+  console.log(" LOGIN CREDENTIALS — Bergmann Großhandel GmbH (bergmann)");
   console.log("═══════════════════════════════════════════════════════════");
   console.log(" ADMIN");
-  console.log("   admin@ngumo.co.ke             admin123");
+  console.log("   admin@bergmann-handel.de          admin123");
   console.log("");
-  console.log(" MANAGER — CBD Branch");
-  console.log("   manager@ngumo.co.ke           manager123");
+  console.log(" MANAGER — Berlin Branch");
+  console.log("   manager@bergmann-handel.de        manager123");
   console.log("");
   console.log(" CASHIERS");
-  console.log("   cashier1@ngumo.co.ke          cashier123   (CBD Branch)");
-  console.log("   cashier2@ngumo.co.ke          cashier123   (CBD Branch)");
-  console.log("   cashier3@ngumo.co.ke          cashier123   (Westlands Branch)");
+  console.log("   cashier1@bergmann-handel.de       cashier123   (Berlin Branch)");
+  console.log("   cashier2@bergmann-handel.de       cashier123   (Berlin Branch)");
+  console.log("   cashier3@bergmann-handel.de       cashier123   (Hamburg Branch)");
   console.log("═══════════════════════════════════════════════════════════");
 }
 

@@ -1,17 +1,13 @@
 import { TrendingUp, ShoppingCart, AlertTriangle, CreditCard } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import type { DashboardMetrics } from "@/lib/actions/dashboard";
-
-function fmtKES(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
 
 interface BranchStat {
   branch: { id: string; name: string };
   metrics: DashboardMetrics;
 }
 
-export function BranchComparison({ branches }: { branches: BranchStat[] }) {
+export function BranchComparison({ branches, currency }: { branches: BranchStat[]; currency: string }) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-slate-700 mb-3">Branch comparison</h2>
@@ -23,13 +19,13 @@ export function BranchComparison({ branches }: { branches: BranchStat[] }) {
               <Row
                 icon={TrendingUp}
                 label="Today's revenue"
-                value={fmtKES(metrics.todayRevenue)}
+                value={formatCurrency(metrics.todayRevenue, currency)}
                 valueClass="text-blue-700"
               />
               <Row
                 icon={TrendingUp}
                 label="MTD revenue"
-                value={fmtKES(metrics.mtdRevenue)}
+                value={formatCurrency(metrics.mtdRevenue, currency)}
                 valueClass="text-slate-700"
               />
               <Row
@@ -47,7 +43,7 @@ export function BranchComparison({ branches }: { branches: BranchStat[] }) {
               <Row
                 icon={CreditCard}
                 label="Outstanding credit"
-                value={fmtKES(metrics.totalOutstandingCredit)}
+                value={formatCurrency(metrics.totalOutstandingCredit, currency)}
                 valueClass={metrics.totalOutstandingCredit > 0 ? "text-red-600" : "text-green-600"}
               />
             </div>

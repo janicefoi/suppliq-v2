@@ -60,7 +60,7 @@ class NewsItem(BaseModel):
 
 
 class MarketPrice(BaseModel):
-    commodity: str                    # e.g. "crude_oil", "kes_usd"
+    commodity: str                    # e.g. "crude_oil", "eur_usd"
     price: float
     currency: str
     change_pct_24h: Optional[float]
@@ -128,6 +128,6 @@ class SmartRecommendation(BaseModel):
     priority: str   # "critical" | "high" | "medium" | "low"
     title: str
     detail: str
-    estimated_impact: Optional[str]   # e.g. "Save KES 12,000/month"
+    estimated_impact: Optional[str]   # e.g. "Save 1,200/month in currency units"
     action_url: Optional[str]         # deep-link into the Next.js app
     created_at: datetime

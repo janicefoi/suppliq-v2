@@ -23,6 +23,7 @@ export default async function ExpensesPage() {
         branches={branches}
         defaultBranchId={session.user.branchId ?? null}
         isAdmin={session.user.role === "ADMIN"}
+        currency={session.user.currency ?? "EUR"}
       />
     </div>
   );

@@ -15,14 +15,10 @@ import { Badge } from "@/components/ui/badge";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { RecordPurchaseDialog } from "@/components/suppliers/record-purchase-dialog";
 import type { SupplierDetail, SupplierRow } from "@/lib/actions/suppliers";
-import { cn } from "@/lib/utils";
-
-function fmtKES(v: string | number) {
-  return `KES ${Number(v).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { cn, formatCurrency } from "@/lib/utils";
 
 function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-KE", {
+  return new Date(iso).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -36,9 +32,10 @@ interface Props {
   role: string;
   branches?: { id: string; name: string }[];
   userBranchId?: string | null;
+  currency: string;
 }
 
-export function SupplierDetailClient({ supplier, role, branches = [], userBranchId }: Props) {
+export function SupplierDetailClient({ supplier, role, branches = [], userBranchId, currency }: Props) {
   const canEdit = role !== "CASHIER";
   const isAdmin = role === "ADMIN";
   const canRecordPurchase = role !== "CASHIER";
@@ -143,7 +140,7 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
             <div className="flex items-center gap-2 text-sm text-slate-600">
               <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
               Added{" "}
-              {new Date(supplier.createdAt).toLocaleDateString("en-KE", {
+              {new Date(supplier.createdAt).toLocaleDateString(undefined, {
                 day: "2-digit",
                 month: "short",
                 year: "numeric",
@@ -176,7 +173,7 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
               <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
                 Total spend
               </p>
-              <p className="text-lg font-bold text-slate-900 tabular-nums">{fmtKES(totalSpend)}</p>
+              <p className="text-lg font-bold text-slate-900 tabular-nums">{formatCurrency(totalSpend, currency)}</p>
             </div>
           )}
         </div>
@@ -237,7 +234,7 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
                         </span>
                       </TableCell>
                       <TableCell className="text-right text-xs tabular-nums text-slate-600">
-                        {fmtKES(item.retailPrice)}
+                        {formatCurrency(item.retailPrice, currency)}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -301,10 +298,10 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
                         +{po.quantity}
                       </TableCell>
                       <TableCell className="text-right text-xs tabular-nums text-slate-600">
-                        {fmtKES(po.costPrice)}
+                        {formatCurrency(po.costPrice, currency)}
                       </TableCell>
                       <TableCell className="text-right text-xs tabular-nums font-semibold text-slate-800">
-                        {fmtKES(lineTotal)}
+                        {formatCurrency(lineTotal, currency)}
                       </TableCell>
                       <TableCell className="text-xs text-slate-600">
                         {po.recordedBy.name}
@@ -335,6 +332,7 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
         isAdmin={isAdmin}
         branches={branches}
         defaultBranchId={userBranchId}
+        currency={currency}
       />
     </div>
   );

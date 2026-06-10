@@ -23,9 +23,10 @@ interface Props {
   role: string;
   stats: SupplierStatsType;
   branches: { id: string; name: string }[];
+  currency: string;
 }
 
-export function SuppliersClient({ suppliers, role, stats, branches }: Props) {
+export function SuppliersClient({ suppliers, role, stats, branches, currency }: Props) {
   const canEdit = role !== "CASHIER";
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -79,7 +80,7 @@ export function SuppliersClient({ suppliers, role, stats, branches }: Props) {
     <div className="space-y-4">
 
       {/* ── Stats bar ────────────────────────────────────────────────────── */}
-      <SupplierStats stats={stats} />
+      <SupplierStats stats={stats} currency={currency} />
 
       {/* ── Toolbar ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">

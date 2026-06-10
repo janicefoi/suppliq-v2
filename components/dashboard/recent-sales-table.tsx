@@ -9,25 +9,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { VoidReceiptDialog } from "@/components/sales/void-receipt-dialog";
 import type { RecentSale } from "@/lib/actions/dashboard";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 function fmtTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-KE", {
+  return new Date(iso).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
   });
 }
 
-function fmtKES(v: string | number) {
-  return `KES ${Number(v).toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
 interface Props {
   sales: RecentSale[];
   isAdmin?: boolean;
+  currency: string;
 }
 
-export function RecentSalesTable({ sales, isAdmin }: Props) {
+export function RecentSalesTable({ sales, isAdmin, currency }: Props) {
   const router = useRouter();
   const [voidTarget, setVoidTarget] = useState<{ saleId: string; receiptNumber: string } | null>(null);
 
@@ -78,7 +75,7 @@ export function RecentSalesTable({ sales, isAdmin }: Props) {
                     </span>
                   </TableCell>
                   <TableCell className="text-right text-xs font-semibold tabular-nums text-slate-800">
-                    {fmtKES(sale.totalAmount)}
+                    {formatCurrency(sale.totalAmount, currency)}
                   </TableCell>
                   <TableCell>
                     <Badge

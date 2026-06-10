@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getBranches } from "@/lib/actions/branches";
 import { ReportsClient } from "@/components/reports/reports-client";
 
-export const metadata = { title: "Reports | JSH ERP" };
+export const metadata = { title: "Reports | Suppliq" };
 
 export default async function ReportsPage() {
   const session = await auth();
@@ -18,7 +18,7 @@ export default async function ReportsPage() {
         <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
         <p className="text-sm text-slate-500 mt-0.5">Sales analysis by date range</p>
       </div>
-      <ReportsClient role={role} branches={branches} />
+      <ReportsClient role={role} branches={branches} currency={session?.user?.currency ?? "EUR"} />
     </div>
   );
 }

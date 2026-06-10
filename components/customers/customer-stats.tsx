@@ -1,14 +1,8 @@
 import { Users, CreditCard, AlertCircle, UserPlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrencyCompact } from "@/lib/utils";
 import type { CustomerStats } from "@/lib/actions/customers";
 
-function fmtKES(v: number) {
-  if (v >= 1_000_000) return `KES ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `KES ${(v / 1_000).toFixed(0)}K`;
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
-}
-
-export function CustomerStats({ stats }: { stats: CustomerStats }) {
+export function CustomerStats({ stats, currency }: { stats: CustomerStats; currency: string }) {
   const cards = [
     {
       label: "Total customers",
@@ -26,7 +20,7 @@ export function CustomerStats({ stats }: { stats: CustomerStats }) {
     },
     {
       label: "Total outstanding",
-      value: fmtKES(stats.totalOutstanding),
+      value: formatCurrencyCompact(stats.totalOutstanding, currency),
       icon: CreditCard,
       color: stats.totalOutstanding > 0 ? "text-red-600" : "text-green-600",
       bg: stats.totalOutstanding > 0 ? "bg-red-50" : "bg-green-50",

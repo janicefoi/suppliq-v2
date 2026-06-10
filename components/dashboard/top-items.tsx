@@ -1,11 +1,8 @@
 import { Package } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 import type { TopItem } from "@/lib/actions/dashboard";
 
-function fmtKES(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-}
-
-export function TopItems({ items }: { items: TopItem[] }) {
+export function TopItems({ items, currency }: { items: TopItem[]; currency: string }) {
   const maxQty = Math.max(...items.map((i) => i.totalQty), 1);
 
   return (
@@ -31,7 +28,7 @@ export function TopItems({ items }: { items: TopItem[] }) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs font-bold text-slate-800 tabular-nums">{item.totalQty} units</p>
-                    <p className="text-[10px] text-slate-400 tabular-nums">{fmtKES(item.totalRevenue)}</p>
+                    <p className="text-[10px] text-slate-400 tabular-nums">{formatCurrency(item.totalRevenue, currency)}</p>
                   </div>
                 </div>
                 <div className="h-1 bg-slate-100 rounded-full overflow-hidden">

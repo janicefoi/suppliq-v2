@@ -18,18 +18,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { recordCreditPayment } from "@/lib/actions/customers";
 
+import { formatCurrency } from "@/lib/utils";
+
 function makeSchema(maxAmount: number) {
   return z.object({
     amount: z
       .number({ invalid_type_error: "Enter a valid amount" })
       .positive("Amount must be greater than zero")
-      .max(maxAmount, `Cannot exceed the balance of KES ${maxAmount.toLocaleString("en-KE", { minimumFractionDigits: 2 })}`),
+      .max(maxAmount, `Cannot exceed the outstanding balance`),
     notes: z.string().optional(),
   });
-}
-
-function fmtKES(n: number) {
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 interface RecordPaymentDialogProps {
@@ -39,6 +37,7 @@ interface RecordPaymentDialogProps {
   customerName: string;
   creditBalance: number;
   onSuccess: () => void;
+  currency: string;
 }
 
 export function RecordPaymentDialog({
@@ -48,6 +47,7 @@ export function RecordPaymentDialog({
   customerName,
   creditBalance,
   onSuccess,
+  currency,
 }: RecordPaymentDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -95,14 +95,14 @@ export function RecordPaymentDialog({
           <DialogTitle>Record Credit Payment</DialogTitle>
           <DialogDescription>
             {customerName} &mdash; balance:{" "}
-            <span className="font-semibold text-red-600">{fmtKES(creditBalance)}</span>
+            <span className="font-semibold text-red-600">{formatCurrency(creditBalance, currency)}</span>
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="pay-amount">Amount paid (KES) *</Label>
+              <Label htmlFor="pay-amount">Amount paid *</Label>
               <button
                 type="button"
                 onClick={() => setValue("amount", creditBalance, { shouldValidate: true })}
@@ -131,7 +131,7 @@ export function RecordPaymentDialog({
                 {isFullPayment && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                 {isFullPayment
                   ? "Full balance — account will be cleared"
-                  : <>Remaining balance: <span className="font-medium text-slate-700">{fmtKES(remaining)}</span></>
+                  : <>Remaining balance: <span className="font-medium text-slate-700">{formatCurrency(remaining, currency)}</span></>
                 }
               </div>
             )}

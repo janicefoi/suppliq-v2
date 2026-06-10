@@ -12,20 +12,19 @@ import type { ExpenseRow, ExpenseStats } from "@/lib/actions/expenses";
 
 type Branch = { id: string; name: string };
 
+import { formatCurrency } from "@/lib/utils";
+
 interface ExpensesClientProps {
   expenses: ExpenseRow[];
   stats: ExpenseStats;
   branches: Branch[];
   defaultBranchId?: string | null;
   isAdmin: boolean;
-}
-
-function fmtKES(n: number) {
-  return `KES ${n.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  currency: string;
 }
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-KE", {
+  return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit", month: "short", year: "numeric",
   });
 }
@@ -50,6 +49,7 @@ export function ExpensesClient({
   branches,
   defaultBranchId,
   isAdmin,
+  currency,
 }: ExpensesClientProps) {
   const router = useRouter();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,7 +80,7 @@ export function ExpensesClient({
   }
 
   function downloadCSV() {
-    const header = "Date,Description,Category,Amount (KES),Branch,Recorded By";
+    const header = `Date,Description,Category,Amount (${currency}),Branch,Recorded By`;
     const rows = filtered.map((e) =>
       [
         fmtDate(e.date),
@@ -119,9 +119,9 @@ export function ExpensesClient({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: "Total expenses",      value: stats.totalExpenses.toLocaleString() },
-          { label: "Total amount",        value: fmtKES(stats.totalAmount) },
+          { label: "Total amount",        value: formatCurrency(stats.totalAmount, currency) },
           { label: "This month",          value: stats.thisMonthExpenses.toLocaleString() },
-          { label: "This month amount",   value: fmtKES(stats.thisMonthAmount) },
+          { label: "This month amount",   value: formatCurrency(stats.thisMonthAmount, currency) },
         ].map(({ label, value }) => (
           <div key={label} className="rounded-xl border border-slate-200 bg-white px-4 py-4">
             <div className="flex items-center gap-2 mb-1">
@@ -148,7 +148,7 @@ export function ExpensesClient({
                   <p className="text-[11px] text-slate-400 mt-0.5">{count} entry{count !== 1 ? "ies" : "y"}</p>
                 </div>
                 <p className="text-sm font-semibold text-slate-800 tabular-nums ml-3">
-                  {fmtKES(total)}
+                  {formatCurrency(total, currency)}
                 </p>
               </div>
             ))}
@@ -190,7 +190,7 @@ export function ExpensesClient({
         <div className="sm:ml-auto flex items-center gap-2">
           {filtered.length > 0 && (
             <span className="text-sm text-slate-500 tabular-nums">
-              Total: <span className="font-semibold text-slate-700">{fmtKES(filteredTotal)}</span>
+              Total: <span className="font-semibold text-slate-700">{formatCurrency(filteredTotal, currency)}</span>
             </span>
           )}
           <Button variant="outline" size="sm" onClick={downloadCSV} className="gap-1.5 h-9">
@@ -240,7 +240,7 @@ export function ExpensesClient({
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold text-slate-800">
-                      {fmtKES(e.amount)}
+                      {formatCurrency(e.amount, currency)}
                     </td>
                     <td className="px-4 py-3 text-slate-600">
                       {e.branch?.name ?? <span className="text-slate-400 text-xs">—</span>}

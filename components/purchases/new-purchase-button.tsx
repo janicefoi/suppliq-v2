@@ -24,6 +24,7 @@ interface NewPurchaseButtonProps {
   branches: Branch[];
   isAdmin: boolean;
   defaultBranchId?: string | null;
+  currency?: string;
 }
 
 export function NewPurchaseButton({
@@ -31,6 +32,7 @@ export function NewPurchaseButton({
   branches,
   isAdmin,
   defaultBranchId,
+  currency = "EUR",
 }: NewPurchaseButtonProps) {
   const router = useRouter();
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -140,6 +142,7 @@ export function NewPurchaseButton({
           isAdmin={isAdmin}
           branches={branches}
           defaultBranchId={defaultBranchId}
+          currency={currency}
         />
       )}
     </>

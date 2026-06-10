@@ -14,9 +14,7 @@ import type {
   RecentSale, LowStockAlert,
 } from "@/lib/actions/dashboard";
 
-function fmtKES(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { formatCurrency } from "@/lib/utils";
 
 function pct(current: number, previous: number) {
   if (previous === 0) return current > 0 ? 100 : 0;
@@ -46,9 +44,10 @@ interface Props {
   branches: { id: string; name: string }[];
   combined: Combined;
   branchData: BranchData[];
+  currency: string;
 }
 
-export function BranchDashboard({ userName, branches, combined, branchData }: Props) {
+export function BranchDashboard({ userName, branches, combined, branchData, currency }: Props) {
   const tabs = ["Combined", ...branches.map((b) => b.name)];
   const [activeTab, setActiveTab] = useState("Combined");
 
@@ -96,7 +95,7 @@ export function BranchDashboard({ userName, branches, combined, branchData }: Pr
         <div className="lg:col-span-1">
           <MetricCard
             title="Today's revenue"
-            value={fmtKES(m.todayRevenue)}
+            value={formatCurrency(m.todayRevenue, currency)}
             icon={TrendingUp}
             color="blue"
             trend={revenueTrend}
@@ -105,7 +104,7 @@ export function BranchDashboard({ userName, branches, combined, branchData }: Pr
         <div className="lg:col-span-1">
           <MetricCard
             title="MTD revenue"
-            value={fmtKES(m.mtdRevenue)}
+            value={formatCurrency(m.mtdRevenue, currency)}
             icon={BarChart3}
             color="blue"
             subtitle={`${m.mtdSalesCount} sales this month`}
@@ -132,7 +131,7 @@ export function BranchDashboard({ userName, branches, combined, branchData }: Pr
         <div className="lg:col-span-1">
           <MetricCard
             title="Outstanding credit"
-            value={fmtKES(m.totalOutstandingCredit)}
+            value={formatCurrency(m.totalOutstandingCredit, currency)}
             icon={CreditCard}
             color={m.totalOutstandingCredit > 0 ? "red" : "green"}
             subtitle={m.totalOutstandingCredit === 0 ? "No outstanding credit" : undefined}
@@ -143,25 +142,25 @@ export function BranchDashboard({ userName, branches, combined, branchData }: Pr
       {/* ── Revenue chart + Top debtors ───────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-          <RevenueChart data={active.chart} />
+          <RevenueChart data={active.chart} currency={currency} />
         </div>
         <div>
-          <TopDebtors debtors={active.topDebtors} />
+          <TopDebtors debtors={active.topDebtors} currency={currency} />
         </div>
       </div>
 
       {/* ── Top items + Branch comparison (combined) or Low stock (branch) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <TopItems items={active.topItems} />
+        <TopItems items={active.topItems} currency={currency} />
         {isCombined ? (
-          <BranchComparison branches={branchData.map((b) => ({ branch: b.branch, metrics: b.metrics }))} />
+          <BranchComparison branches={branchData.map((b) => ({ branch: b.branch, metrics: b.metrics }))} currency={currency} />
         ) : (
           <LowStockList items={active.lowStock} />
         )}
       </div>
 
       {/* ── Recent sales (combined only) ─────────────────────────────────── */}
-      {isCombined && <RecentSalesTable sales={combined.sales} isAdmin />}
+      {isCombined && <RecentSalesTable sales={combined.sales} isAdmin currency={currency} />}
     </div>
   );
 }

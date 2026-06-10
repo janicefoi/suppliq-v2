@@ -8,7 +8,7 @@ What this will do:
        - Wheat, maize, sugar — food & beverage businesses
        - Diesel fuel — direct logistics cost
   2. Fetch live currency rates:
-       - KES/USD, KES/EUR, KES/GBP, KES/CNY
+       - EUR/USD, GBP/USD, EUR/GBP, EUR/JPY
        (Critical for businesses importing goods priced in foreign currency)
   3. Detect significant price movements (>2% in 24h) and flag as alerts
   4. Return trends for dashboard sparklines
@@ -46,9 +46,8 @@ COMMODITY_SYMBOLS = {
     "sugar":        "SUGAR",
 }
 
-# Commodities most relevant for typical African SME supply chains
 DEFAULT_COMMODITIES = ["brent_crude", "wheat", "corn", "sugar"]
-DEFAULT_FX_PAIRS = ["KES/USD", "KES/EUR", "KES/CNY", "KES/GBP"]
+DEFAULT_FX_PAIRS = ["EUR/USD", "GBP/USD", "EUR/GBP", "EUR/JPY"]
 
 
 async def _fetch_alpha_vantage_commodity(symbol: str) -> Optional[dict]:
@@ -128,7 +127,7 @@ async def get_market_prices(
     Returns:
     {
         "commodities": { "brent_crude": {...}, ... },
-        "fx_rates":    { "KES/USD": {...}, ... },
+        "fx_rates":    { "EUR/USD": {...}, ... },
         "alerts": [...]
     }
     """

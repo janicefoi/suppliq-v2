@@ -198,7 +198,7 @@ export function ItemForm({
       {/* Row 3 — Prices */}
       <div className="grid grid-cols-3 gap-4">
         <div>
-          <Label htmlFor="retailPrice">Retail Price (KES) *</Label>
+          <Label htmlFor="retailPrice">Retail Price *</Label>
           <Input
             id="retailPrice"
             type="number"
@@ -211,7 +211,7 @@ export function ItemForm({
           <FieldError message={errors.retailPrice?.message} />
         </div>
         <div>
-          <Label htmlFor="wholesalePrice">Wholesale Price (KES) *</Label>
+          <Label htmlFor="wholesalePrice">Wholesale Price *</Label>
           <Input
             id="wholesalePrice"
             type="number"
@@ -229,7 +229,7 @@ export function ItemForm({
           <FieldError message={errors.wholesalePrice?.message} />
         </div>
         <div>
-          <Label htmlFor="specialPrice">Special Price (KES)</Label>
+          <Label htmlFor="specialPrice">Special Price</Label>
           <Input
             id="specialPrice"
             type="number"

@@ -29,6 +29,7 @@ export default async function SupplierDetailPage({ params }: Props) {
       role={role}
       branches={branches}
       userBranchId={session?.user?.branchId ?? null}
+      currency={session?.user?.currency ?? "EUR"}
     />
   );
 }

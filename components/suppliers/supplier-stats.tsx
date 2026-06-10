@@ -1,14 +1,8 @@
 import { Truck, Package, ClipboardList, TrendingDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrencyCompact } from "@/lib/utils";
 import type { SupplierStats } from "@/lib/actions/suppliers";
 
-function fmtKES(v: number) {
-  if (v >= 1_000_000) return `KES ${(v / 1_000_000).toFixed(1)}M`;
-  if (v >= 1_000) return `KES ${(v / 1_000).toFixed(0)}K`;
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 0 })}`;
-}
-
-export function SupplierStats({ stats }: { stats: SupplierStats }) {
+export function SupplierStats({ stats, currency }: { stats: SupplierStats; currency: string }) {
   const cards = [
     {
       label: "Total suppliers",
@@ -33,7 +27,7 @@ export function SupplierStats({ stats }: { stats: SupplierStats }) {
     },
     {
       label: "Total spend",
-      value: fmtKES(stats.totalSpend),
+      value: formatCurrencyCompact(stats.totalSpend, currency),
       icon: TrendingDown,
       color: "text-amber-600",
       bg: "bg-amber-50",

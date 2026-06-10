@@ -11,14 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { MetricCard } from "@/components/dashboard/metric-card";
 import { VoidReceiptDialog } from "@/components/sales/void-receipt-dialog";
 import { getReportData, type ReportData, type ReportSale } from "@/lib/actions/reports";
-import { cn } from "@/lib/utils";
-
-function fmtKES(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+import { cn, formatCurrency } from "@/lib/utils";
 
 function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("en-KE", {
+  return new Date(iso).toLocaleString(undefined, {
     day: "2-digit", month: "short", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });
@@ -28,11 +24,11 @@ function toInputDate(d: Date) {
   return format(d, "yyyy-MM-dd");
 }
 
-function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canViewRevenue: boolean) {
+function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canViewRevenue: boolean, currency: string) {
   const headers = canViewRevenue
     ? [
         "Receipt #", "Date", "Cashier", "Customer",
-        "Sale Type", "Total (KES)", "Tax (KES)", "Discount (KES)", "Payment",
+        `Sale Type`, `Total (${currency})`, `Tax (${currency})`, `Discount (${currency})`, "Payment",
       ]
     : ["Receipt #", "Date", "Cashier", "Customer", "Sale Type", "Payment"];
 
@@ -65,7 +61,7 @@ function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canV
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `jsh-report-${startDate}-to-${endDate}.csv`;
+  a.download = `report-${startDate}-to-${endDate}.csv`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -75,9 +71,10 @@ function exportCSV(sales: ReportSale[], startDate: string, endDate: string, canV
 interface Props {
   role: string;
   branches: { id: string; name: string }[];
+  currency: string;
 }
 
-export function ReportsClient({ role, branches }: Props) {
+export function ReportsClient({ role, branches, currency }: Props) {
   const isAdmin = role === "ADMIN";
   const tabs = isAdmin ? [{ id: null, name: "All Branches" }, ...branches.map((b) => ({ id: b.id, name: b.name }))] : [];
   const [activeBranchId, setActiveBranchId] = useState<string | null>(null);
@@ -167,7 +164,7 @@ export function ReportsClient({ role, branches }: Props) {
             variant="outline"
             size="sm"
             className="gap-1.5 self-end ml-auto"
-            onClick={() => exportCSV(data.sales, startDate, endDate, data.canViewRevenue)}
+            onClick={() => exportCSV(data.sales, startDate, endDate, data.canViewRevenue, currency)}
           >
             <Download className="h-3.5 w-3.5" />
             Export CSV
@@ -183,7 +180,7 @@ export function ReportsClient({ role, branches }: Props) {
               <div className="lg:col-span-2">
                 <MetricCard
                   title="Total revenue"
-                  value={fmtKES(data.totalRevenue ?? 0)}
+                  value={formatCurrency(data.totalRevenue ?? 0, currency)}
                   icon={TrendingUp}
                   color="blue"
                 />
@@ -202,7 +199,7 @@ export function ReportsClient({ role, branches }: Props) {
                 <div>
                   <MetricCard
                     title="Retail revenue"
-                    value={fmtKES(data.revenueByType.RETAIL)}
+                    value={formatCurrency(data.revenueByType.RETAIL, currency)}
                     icon={BarChart3}
                     color="blue"
                     subtitle="Retail"
@@ -211,7 +208,7 @@ export function ReportsClient({ role, branches }: Props) {
                 <div>
                   <MetricCard
                     title="Wholesale revenue"
-                    value={fmtKES(data.revenueByType.WHOLESALE)}
+                    value={formatCurrency(data.revenueByType.WHOLESALE, currency)}
                     icon={BarChart3}
                     color="amber"
                     subtitle="Wholesale"
@@ -273,7 +270,7 @@ export function ReportsClient({ role, branches }: Props) {
                         </TableCell>
                         {data.canViewRevenue && (
                           <TableCell className="text-right text-xs font-semibold tabular-nums text-slate-800">
-                            {fmtKES(Number(sale.totalAmount ?? 0))}
+                            {formatCurrency(Number(sale.totalAmount ?? 0), currency)}
                           </TableCell>
                         )}
                         <TableCell>

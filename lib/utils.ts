@@ -5,14 +5,24 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-const CURRENCY_SYMBOL = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL ?? "KSh";
-
-export function formatCurrency(amount: number | string): string {
+export function formatCurrency(amount: number | string, currency = "EUR"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return `${CURRENCY_SYMBOL} ${num.toLocaleString("en-KE", {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  })}`;
+  }).format(num);
+}
+
+export function formatCurrencyCompact(amount: number | string, currency = "EUR"): string {
+  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  const symbol = new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 })
+    .formatToParts(0)
+    .find((p) => p.type === "currency")?.value ?? currency;
+  if (num >= 1_000_000) return `${symbol} ${(num / 1_000_000).toFixed(1)}M`;
+  if (num >= 1_000) return `${symbol} ${(num / 1_000).toFixed(0)}K`;
+  return `${symbol} ${num.toFixed(0)}`;
 }
 
 export function generateInvoiceNumber(): string {

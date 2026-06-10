@@ -21,7 +21,7 @@ const ROLE_BADGE: Record<string, string> = {
 };
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-KE", {
+  return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit", month: "short", year: "numeric",
   });
 }
