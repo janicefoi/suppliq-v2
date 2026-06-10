@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getPurchaseOrders, getPOStats } from "@/lib/actions/purchases";
+import { getPurchaseOrders, getPOStats, getPayables } from "@/lib/actions/purchases";
 import { getSuppliers } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/dashboard";
 import { PurchasesClient } from "@/components/purchases/purchases-client";
@@ -10,11 +10,12 @@ export default async function PurchasesPage() {
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
 
-  const [orders, stats, suppliers, branches] = await Promise.all([
+  const [orders, stats, suppliers, branches, payables] = await Promise.all([
     getPurchaseOrders(),
     getPOStats(),
     getSuppliers(),
     session.user.role === "ADMIN" ? getBranches() : Promise.resolve([]),
+    getPayables(),
   ]);
 
   return (
@@ -27,6 +28,7 @@ export default async function PurchasesPage() {
         isAdmin={session.user.role === "ADMIN"}
         defaultBranchId={session.user.branchId ?? null}
         currency={session.user.currency ?? "EUR"}
+        payables={payables}
       />
     </div>
   );

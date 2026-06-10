@@ -44,6 +44,13 @@ enum PurchaseOrderStatus {
   CANCELLED
 }
 
+enum SupplierInvoiceStatus {
+  NONE
+  RECEIVED
+  PAID
+  DISPUTED
+}
+
 enum StockTransferStatus {
   PENDING
   IN_TRANSIT
@@ -158,7 +165,8 @@ model User {
   branch                Branch?         @relation(fields: [branchId], references: [id])
   sales                 Sale[]
   creditPayments        CreditPayment[]
-  purchaseOrders        PurchaseOrder[]
+  purchaseOrdersCreated PurchaseOrder[] @relation("POCreatedBy")
+  purchaseOrdersPaid    PurchaseOrder[] @relation("POInvoicePaidBy")
   stockLogs             StockLog[]
   stockTransfersCreated StockTransfer[] @relation("TransferCreatedBy")
   expenses              Expense[]
@@ -402,16 +410,26 @@ model PurchaseOrder {
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
-  organization Organization        @relation(fields: [organizationId], references: [id])
-  branch       Branch?             @relation(fields: [branchId], references: [id])
-  supplier     Supplier            @relation(fields: [supplierId], references: [id])
-  createdBy    User                @relation(fields: [createdById], references: [id])
-  items        PurchaseOrderItem[]
+  // Supplier invoice matching
+  invoiceRef      String?
+  invoiceAmount   Decimal?              @db.Decimal(10, 2)
+  invoiceDate     DateTime?
+  invoiceStatus   SupplierInvoiceStatus @default(NONE)
+  invoicePaidAt   DateTime?
+  invoicePaidById String?
+
+  organization  Organization        @relation(fields: [organizationId], references: [id])
+  branch        Branch?             @relation(fields: [branchId], references: [id])
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  createdBy     User                @relation("POCreatedBy", fields: [createdById], references: [id])
+  invoicePaidBy User?               @relation("POInvoicePaidBy", fields: [invoicePaidById], references: [id])
+  items         PurchaseOrderItem[]
 
   @@unique([poNumber, organizationId])
   @@index([organizationId])
   @@index([supplierId])
   @@index([branchId])
+  @@index([invoiceStatus])
   @@map("purchase_orders")
 }
 

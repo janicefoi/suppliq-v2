@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 
@@ -15,6 +16,26 @@ export type PurchaseOrderRow = {
   lineCount: number;
   createdAt: string;
   createdBy: { name: string };
+  invoiceRef: string | null;
+  invoiceAmount: number | null;
+  invoiceDate: string | null;
+  invoiceStatus: string;
+  invoicePaidAt: string | null;
+  invoicePaidBy: { name: string } | null;
+};
+
+export type PayableRow = {
+  id: string;
+  poNumber: string;
+  supplier: { id: string; name: string };
+  branch: { id: string; name: string } | null;
+  invoiceRef: string;
+  invoiceAmount: number;
+  invoiceDate: string;
+  invoiceStatus: string;
+  invoicePaidAt: string | null;
+  poTotalCost: number;
+  createdAt: string;
 };
 
 export type POStats = {
@@ -53,6 +74,7 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
       supplier: { select: { id: true, name: true } },
       branch: { select: { id: true, name: true } },
       createdBy: { select: { name: true } },
+      invoicePaidBy: { select: { name: true } },
       items: { select: { quantity: true, costPrice: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -68,6 +90,12 @@ export async function getPurchaseOrders(): Promise<PurchaseOrderRow[]> {
     lineCount: po.items.length,
     createdAt: po.createdAt.toISOString(),
     createdBy: po.createdBy,
+    invoiceRef: po.invoiceRef,
+    invoiceAmount: po.invoiceAmount ? Number(po.invoiceAmount) : null,
+    invoiceDate: po.invoiceDate?.toISOString() ?? null,
+    invoiceStatus: po.invoiceStatus,
+    invoicePaidAt: po.invoicePaidAt?.toISOString() ?? null,
+    invoicePaidBy: po.invoicePaidBy,
   }));
 }
 
@@ -151,4 +179,120 @@ export async function getSupplierItems(supplierId: string): Promise<SupplierForP
       stockQty: item.branchStocks.reduce((sum, bs) => sum + bs.stockQty, 0),
     })),
   };
+}
+
+// ── Link supplier invoice to a PO ─────────────────────────────────────────
+
+export type LinkInvoiceInput = {
+  invoiceRef: string;
+  invoiceAmount: number;
+  invoiceDate: string; // ISO date string
+};
+
+export async function linkInvoice(
+  poId: string,
+  data: LinkInvoiceInput
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  if (session.user.isDemo) return { success: false, error: "Demo accounts are read-only. Sign up to save your own data." };
+  if (session.user.role === "CASHIER") return { success: false, error: "Insufficient permissions." };
+
+  const orgId = session.user.organizationId;
+  const ref = data.invoiceRef.trim();
+  if (!ref) return { success: false, error: "Invoice reference is required." };
+  if (data.invoiceAmount <= 0) return { success: false, error: "Invoice amount must be greater than zero." };
+
+  const po = await db.purchaseOrder.findFirst({
+    where: { id: poId, organizationId: orgId },
+    select: { id: true, status: true, invoiceStatus: true },
+  });
+  if (!po) return { success: false, error: "Purchase order not found." };
+  if (po.status !== "RECEIVED" && po.status !== "PARTIAL") {
+    return { success: false, error: "Invoice can only be linked to a received purchase order." };
+  }
+
+  await db.purchaseOrder.update({
+    where: { id: poId },
+    data: {
+      invoiceRef: ref,
+      invoiceAmount: data.invoiceAmount,
+      invoiceDate: new Date(data.invoiceDate),
+      invoiceStatus: "RECEIVED",
+    },
+  });
+
+  revalidatePath("/purchases");
+  return { success: true };
+}
+
+// ── Mark invoice as paid ──────────────────────────────────────────────────
+
+export async function markInvoicePaid(
+  poId: string
+): Promise<{ success: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+  if (session.user.isDemo) return { success: false, error: "Demo accounts are read-only. Sign up to save your own data." };
+  if (session.user.role !== "ADMIN") return { success: false, error: "Only admins can record invoice payments." };
+
+  const orgId = session.user.organizationId;
+
+  const po = await db.purchaseOrder.findFirst({
+    where: { id: poId, organizationId: orgId },
+    select: { id: true, invoiceStatus: true },
+  });
+  if (!po) return { success: false, error: "Purchase order not found." };
+  if (po.invoiceStatus !== "RECEIVED") {
+    return { success: false, error: "Only a received (unpaid) invoice can be marked as paid." };
+  }
+
+  await db.purchaseOrder.update({
+    where: { id: poId },
+    data: {
+      invoiceStatus: "PAID",
+      invoicePaidAt: new Date(),
+      invoicePaidById: session.user.id,
+    },
+  });
+
+  revalidatePath("/purchases");
+  return { success: true };
+}
+
+// ── Accounts Payable report ───────────────────────────────────────────────
+
+export async function getPayables(): Promise<PayableRow[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  if (session.user.role === "CASHIER") return [];
+
+  const orgId = session.user.organizationId;
+
+  const rows = await db.purchaseOrder.findMany({
+    where: {
+      organizationId: orgId,
+      invoiceStatus: { in: ["RECEIVED", "PAID", "DISPUTED"] },
+    },
+    include: {
+      supplier: { select: { id: true, name: true } },
+      branch: { select: { id: true, name: true } },
+      items: { select: { quantity: true, costPrice: true } },
+    },
+    orderBy: [{ invoiceStatus: "asc" }, { invoiceDate: "asc" }],
+  });
+
+  return rows.map((po) => ({
+    id: po.id,
+    poNumber: po.poNumber,
+    supplier: po.supplier,
+    branch: po.branch,
+    invoiceRef: po.invoiceRef!,
+    invoiceAmount: Number(po.invoiceAmount),
+    invoiceDate: po.invoiceDate!.toISOString(),
+    invoiceStatus: po.invoiceStatus,
+    invoicePaidAt: po.invoicePaidAt?.toISOString() ?? null,
+    poTotalCost: po.items.reduce((s, i) => s + i.quantity * Number(i.costPrice), 0),
+    createdAt: po.createdAt.toISOString(),
+  }));
 }
