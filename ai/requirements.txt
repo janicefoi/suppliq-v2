@@ -1,0 +1,26 @@
+# ── Web framework ─────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.7.0
+
+# ── Database ──────────────────────────────────────────────────────────────
+asyncpg==0.30.0
+
+# ── Anthropic (Claude) ────────────────────────────────────────────────────
+anthropic==0.40.0
+
+# ── HTTP client (news feeds, market APIs) ────────────────────────────────
+httpx==0.28.1
+feedparser==6.0.11          # RSS feed parsing
+beautifulsoup4==4.12.3       # HTML scraping (Phase 2)
+lxml==5.3.0                  # fast HTML parser for bs4
+
+# ── Data / ML ─────────────────────────────────────────────────────────────
+numpy==2.2.0
+pandas==2.2.3
+scikit-learn==1.6.0
+statsmodels==0.14.4          # ARIMA / exponential smoothing (Phase 2)
+
+# ── Utilities ─────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
