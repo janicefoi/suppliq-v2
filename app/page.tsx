@@ -124,16 +124,16 @@ function Hero() {
 
         {/* Headline */}
         <h1 className="anim-2 mb-6 text-5xl font-bold leading-[1.08] tracking-tight text-white md:text-7xl">
-          Your warehouse runs on spreadsheets.{" "}
+          Inventory. Sales. Purchasing. Suppliers.{" "}
           <span className="bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
-            It doesn&apos;t have to.
+            One platform for all of it.
           </span>
         </h1>
 
         {/* Sub */}
         <p className="anim-3 mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/50">
-          One platform for inventory, purchasing, and sales across every branch.
-          Fast to get started, built to grow with you.
+          Whether you run one location or ten, Suppliq gives you real-time
+          visibility across your whole operation. Nothing slipping through the cracks.
         </p>
 
         {/* CTAs */}
