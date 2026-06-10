@@ -3,24 +3,25 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import {
   BarChart3,
-  Box,
   Building2,
   CheckCircle2,
   Globe2,
   LayoutDashboard,
   Package,
   ShoppingCart,
+  Sparkles,
   TrendingUp,
   Users,
   Zap,
   ArrowRight,
+  ScanSearch,
 } from "lucide-react";
 import { FadeIn } from "@/components/landing/fade-in";
 
 export const metadata = {
-  title: "Suppliq: ERP for wholesale and retail businesses",
+  title: "Suppliq: AI-powered operations for wholesale and retail",
   description:
-    "Manage inventory, sales, purchases, and suppliers across multiple branches. Built for wholesale and retail businesses.",
+    "An AI-first operations platform for wholesale and retail businesses. A complete ERP foundation with an AI layer that turns your data into forecasts, alerts, and decisions.",
 };
 
 export default async function LandingPage() {
@@ -118,22 +119,23 @@ function Hero() {
       <div className="relative mx-auto max-w-4xl text-center">
         {/* Badge */}
         <div className="anim-1 mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/60">
-          <span className="inline-block h-2 w-2 rounded-full bg-blue-400" />
-          Multi-branch ERP for wholesale &amp; retail
+          <span className="inline-block h-2 w-2 rounded-full bg-violet-400" />
+          AI-first operations platform
         </div>
 
         {/* Headline */}
         <h1 className="anim-2 mb-6 text-5xl font-bold leading-[1.08] tracking-tight text-white md:text-7xl">
-          Inventory. Sales. Purchasing. Suppliers.{" "}
-          <span className="bg-gradient-to-r from-blue-400 to-blue-300 bg-clip-text text-transparent">
-            One platform for all of it.
+          Not just another ERP.{" "}
+          <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
+            An AI built on your own business data.
           </span>
         </h1>
 
         {/* Sub */}
         <p className="anim-3 mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/50">
-          Whether you run one location or ten, Suppliq gives you real-time
-          visibility across your whole operation. Nothing slipping through the cracks.
+          Suppliq starts with a complete operations layer that captures every
+          sale, purchase, and stock movement. The AI sits on top of that and
+          turns your real data into forecasts, recommendations, and decisions.
         </p>
 
         {/* CTAs */}
@@ -262,66 +264,63 @@ function StatsBar() {
 
 // ── Features ───────────────────────────────────────────────────────────────
 
-const PRIMARY_FEATURES = [
+const AI_CAPABILITIES = [
   {
-    icon: LayoutDashboard,
-    iconBg: "bg-blue-600 text-white",
-    tag: "Command center",
-    title: "Everything across every branch, on one screen",
-    description:
-      "Get a real-time view across every location without switching tabs. Filter by branch, product, or date range and catch issues before they turn into expensive mistakes.",
-    bullets: ["Real-time multi-branch view", "Branch-level breakdowns", "Custom date ranges"],
-  },
-  {
-    icon: Zap,
+    icon: TrendingUp,
     iconBg: "bg-violet-600 text-white",
-    tag: "AI-powered",
-    title: "Know what to reorder before you run out",
+    tag: "Forecasting",
+    title: "Know what is coming before it arrives",
     description:
-      "Forecasting built on your real sales history, lead times, and seasonal patterns. You get reorder suggestions before stock runs out, not after.",
-    bullets: ["Automated reorder suggestions", "Seasonality-aware predictions", "Supplier lead time built in"],
+      "Demand forecasts, reorder recommendations, and revenue projections built on your real sales history, seasonal patterns, and supplier lead times. The more data Suppliq has, the sharper the predictions get.",
   },
   {
-    icon: Box,
-    iconBg: "bg-emerald-600 text-white",
-    tag: "Core operations",
-    title: "Inventory and POS built to move fast",
+    icon: Sparkles,
+    iconBg: "bg-blue-600 text-white",
+    tag: "Business intelligence",
+    title: "Answers without building reports",
     description:
-      "Live stock levels across every warehouse with automatic low-stock alerts. The POS handles retail, wholesale, and credit sales all in one flow, no switching required.",
-    bullets: ["Live stock across warehouses", "Offline-capable POS", "Wholesale & retail in one"],
+      "Ask questions about your business and get back analysis, trends, and comparisons without manually building dashboards. Margin breakdowns, supplier performance, slow-moving stock, and much more surfaced automatically.",
+  },
+  {
+    icon: ScanSearch,
+    iconBg: "bg-indigo-600 text-white",
+    tag: "Anomaly detection",
+    title: "Catch problems before they escalate",
+    description:
+      "Unusual sales patterns, stock discrepancies, supplier delays, and margin compression surface the moment they appear. You find out straight away, not at month-end when it is too late to act.",
   },
 ];
 
-const SECONDARY_FEATURES = [
+const FOUNDATION_FEATURES = [
   {
-    icon: Users,
-    title: "Customer & Supplier CRM",
-    description: "Credit balances, payment history, and overdue invoice reminders all in one place. No chasing down records across three systems.",
-  },
-  {
-    icon: TrendingUp,
-    title: "Reports & Analytics",
-    description: "P&L, stock movement, and branch comparison reports ready to run at any time. Export to CSV for your accountant in one click.",
+    icon: LayoutDashboard,
+    title: "Multi-branch dashboard",
+    description: "Real-time view across every location. Filter by branch, product, or date range and catch issues before they become expensive.",
   },
   {
     icon: ShoppingCart,
-    title: "Purchase Orders",
+    title: "Inventory & point of sale",
+    description: "Live stock levels, low-stock alerts, and a POS that handles retail, wholesale, and credit sales all in one flow.",
+  },
+  {
+    icon: Zap,
+    title: "Purchase orders",
     description: "Raise POs, track deliveries, match supplier invoices against received stock, and keep a clean audit trail throughout.",
   },
   {
+    icon: Users,
+    title: "Customer & supplier CRM",
+    description: "Credit balances, payment history, and overdue invoice reminders all in one place. No chasing records across three systems.",
+  },
+  {
     icon: Globe2,
-    title: "Multi-currency",
-    description: "GBP, EUR, USD and 15+ currencies with locale-aware formatting. If your suppliers or customers are international, Suppliq keeps up.",
+    title: "Multi-currency support",
+    description: "EUR, GBP, USD and 15+ currencies with locale-aware formatting. Works whether your suppliers are local or international.",
   },
   {
     icon: Building2,
-    title: "Role-based Access",
-    description: "Admins, managers, and cashiers each get the view they need. Permissions go down to branch level so nothing leaks across teams.",
-  },
-  {
-    icon: BarChart3,
-    title: "Full Audit Trail",
-    description: "Every transaction, edit, and stock adjustment is logged with a timestamp and user. You always know who did what and when.",
+    title: "Role-based access",
+    description: "Admins, managers, and cashiers each get exactly the view they need. Permissions go down to branch level.",
   },
 ];
 
@@ -331,20 +330,20 @@ function Features() {
       <div className="mx-auto max-w-7xl">
         {/* Header */}
         <FadeIn className="mb-16 text-center">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-blue-600">
-            What Suppliq does
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-violet-600">
+            The AI layer
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
-            Built for businesses that move stock.
+            Where operations data becomes intelligence.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
-            Not another generic dashboard. Every feature exists because someone running a warehouse or shop floor actually needed it.
+            Most business software just records what happened. Suppliq uses that data to tell you what is coming, where the problems are, and what to do next. And there is much more on the way.
           </p>
         </FadeIn>
 
-        {/* Primary features */}
+        {/* AI capability cards */}
         <div className="mb-6 grid gap-5 md:grid-cols-3">
-          {PRIMARY_FEATURES.map(({ icon: Icon, iconBg, tag, title, description, bullets }, i) => (
+          {AI_CAPABILITIES.map(({ icon: Icon, iconBg, tag, title, description }, i) => (
             <FadeIn key={title} delay={i * 80}>
               <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition-shadow hover:shadow-md">
                 <div className={`mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconBg}`}>
@@ -352,23 +351,38 @@ function Features() {
                 </div>
                 <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">{tag}</p>
                 <h3 className="mb-3 text-xl font-bold leading-snug text-gray-900">{title}</h3>
-                <p className="mb-6 flex-1 text-sm leading-relaxed text-gray-500">{description}</p>
-                <ul className="space-y-2">
-                  {bullets.map((b) => (
-                    <li key={b} className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-blue-500" />
-                      {b}
-                    </li>
-                  ))}
-                </ul>
+                <p className="flex-1 text-sm leading-relaxed text-gray-500">{description}</p>
               </div>
             </FadeIn>
           ))}
         </div>
 
-        {/* Secondary features */}
+        {/* "More coming" note */}
+        <FadeIn>
+          <p className="mb-16 text-center text-sm text-gray-400">
+            New AI capabilities ship continuously. The model learns from your data patterns the longer you use it.
+          </p>
+        </FadeIn>
+
+        {/* Foundation layer divider */}
+        <FadeIn>
+          <div className="mb-10 flex items-center gap-5">
+            <div className="flex-1 border-t border-gray-100" />
+            <div className="text-center">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-gray-400">
+                The foundation layer
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                The AI is only as good as the data it runs on. This is what feeds it.
+              </p>
+            </div>
+            <div className="flex-1 border-t border-gray-100" />
+          </div>
+        </FadeIn>
+
+        {/* Foundation features */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {SECONDARY_FEATURES.map(({ icon: Icon, title, description }, i) => (
+          {FOUNDATION_FEATURES.map(({ icon: Icon, title, description }, i) => (
             <FadeIn key={title} delay={i * 55}>
               <div className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-5 transition-all hover:bg-white hover:shadow-sm">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-100 bg-white text-gray-700 shadow-sm">
@@ -559,10 +573,10 @@ function CtaBanner() {
             Get started
           </p>
           <h2 className="mb-5 text-4xl font-bold leading-tight text-white md:text-5xl">
-            Ready to stop running your business in Excel?
+            Ready to put your business data to work?
           </h2>
           <p className="mb-10 text-lg text-white/45">
-            Get set up in under 10 minutes and import your existing stock data straight away. No consultant, no drawn-out rollout, no surprises.
+            Get set up in under 10 minutes. The more you use Suppliq, the more the AI understands your business. Start now and it only gets better from here.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
