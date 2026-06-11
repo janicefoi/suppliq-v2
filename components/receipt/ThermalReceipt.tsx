@@ -1,10 +1,5 @@
-import QRCode from "react-qr-code";
 import type { SaleResult } from "@/lib/actions/pos";
 import { SHOP } from "@/lib/constants/shop";
-
-function toWaNumber(phone: string) {
-  return phone.replace(/\D/g, "");
-}
 
 function Dashes() {
   return <div style={{ borderTop: "1px dashed #000", margin: "5px 0" }} />;
@@ -18,7 +13,7 @@ interface ThermalReceiptProps {
 
 export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: ThermalReceiptProps) {
   function money(v: string | number) {
-    return Number(v).toLocaleString(undefined, {
+    return Number(v).toLocaleString("en-GB", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -28,14 +23,13 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
   const shopPhone   = sale.branch?.phone   ?? SHOP.phone;
   const shopPin     = sale.branch?.pin     ?? "";
   const shopPaybill = sale.branch?.paybill ?? "";
-  const waUrl       = `https://wa.me/${toWaNumber(shopPhone)}`;
 
   const createdAt = new Date(sale.createdAt);
-  const dayName   = createdAt.toLocaleDateString(undefined, { weekday: "long" });
+  const dayName   = createdAt.toLocaleDateString("en-GB", { weekday: "long" });
   const datePart  = createdAt.toLocaleDateString("en-GB", {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
-  const timePart  = createdAt.toLocaleTimeString(undefined, {
+  const timePart  = createdAt.toLocaleTimeString("en-GB", {
     hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
   });
   const fullDate  = `${dayName}, ${datePart} ${timePart}`;
@@ -66,15 +60,8 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
   return (
     <div className="thermal-receipt-print" style={base}>
 
-      {/* ── Logo ─────────────────────────────────────────────────────── */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "6px" }}>
-        <div style={{ backgroundColor: "#38bdf8", borderRadius: "6px", padding: "4px 10px", display: "inline-block" }}>
-          <img src="/logo.svg" alt="JSH" style={{ width: "160px", height: "55px", display: "block" }} />
-        </div>
-      </div>
-
       {/* ── Shop header ───────────────────────────────────────────────── */}
-      <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "13px", letterSpacing: "0.5px" }}>
+      <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", letterSpacing: "0.5px", marginBottom: "2px" }}>
         {shopName}
       </div>
 
@@ -116,11 +103,9 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       {/* ── Items ─────────────────────────────────────────────────────── */}
       {sale.items.map((line, idx) => (
         <div key={idx} style={{ marginBottom: "5px" }}>
-          {/* Item name */}
           <div style={{ fontSize: "11px", fontWeight: "600" }}>
             {line.item.name}
           </div>
-          {/* SKU + columns */}
           <div style={{ display: "flex", fontSize: "10px", color: "#222" }}>
             <span style={{ flex: 1 }}>{line.item.sku}</span>
             <span style={{ width: "26px", textAlign: "right" }}>{line.quantity}</span>
@@ -188,20 +173,8 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       <Dashes />
 
       {/* ── Thank you message ─────────────────────────────────────────── */}
-      <div style={{ textAlign: "center", fontSize: "11px", fontWeight: "600", margin: "6px 0 4px" }}>
+      <div style={{ textAlign: "center", fontSize: "11px", fontWeight: "600", margin: "6px 0 2px" }}>
         Thank you for shopping with {shopName}!
-      </div>
-      <div style={{ textAlign: "center", fontSize: "10px", color: "#333", marginBottom: "6px" }}>
-        We appreciate your business. See you again!
-      </div>
-
-      {/* ── QR code ───────────────────────────────────────────────────── */}
-      <Dashes />
-      <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 4px" }}>
-        <QRCode value={waUrl} size={64} fgColor="#000000" bgColor="#ffffff" level="M" />
-      </div>
-      <div style={{ textAlign: "center", fontSize: "9px", color: "#555" }}>
-        Scan to chat with us on WhatsApp
       </div>
 
     </div>
