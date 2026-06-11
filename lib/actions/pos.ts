@@ -130,6 +130,7 @@ export type SaleResult = {
   taxAmount: string;
   totalAmount: string;
   createdAt: string;
+  organization: { name: string; phone: string | null; address: string | null; email: string | null; website: string | null; taxId: string | null; vatRate: string; currency: string } | null;
   branch: { name: string; address: string | null; phone: string | null; paybill: string | null; pin: string | null } | null;
   customer: { name: string; phone: string; creditBalance: string } | null;
   employee: { name: string };
@@ -242,6 +243,7 @@ export async function completeSale(
         },
         include: {
           items: { include: { item: { select: { name: true, sku: true } } } },
+          organization: { select: { name: true, phone: true, address: true, email: true, website: true, taxId: true, vatRate: true, currency: true } },
           branch: { select: { name: true, address: true, phone: true, paybill: true, pin: true } },
           customer: { select: { name: true, phone: true, creditBalance: true } },
           employee: { select: { name: true } },
@@ -334,6 +336,7 @@ export async function getSaleById(id: string): Promise<SaleResult | null> {
     where: { id, organizationId: orgId },
     include: {
       items: { include: { item: { select: { name: true, sku: true } } } },
+      organization: { select: { name: true, phone: true, address: true, email: true, website: true, taxId: true, vatRate: true, currency: true } },
       branch: { select: { name: true, address: true, phone: true, paybill: true, pin: true } },
       customer: { select: { name: true, phone: true, creditBalance: true } },
       employee: { select: { name: true } },

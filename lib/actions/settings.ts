@@ -22,9 +22,15 @@ export type OrgDetail = {
   name: string;
   slug: string;
   industry: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  website: string | null;
+  taxId: string | null;
   country: string;
   currency: string;
   timezone: string;
+  vatRate: number;
   plan: string;
   createdAt: string;
   _counts: { users: number; branches: number; items: number };
@@ -53,9 +59,15 @@ export async function getOrgDetail(): Promise<OrgDetail | null> {
     name: org.name,
     slug: org.slug,
     industry: org.industry,
+    phone: org.phone ?? null,
+    email: org.email ?? null,
+    address: org.address ?? null,
+    website: org.website ?? null,
+    taxId: org.taxId ?? null,
     country: org.country,
     currency: org.currency,
     timezone: org.timezone,
+    vatRate: Number(org.vatRate),
     plan: org.plan,
     createdAt: org.createdAt.toISOString(),
     _counts: org._count,
@@ -82,11 +94,17 @@ export async function updateOrganization(data: OrgInput): Promise<ActionResult> 
   await db.organization.update({
     where: { id: orgId },
     data: {
-      name: parsed.data.name,
+      name:     parsed.data.name,
       industry: parsed.data.industry || null,
+      phone:    parsed.data.phone    || null,
+      email:    parsed.data.email    || null,
+      address:  parsed.data.address  || null,
+      website:  parsed.data.website  || null,
+      taxId:    parsed.data.taxId    || null,
+      country:  parsed.data.country,
       currency: parsed.data.currency,
       timezone: parsed.data.timezone,
-      country: parsed.data.country,
+      vatRate:  parsed.data.vatRate,
     },
   });
 

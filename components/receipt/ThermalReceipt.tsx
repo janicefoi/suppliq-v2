@@ -1,5 +1,4 @@
 import type { SaleResult } from "@/lib/actions/pos";
-import { SHOP } from "@/lib/constants/shop";
 
 function Dashes() {
   return <div style={{ borderTop: "1px dashed #000", margin: "5px 0" }} />;
@@ -12,17 +11,32 @@ interface ThermalReceiptProps {
 }
 
 export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: ThermalReceiptProps) {
+  const org = sale.organization;
+  const cur = org?.currency ?? currency;
+
   function money(v: string | number) {
     return Number(v).toLocaleString("en-GB", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
   }
-  const shopName    = SHOP.name;
-  const shopAddress = sale.branch?.address ?? SHOP.address;
-  const shopPhone   = sale.branch?.phone   ?? SHOP.phone;
-  const shopPin     = sale.branch?.pin     ?? "";
+
+  function moneyWithCurrency(v: string | number) {
+    return new Intl.NumberFormat("en-GB", {
+      style: "currency",
+      currency: cur,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(v));
+  }
+
+  const shopName    = org?.name ?? "—";
+  const shopAddress = sale.branch?.address ?? org?.address ?? "";
+  const shopPhone   = sale.branch?.phone   ?? org?.phone   ?? "";
+  const shopPin     = sale.branch?.pin     ?? org?.taxId   ?? "";
   const shopPaybill = sale.branch?.paybill ?? "";
+
+  const vatRate = org?.vatRate ? Number(org.vatRate) : 20;
 
   const createdAt = new Date(sale.createdAt);
   const dayName   = createdAt.toLocaleDateString("en-GB", { weekday: "long" });
@@ -64,26 +78,33 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       <div style={{ textAlign: "center", fontWeight: "bold", fontSize: "15px", letterSpacing: "0.5px", marginBottom: "2px" }}>
         {shopName}
       </div>
+      {sale.branch?.name && (
+        <div style={{ textAlign: "center", fontSize: "11px", color: "#444", marginBottom: "2px" }}>
+          {sale.branch.name}
+        </div>
+      )}
+      {shopAddress && <div style={{ fontSize: "10px", marginTop: "3px" }}>{shopAddress}</div>}
+      {shopPhone && (
+        <div style={{ fontSize: "10px" }}>
+          Phone: {shopPhone}
+          {shopPin ? `   Tax ID: ${shopPin}` : ""}
+        </div>
+      )}
+      {!shopPhone && shopPin && (
+        <div style={{ fontSize: "10px" }}>Tax ID: {shopPin}</div>
+      )}
+      {org?.email && <div style={{ fontSize: "10px" }}>Email: {org.email}</div>}
 
-      <div style={{ fontSize: "10px", marginTop: "3px" }}>{shopAddress}</div>
-
-      <div style={{ fontSize: "10px" }}>
-        Phone:{shopPhone}
-        {shopPin ? `  Tax ID: ${shopPin}` : ""}
-      </div>
-
-      <div style={{ fontSize: "10px" }}>Date :{fullDate}</div>
+      <div style={{ fontSize: "10px", marginTop: "2px" }}>Date: {fullDate}</div>
 
       {sale.customer && (
         <div style={{ fontSize: "10px" }}>
-          Client :{sale.customer.name.toUpperCase()}
+          Client: {sale.customer.name.toUpperCase()}
         </div>
       )}
-
-      <div style={{ fontSize: "10px" }}>Served By :{sale.employee.name}</div>
-
+      <div style={{ fontSize: "10px" }}>Served by: {sale.employee.name}</div>
       <div style={{ fontSize: "10px" }}>
-        {shopPaybill ? `Pay Ref: ${shopPaybill}  ` : ""}
+        {shopPaybill ? `Pay Ref: ${shopPaybill}   ` : ""}
         Ord No: {sale.receiptNumber}
       </div>
 
@@ -93,9 +114,8 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       <div style={{ display: "flex", fontSize: "10px", fontWeight: "600" }}>
         <span style={{ flex: 1 }}>Description</span>
         <span style={{ width: "26px", textAlign: "right" }}>Qty</span>
-        <span style={{ width: "56px", textAlign: "right" }}>Price</span>
-        <span style={{ width: "62px", textAlign: "right" }}>Subtotal</span>
-        <span style={{ width: "14px", textAlign: "right" }}>TC</span>
+        <span style={{ width: "60px", textAlign: "right" }}>Price</span>
+        <span style={{ width: "66px", textAlign: "right" }}>Subtotal</span>
       </div>
 
       <Dashes />
@@ -109,9 +129,8 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
           <div style={{ display: "flex", fontSize: "10px", color: "#222" }}>
             <span style={{ flex: 1 }}>{line.item.sku}</span>
             <span style={{ width: "26px", textAlign: "right" }}>{line.quantity}</span>
-            <span style={{ width: "56px", textAlign: "right" }}>{money(line.unitPrice)}</span>
-            <span style={{ width: "62px", textAlign: "right" }}>{money(line.subtotal)}</span>
-            <span style={{ width: "14px", textAlign: "right" }}>V</span>
+            <span style={{ width: "60px", textAlign: "right" }}>{money(line.unitPrice)}</span>
+            <span style={{ width: "66px", textAlign: "right" }}>{money(line.subtotal)}</span>
           </div>
         </div>
       ))}
@@ -131,11 +150,11 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       {/* ── Subtotals ─────────────────────────────────────────────────── */}
       <div style={row}>
         <span>SUB-TOTAL:</span>
-        <span>{money(subTotalExVat)}</span>
+        <span>{moneyWithCurrency(subTotalExVat)}</span>
       </div>
       <div style={row}>
-        <span>VAT:</span>
-        <span>{money(tax)}</span>
+        <span>VAT ({vatRate}%):</span>
+        <span>{moneyWithCurrency(tax)}</span>
       </div>
 
       <Dashes />
@@ -143,13 +162,15 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       {/* ── Grand total ───────────────────────────────────────────────── */}
       <div style={{ ...row, fontWeight: "bold", fontSize: "13px" }}>
         <span>TOTAL:</span>
-        <span>{money(total)}</span>
+        <span>{moneyWithCurrency(total)}</span>
       </div>
 
-      <div style={row}>
-        <span>DISCOUNT:</span>
-        <span>{money(discount)}</span>
-      </div>
+      {discount > 0 && (
+        <div style={row}>
+          <span>DISCOUNT:</span>
+          <span>{moneyWithCurrency(discount)}</span>
+        </div>
+      )}
 
       {/* ── Credit status ─────────────────────────────────────────────── */}
       {isCreditSale && (
@@ -161,14 +182,16 @@ export function ThermalReceipt({ sale, amountGiven = 0, currency = "EUR" }: Ther
       {isCreditSale && sale.customer && (
         <div style={row}>
           <span>CREDIT BALANCE:</span>
-          <span>{currency} {money(sale.customer.creditBalance)}</span>
+          <span>{moneyWithCurrency(sale.customer.creditBalance)}</span>
         </div>
       )}
 
-      <div style={row}>
-        <span>CHANGE:</span>
-        <span>{money(Math.max(0, amountGiven - total))}</span>
-      </div>
+      {amountGiven > 0 && (
+        <div style={row}>
+          <span>CHANGE:</span>
+          <span>{moneyWithCurrency(Math.max(0, amountGiven - total))}</span>
+        </div>
+      )}
 
       <Dashes />
 

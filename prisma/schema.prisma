@@ -95,9 +95,20 @@ model Organization {
   name      String
   slug      String   @unique          // used in URLs / subdomains
   industry  String?
+
+  // Business contact info (shown on receipts and documents)
+  phone   String?
+  email   String?
+  address String?
+  website String?
+  taxId   String?   // VAT/tax registration number
+
+  // Regional settings
   country   String   @default("FR")
   currency  String   @default("EUR")
   timezone  String   @default("Europe/Paris")
+  vatRate   Decimal  @default(20) @db.Decimal(5, 2)
+
   plan      OrgPlan  @default(FREE)
   isActive  Boolean  @default(true)
 

@@ -264,7 +264,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
 
         {/* Amount given - only for cash/paid sales */}
         {paymentStatus === "PAID" && (
-          <div className="space-y-1">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <label className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide shrink-0">
                 Amount Given
@@ -287,6 +287,28 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
                 />
               </div>
             </div>
+            {/* Quick cash buttons */}
+            {tot > 0 && (
+              <div className="flex gap-1 flex-wrap justify-end">
+                <button
+                  type="button"
+                  onClick={() => setAmountGiven(tot)}
+                  className="text-[10px] px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium tabular-nums"
+                >
+                  Exact
+                </button>
+                {[5, 10, 20, 50, 100, 200].map((v) => v > tot ? (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setAmountGiven(v)}
+                    className="text-[10px] px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 font-medium tabular-nums"
+                  >
+                    {v}
+                  </button>
+                ) : null)}
+              </div>
+            )}
             {amountGiven > 0 && amountGiven < tot && (
               <p className="text-[10px] text-red-600 text-right">
                 Amount given is less than total
