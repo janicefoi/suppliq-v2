@@ -11,18 +11,9 @@ import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/store/cart";
 import { searchItems, type SearchedItem } from "@/lib/actions/pos";
 import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
-function fmt(v: number) {
-  return `KES ${v.toLocaleString("en-KE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-function fmtP(v: string | number | null | undefined) {
-  if (v === null || v === undefined) return null;
-  const n = Number(v);
-  return isNaN(n) ? null : fmt(n);
-}
-
-export function ItemSearch() {
+export function ItemSearch({ currency = "EUR" }: { currency?: string }) {
   const [query, setQuery] = useState("");
   const [pending, setPending] = useState<SearchedItem | null>(null);
   const [addQty, setAddQty] = useState(1);
@@ -184,10 +175,10 @@ export function ItemSearch() {
                             <span className={cn("text-[10px]", oos ? "text-red-500" : lowStock ? "text-amber-500" : "text-slate-400")}>
                               {oos ? "Out of stock" : `${item.stockQty} in stock`}
                             </span>
-                            <span className="text-[10px] text-slate-500">R {fmtP(item.retailPrice)}</span>
-                            <span className="text-[10px] text-slate-500">WS {fmtP(item.wholesalePrice)}</span>
+                            <span className="text-[10px] text-slate-500">R {item.retailPrice != null ? formatCurrency(item.retailPrice, currency) : null}</span>
+                            <span className="text-[10px] text-slate-500">WS {item.wholesalePrice != null ? formatCurrency(item.wholesalePrice, currency) : null}</span>
                             {item.specialPrice && (
-                              <span className="text-[10px] text-purple-600 font-medium">Sp {fmtP(item.specialPrice)}</span>
+                              <span className="text-[10px] text-purple-600 font-medium">Sp {formatCurrency(item.specialPrice, currency)}</span>
                             )}
                           </div>
                         </div>
@@ -259,7 +250,7 @@ export function ItemSearch() {
                   type="button"
                   onClick={() => pending.specialPrice && setUseSpecialPrice((v) => !v)}
                   disabled={!pending.specialPrice}
-                  title={pending.specialPrice ? `Use special price ${fmtP(pending.specialPrice)}` : "No special price set for this item"}
+                  title={pending.specialPrice ? `Use special price ${formatCurrency(pending.specialPrice, currency)}` : "No special price set for this item"}
                   className={cn(
                     "h-8 px-2.5 rounded-md border text-xs font-semibold inline-flex items-center gap-1.5 transition-colors shrink-0",
                     useSpecialPrice
@@ -375,7 +366,7 @@ export function ItemSearch() {
                           type="button"
                           onClick={() => setItemSpecialPrice(item.itemId, !item.useSpecialPrice)}
                           disabled={item.specialPrice === null}
-                          title={item.specialPrice !== null ? `Use special price ${fmt(item.specialPrice)}` : "No special price set for this item"}
+                          title={item.specialPrice !== null ? `Use special price ${formatCurrency(item.specialPrice, currency)}` : "No special price set for this item"}
                           className={cn(
                             "mt-1 mx-auto h-5 px-1.5 rounded border text-[10px] font-semibold inline-flex items-center gap-1 transition-colors",
                             item.useSpecialPrice
@@ -392,12 +383,12 @@ export function ItemSearch() {
 
                       {/* Unit price */}
                       <TableCell className="text-right text-xs tabular-nums text-slate-600 whitespace-nowrap">
-                        {fmt(item.unitPrice)}
+                        {formatCurrency(item.unitPrice, currency)}
                       </TableCell>
 
                       {/* Subtotal */}
                       <TableCell className="text-right text-xs tabular-nums font-semibold text-slate-800 whitespace-nowrap">
-                        {fmt(item.subtotal)}
+                        {formatCurrency(item.subtotal, currency)}
                       </TableCell>
 
                       {/* Remove */}

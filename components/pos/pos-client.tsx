@@ -22,7 +22,7 @@ export function POSClient({ currency = "EUR" }: { currency?: string }) {
     <div className="-m-6 flex h-[calc(100vh-3.5rem)] overflow-hidden bg-slate-50">
       {/* ── Left: Item search ─────────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden border-r border-slate-200 bg-white min-w-0">
-        <ItemSearch />
+        <ItemSearch currency={currency} />
       </div>
 
       {/* ── Right: Active order ───────────────────────────────────── */}

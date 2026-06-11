@@ -196,6 +196,7 @@ export function CartPanel({ onSaleComplete, currency = "EUR" }: CartPanelProps) 
                 : null
             }
             onSelect={(c) => setCustomer(c?.id ?? null, c?.name ?? null)}
+            currency={currency}
           />
         </div>
 

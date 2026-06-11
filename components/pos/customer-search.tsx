@@ -4,14 +4,15 @@ import { useState, useRef, useEffect, useTransition } from "react";
 import { Search, X, User, Loader2 } from "lucide-react";
 import { searchCustomers, type SearchedCustomer } from "@/lib/actions/pos";
 import { useDebounce } from "@/hooks/use-debounce";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 
 interface CustomerSearchProps {
   selected: { id: string; name: string; phone: string } | null;
   onSelect: (customer: { id: string; name: string; phone: string } | null) => void;
+  currency?: string;
 }
 
-export function CustomerSearch({ selected, onSelect }: CustomerSearchProps) {
+export function CustomerSearch({ selected, onSelect, currency = "EUR" }: CustomerSearchProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchedCustomer[]>([]);
@@ -114,7 +115,7 @@ export function CustomerSearch({ selected, onSelect }: CustomerSearchProps) {
                   </div>
                   {Number(c.creditBalance) > 0 && (
                     <span className="ml-auto text-[10px] text-amber-600 shrink-0">
-                      CR {Number(c.creditBalance).toLocaleString("en-KE", { minimumFractionDigits: 2 })}
+                      CR {formatCurrency(c.creditBalance, currency)}
                     </span>
                   )}
                 </button>
