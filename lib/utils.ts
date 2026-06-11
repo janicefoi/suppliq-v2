@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(amount: number | string, currency = "EUR"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat("en-GB", {
     style: "currency",
     currency,
     minimumFractionDigits: 2,
@@ -17,7 +17,7 @@ export function formatCurrency(amount: number | string, currency = "EUR"): strin
 
 export function formatCurrencyCompact(amount: number | string, currency = "EUR"): string {
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
-  const symbol = new Intl.NumberFormat(undefined, { style: "currency", currency, maximumFractionDigits: 0 })
+  const symbol = new Intl.NumberFormat("en-GB", { style: "currency", currency, maximumFractionDigits: 0 })
     .formatToParts(0)
     .find((p) => p.type === "currency")?.value ?? currency;
   if (num >= 1_000_000) return `${symbol} ${(num / 1_000_000).toFixed(1)}M`;
