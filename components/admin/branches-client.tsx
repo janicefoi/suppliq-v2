@@ -12,7 +12,7 @@ import type { BranchRow } from "@/lib/actions/branches";
 import { cn } from "@/lib/utils";
 
 function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("en-KE", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 interface Props { branches: BranchRow[] }
@@ -50,6 +50,7 @@ export function BranchesClient({ branches }: Props) {
         <Table>
           <TableHeader>
             <TableRow className="bg-slate-50 hover:bg-slate-50">
+              <TableHead className="w-10 text-center text-slate-400">#</TableHead>
               <TableHead className="min-w-[140px]">Name</TableHead>
               <TableHead>Address</TableHead>
               <TableHead className="w-32">Phone</TableHead>
@@ -64,16 +65,17 @@ export function BranchesClient({ branches }: Props) {
           <TableBody>
             {branches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-xs text-slate-400">
+                <TableCell colSpan={10} className="py-10 text-center text-xs text-slate-400">
                   <GitBranch className="h-7 w-7 mx-auto mb-1.5 opacity-30" />
                   No branches yet.
                 </TableCell>
               </TableRow>
             ) : (
-              branches.map((b) => {
+              branches.map((b, idx) => {
                 const isToggling = togglingId === b.id;
                 return (
                   <TableRow key={b.id} className={cn("hover:bg-slate-50/60", !b.isActive && "opacity-60 bg-slate-50")}>
+                    <TableCell className="text-center text-xs font-medium text-slate-400 tabular-nums">{idx + 1}</TableCell>
                     <TableCell className="text-xs font-semibold text-slate-800">{b.name}</TableCell>
                     <TableCell className="text-xs text-slate-500">
                       {b.address ? (

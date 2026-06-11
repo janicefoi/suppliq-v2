@@ -45,7 +45,7 @@ export function BillingCard({ org }: { org: OrgDetail }) {
   const key = org.plan as keyof typeof PLAN_CONFIG;
   const config = PLAN_CONFIG[key] ?? PLAN_CONFIG.FREE;
   const features = PLAN_FEATURES[org.plan] ?? PLAN_FEATURES.FREE;
-  const memberSince = new Date(org.createdAt).toLocaleDateString(undefined, {
+  const memberSince = new Date(org.createdAt).toLocaleDateString("en-GB", {
     day: "2-digit", month: "long", year: "numeric",
   });
 
@@ -54,7 +54,7 @@ export function BillingCard({ org }: { org: OrgDetail }) {
     : null;
 
   const renewsOn = org.currentPeriodEnd
-    ? new Date(org.currentPeriodEnd).toLocaleDateString(undefined, {
+    ? new Date(org.currentPeriodEnd).toLocaleDateString("en-GB", {
         day: "2-digit", month: "long", year: "numeric",
       })
     : null;

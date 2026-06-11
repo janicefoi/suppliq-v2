@@ -14,7 +14,7 @@ export default async function ProfileSettingsPage() {
   if (!profile) redirect("/login");
 
   const roleLabel = ROLE_LABELS[profile.role] ?? profile.role;
-  const memberSince = new Date(profile.createdAt).toLocaleDateString(undefined, {
+  const memberSince = new Date(profile.createdAt).toLocaleDateString("en-GB", {
     day: "2-digit", month: "long", year: "numeric",
   });
 

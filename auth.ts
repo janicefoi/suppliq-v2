@@ -30,7 +30,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
             isActive: true,
             branchId: true,
             organizationId: true,
-            organization: { select: { currency: true } },
+            organization: { select: { currency: true, plan: true } },
           },
         });
 
@@ -47,6 +47,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
           branchId: user.branchId,
           organizationId: user.organizationId,
           currency: user.organization.currency,
+          plan: user.organization.plan,
           isDemo: user.email === "demo@suppliq.com",
         };
       },

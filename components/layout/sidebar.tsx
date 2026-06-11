@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { NAV_ITEMS, ROLE_LABELS } from "@/components/layout/nav-items";
+import { PLAN_DISPLAY } from "@/lib/constants/plans";
 
 interface SidebarUser {
   name?: string | null;
@@ -21,6 +22,7 @@ interface SidebarUser {
 
 interface SidebarProps {
   user: SidebarUser;
+  plan?: string;
   mobileOpen: boolean;
   onMobileClose: () => void;
 }
@@ -49,9 +51,11 @@ function roleBadgeClass(role: string) {
 // ── Shared sidebar content ─────────────────────────────────────────────────
 function SidebarContent({
   user,
+  plan = "FREE",
   onNavClick,
 }: {
   user: SidebarUser;
+  plan?: string;
   onNavClick?: () => void;
 }) {
   const pathname = usePathname();
@@ -99,6 +103,27 @@ function SidebarContent({
           );
         })}
       </nav>
+
+      {/* Plan badge */}
+      {user.role === "ADMIN" && (
+        <Link
+          href="/settings/billing"
+          onClick={onNavClick}
+          className="mx-3 mb-2 flex items-center justify-between px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+        >
+          <span className="text-[11px] text-slate-400">Plan</span>
+          <span className={cn(
+            "text-[10px] font-semibold px-2 py-0.5 rounded border",
+            plan === "ENTERPRISE"
+              ? "bg-violet-500/20 text-violet-300 border-violet-500/30"
+              : plan === "GROWTH"
+              ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
+              : "bg-slate-500/20 text-slate-300 border-slate-500/30"
+          )}>
+            {PLAN_DISPLAY[plan as keyof typeof PLAN_DISPLAY]?.label ?? plan}
+          </span>
+        </Link>
+      )}
 
       <Separator className="bg-[hsl(var(--sidebar-border))]" />
 
@@ -148,7 +173,7 @@ function SidebarContent({
 }
 
 // ── Sidebar (desktop + mobile Sheet) ──────────────────────────────────────
-export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ user, plan, mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop - fixed left */}
@@ -156,7 +181,7 @@ export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
         className="hidden md:flex flex-col fixed inset-y-0 left-0 w-60 z-30"
         style={{ background: "hsl(var(--sidebar-background))" }}
       >
-        <SidebarContent user={user} />
+        <SidebarContent user={user} plan={plan} />
       </aside>
 
       {/* Mobile - Sheet */}
@@ -166,7 +191,7 @@ export function Sidebar({ user, mobileOpen, onMobileClose }: SidebarProps) {
           className="w-60 p-0 border-r-0"
           style={{ background: "hsl(var(--sidebar-background))" }}
         >
-          <SidebarContent user={user} onNavClick={onMobileClose} />
+          <SidebarContent user={user} plan={plan} onNavClick={onMobileClose} />
         </SheetContent>
       </Sheet>
     </>

@@ -42,7 +42,7 @@ export async function getBranches(): Promise<BranchRow[]> {
 
   const rows = await db.branch.findMany({
     where: { organizationId: admin.organizationId },
-    orderBy: { name: "asc" },
+    orderBy: { createdAt: "asc" },
     select: {
       id: true,
       name: true,

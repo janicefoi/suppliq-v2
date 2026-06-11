@@ -12,6 +12,7 @@ interface ShellUser {
   name?: string | null;
   email?: string | null;
   role: string;
+  plan?: string;
 }
 
 interface DashboardShellProps {
@@ -64,6 +65,7 @@ export function DashboardShell({ user, isDemo, lowStockCount, children }: Dashbo
     <div className="min-h-screen bg-slate-50">
       <Sidebar
         user={user}
+        plan={user.plan ?? "FREE"}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
       />
