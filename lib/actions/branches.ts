@@ -5,6 +5,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { checkBranchLimit } from "@/lib/plan-limits";
+import { getPlanLimits } from "@/lib/constants/plans";
 
 const BranchSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
@@ -121,6 +122,75 @@ export async function updateBranch(id: string, data: BranchInput): Promise<Actio
 
   revalidatePath("/admin/branches");
   return { success: true };
+}
+
+// ── Import branches (CSV bulk) ────────────────────────────────────────────
+
+export type CsvImportResult = {
+  imported: number;
+  skipped: Array<{ row: number; value: string; reason: string }>;
+};
+
+export async function importBranches(
+  rows: Array<Record<string, string>>
+): Promise<CsvImportResult> {
+  try {
+    const admin = await requireAdmin();
+    const orgId = admin.organizationId;
+
+    const org = await db.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
+    const { branches: branchLimit } = getPlanLimits(org?.plan ?? "FREE");
+
+    let currentCount = await db.branch.count({ where: { organizationId: orgId } });
+
+    const existingNames = new Set(
+      (await db.branch.findMany({ where: { organizationId: orgId }, select: { name: true } }))
+        .map((b) => b.name.toLowerCase())
+    );
+
+    let imported = 0;
+    const skipped: CsvImportResult["skipped"] = [];
+    const seenNames = new Set<string>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+      const name = row.name?.trim();
+
+      if (!name || name.length < 2) {
+        skipped.push({ row: rowNum, value: name ?? "", reason: "name is required (min 2 characters)" });
+        continue;
+      }
+      if (existingNames.has(name.toLowerCase()) || seenNames.has(name.toLowerCase())) {
+        skipped.push({ row: rowNum, value: name, reason: `branch "${name}" already exists` });
+        continue;
+      }
+      if (branchLimit !== null && currentCount >= branchLimit) {
+        skipped.push({ row: rowNum, value: name, reason: "branch limit reached for your plan" });
+        continue;
+      }
+
+      await db.branch.create({
+        data: {
+          name,
+          address: row.address?.trim() || null,
+          phone: row.phone?.trim() || null,
+          paybill: row.paybill?.trim() || null,
+          pin: row.pin?.trim() || null,
+          organizationId: orgId,
+        },
+      });
+
+      seenNames.add(name.toLowerCase());
+      currentCount++;
+      imported++;
+    }
+
+    if (imported > 0) revalidatePath("/admin/branches");
+    return { imported, skipped };
+  } catch (err) {
+    return { imported: 0, skipped: [{ row: 0, value: "", reason: err instanceof Error ? err.message : "Import failed" }] };
+  }
 }
 
 export async function toggleBranchActive(id: string): Promise<ActionResult> {

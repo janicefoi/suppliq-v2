@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Power, MapPin, Phone, Users, GitBranch } from "lucide-react";
+import { Plus, Pencil, Power, MapPin, Phone, Users, GitBranch, Upload } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BranchDialog } from "@/components/admin/branch-dialog";
-import { toggleBranchActive } from "@/lib/actions/branches";
+import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
+import { toggleBranchActive, importBranches } from "@/lib/actions/branches";
 import type { BranchRow } from "@/lib/actions/branches";
 import { cn } from "@/lib/utils";
 
@@ -23,6 +24,7 @@ export function BranchesClient({ branches }: Props) {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editBranch, setEditBranch] = useState<BranchRow | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   function refresh() {
     setDialogOpen(false);
@@ -41,9 +43,14 @@ export function BranchesClient({ branches }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-xs text-slate-400">{branches.length} branch{branches.length !== 1 ? "es" : ""}</p>
-        <Button size="sm" className="gap-1.5" onClick={() => { setEditBranch(null); setDialogOpen(true); }}>
-          <Plus className="h-3.5 w-3.5" /> Add branch
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCsvOpen(true)}>
+            <Upload className="h-3.5 w-3.5" /> Import CSV
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => { setEditBranch(null); setDialogOpen(true); }}>
+            <Plus className="h-3.5 w-3.5" /> Add branch
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-lg border border-slate-200 bg-white overflow-hidden [&_th]:h-8 [&_th]:py-2 [&_th]:text-[11px] [&_td]:py-2 [&_td]:align-middle">
@@ -134,6 +141,27 @@ export function BranchesClient({ branches }: Props) {
         onClose={() => { setDialogOpen(false); setEditBranch(null); }}
         branch={editBranch}
         onSuccess={refresh}
+      />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onSuccess={() => startTransition(() => router.refresh())}
+        title="Import branches"
+        formatCols={[
+          { key: "name",    required: true,  note: "Branch name (must be unique, min 2 characters)" },
+          { key: "address", required: false, note: "Street address" },
+          { key: "phone",   required: false, note: "Branch phone number" },
+          { key: "paybill", required: false, note: "Payment / paybill reference" },
+          { key: "pin",     required: false, note: "Branch PIN" },
+        ]}
+        previewCols={[
+          { key: "name",    label: "Name" },
+          { key: "address", label: "Address" },
+          { key: "phone",   label: "Phone" },
+        ]}
+        exampleRows={[["Main Branch", "123 High Street", "+1 555 0100", "", ""]]}
+        onImport={importBranches}
       />
     </div>
   );
