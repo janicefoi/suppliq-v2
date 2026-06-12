@@ -228,11 +228,20 @@ export function EmployeesClient({ employees, currentUserId, branches }: Props) {
         onClose={() => setCsvOpen(false)}
         onSuccess={() => { startTransition(() => router.refresh()); }}
         title="Import employees"
-        requiredHeaders={["name", "email", "role"]}
-        optionalHeaders={["branch_name"]}
-        exampleRow={["Alice Smith", "alice@example.com", "CASHIER", "Main Branch"]}
+        formatCols={[
+          { key: "name",        required: true,  note: "Employee full name" },
+          { key: "email",       required: true,  note: "Login email address (must be unique)" },
+          { key: "role",        required: true,  note: "ADMIN, MANAGER, or CASHIER" },
+          { key: "branch_name", required: false, note: "Must match an existing branch name exactly" },
+        ]}
+        previewCols={[
+          { key: "name",        label: "Name" },
+          { key: "email",       label: "Email" },
+          { key: "role",        label: "Role" },
+          { key: "branch_name", label: "Branch" },
+        ]}
+        exampleRows={[["Alice Smith", "alice@example.com", "CASHIER", "Main Branch"]]}
         onImport={importEmployees}
-        notes="Role must be ADMIN, MANAGER, or CASHIER. Temporary passwords will be shown after import."
       />
     </div>
   );

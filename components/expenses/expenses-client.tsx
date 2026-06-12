@@ -309,11 +309,22 @@ export function ExpensesClient({
         onClose={() => setCsvOpen(false)}
         onSuccess={() => router.refresh()}
         title="Import expenses"
-        requiredHeaders={["description", "amount", "category", "date"]}
-        optionalHeaders={["branch_name"]}
-        exampleRow={["Office rent", "1500", "RENT", "2026-06-01", "Main Branch"]}
+        formatCols={[
+          { key: "description", required: true,  note: "Expense description" },
+          { key: "amount",      required: true,  note: "Positive number (e.g. 1500.00)" },
+          { key: "category",    required: true,  note: "RENT, SALARIES, UTILITIES, TRANSPORT, MAINTENANCE, MARKETING, or OTHER" },
+          { key: "date",        required: true,  note: "Date in YYYY-MM-DD format" },
+          { key: "branch_name", required: false, note: "Must match an existing branch name exactly" },
+        ]}
+        previewCols={[
+          { key: "description", label: "Description" },
+          { key: "amount",      label: "Amount", align: "right" },
+          { key: "category",    label: "Category" },
+          { key: "date",        label: "Date" },
+          { key: "branch_name", label: "Branch" },
+        ]}
+        exampleRows={[["Office rent", "1500", "RENT", "2026-06-01", "Main Branch"]]}
         onImport={importExpenses}
-        notes="Category must be: RENT, SALARIES, UTILITIES, TRANSPORT, MAINTENANCE, MARKETING, or OTHER. Date format: YYYY-MM-DD."
       />
     </div>
   );

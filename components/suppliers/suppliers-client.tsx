@@ -249,9 +249,20 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
         onClose={() => setCsvOpen(false)}
         onSuccess={() => startTransition(() => router.refresh())}
         title="Import suppliers"
-        requiredHeaders={["name", "phone"]}
-        optionalHeaders={["email", "address", "notes"]}
-        exampleRow={["Acme Supplies", "+1 555 0200", "acme@example.com", "456 Trade St", "Reliable vendor"]}
+        formatCols={[
+          { key: "name",    required: true,  note: "Supplier name" },
+          { key: "phone",   required: true,  note: "Phone number (must be unique per organisation)" },
+          { key: "email",   required: false, note: "Email address" },
+          { key: "address", required: false, note: "Street address" },
+          { key: "notes",   required: false, note: "Internal notes" },
+        ]}
+        previewCols={[
+          { key: "name",    label: "Name" },
+          { key: "phone",   label: "Phone" },
+          { key: "email",   label: "Email" },
+          { key: "address", label: "Address" },
+        ]}
+        exampleRows={[["Acme Supplies", "+1 555 0200", "acme@example.com", "456 Trade St", "Reliable vendor"]]}
         onImport={importSuppliers}
       />
     </div>

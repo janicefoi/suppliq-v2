@@ -317,9 +317,17 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
         onClose={() => setCsvOpen(false)}
         onSuccess={() => startTransition(() => router.refresh())}
         title="Import customers"
-        requiredHeaders={["name", "phone"]}
-        optionalHeaders={["address"]}
-        exampleRow={["Jane Doe", "+1 555 0100", "123 Main St"]}
+        formatCols={[
+          { key: "name",    required: true,  note: "Customer display name" },
+          { key: "phone",   required: true,  note: "Phone number (must be unique per organisation)" },
+          { key: "address", required: false, note: "Street address" },
+        ]}
+        previewCols={[
+          { key: "name",    label: "Name" },
+          { key: "phone",   label: "Phone" },
+          { key: "address", label: "Address" },
+        ]}
+        exampleRows={[["Jane Doe", "+1 555 0100", "123 Main St"]]}
         onImport={importCustomers}
       />
     </div>
