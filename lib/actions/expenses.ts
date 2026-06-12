@@ -197,6 +197,82 @@ export async function updateExpense(
   }
 }
 
+// ── Import expenses (CSV bulk) ─────────────────────────────────────────────
+
+export type CsvImportResult = {
+  imported: number;
+  skipped: Array<{ row: number; value: string; reason: string }>;
+};
+
+const VALID_CATEGORIES = ["RENT", "SALARIES", "UTILITIES", "TRANSPORT", "MAINTENANCE", "MARKETING", "OTHER"] as const;
+
+export async function importExpenses(
+  rows: Array<Record<string, string>>
+): Promise<CsvImportResult> {
+  try {
+    const user = await requireManager();
+    const orgId = user.organizationId;
+
+    const allBranches = await db.branch.findMany({
+      where: { organizationId: orgId },
+      select: { id: true, name: true },
+    });
+    const branchByName = new Map(allBranches.map((b) => [b.name.toLowerCase(), b.id]));
+
+    let imported = 0;
+    const skipped: CsvImportResult["skipped"] = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+      const description = row.description?.trim();
+      const amountRaw = row.amount?.trim();
+      const categoryRaw = row.category?.trim().toUpperCase();
+      const dateRaw = row.date?.trim();
+
+      if (!description) { skipped.push({ row: rowNum, value: "", reason: "description is required" }); continue; }
+      if (!amountRaw || isNaN(Number(amountRaw)) || Number(amountRaw) <= 0) {
+        skipped.push({ row: rowNum, value: description, reason: "amount must be a positive number" }); continue;
+      }
+      if (!categoryRaw || !VALID_CATEGORIES.includes(categoryRaw as typeof VALID_CATEGORIES[number])) {
+        skipped.push({ row: rowNum, value: description, reason: `category must be one of: ${VALID_CATEGORIES.join(", ")}` }); continue;
+      }
+      if (!dateRaw) { skipped.push({ row: rowNum, value: description, reason: "date is required" }); continue; }
+      const parsedDate = new Date(dateRaw);
+      if (isNaN(parsedDate.getTime())) {
+        skipped.push({ row: rowNum, value: description, reason: `invalid date "${dateRaw}"` }); continue;
+      }
+
+      const branchName = row.branch_name?.trim();
+      let branchId: string | null = null;
+      if (branchName) {
+        branchId = branchByName.get(branchName.toLowerCase()) ?? null;
+        if (!branchId) {
+          skipped.push({ row: rowNum, value: description, reason: `branch "${branchName}" not found` }); continue;
+        }
+      }
+
+      await db.expense.create({
+        data: {
+          description,
+          amount: Number(amountRaw),
+          category: categoryRaw as typeof VALID_CATEGORIES[number],
+          date: parsedDate,
+          branchId,
+          organizationId: orgId,
+          recordedById: user.id,
+        },
+      });
+      imported++;
+    }
+
+    if (imported > 0) revalidatePath("/expenses");
+    return { imported, skipped };
+  } catch (err) {
+    return { imported: 0, skipped: [{ row: 0, value: "", reason: err instanceof Error ? err.message : "Import failed" }] };
+  }
+}
+
 // ── Delete expense ─────────────────────────────────────────────────────────
 
 export async function deleteExpense(

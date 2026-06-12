@@ -293,6 +293,59 @@ export async function recordPurchaseOrder(
   }
 }
 
+// ── Import suppliers (CSV bulk) ───────────────────────────────────────────
+
+export type CsvImportResult = {
+  imported: number;
+  skipped: Array<{ row: number; value: string; reason: string }>;
+};
+
+export async function importSuppliers(
+  rows: Array<Record<string, string>>
+): Promise<CsvImportResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { imported: 0, skipped: [{ row: 0, value: "", reason: "Unauthorized" }] };
+  const orgId = session.user.organizationId;
+
+  const existingPhones = new Set(
+    (await db.supplier.findMany({ where: { organizationId: orgId }, select: { phone: true } }))
+      .map((s) => s.phone)
+  );
+
+  let imported = 0;
+  const skipped: CsvImportResult["skipped"] = [];
+  const seenPhones = new Set<string>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+    const name = row.name?.trim();
+    const phone = row.phone?.trim();
+
+    if (!name) { skipped.push({ row: rowNum, value: phone ?? "", reason: "name is required" }); continue; }
+    if (!phone) { skipped.push({ row: rowNum, value: name, reason: "phone is required" }); continue; }
+    if (existingPhones.has(phone) || seenPhones.has(phone)) {
+      skipped.push({ row: rowNum, value: name, reason: `phone ${phone} already exists` }); continue;
+    }
+
+    await db.supplier.create({
+      data: {
+        name,
+        phone,
+        email: row.email?.trim() || null,
+        address: row.address?.trim() || null,
+        notes: row.notes?.trim() || null,
+        organizationId: orgId,
+      },
+    });
+    seenPhones.add(phone);
+    imported++;
+  }
+
+  if (imported > 0) revalidatePath("/suppliers");
+  return { imported, skipped };
+}
+
 // ── Get supplier detail ───────────────────────────────────────────────────
 
 export async function getSupplierDetail(id: string): Promise<SupplierDetail | null> {

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Search, Truck, Pencil, ChevronRight, Mail, Phone,
-  ArrowUpDown, ChevronUp, ChevronDown,
+  ArrowUpDown, ChevronUp, ChevronDown, Upload,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { SupplierStats } from "@/components/suppliers/supplier-stats";
+import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
+import { importSuppliers } from "@/lib/actions/suppliers";
 import type { SupplierRow, SupplierStats as SupplierStatsType } from "@/lib/actions/suppliers";
 
 type SortField = "name" | "items" | "orders";
@@ -35,6 +37,7 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editSupplier, setEditSupplier] = useState<SupplierRow | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   function handleSort(field: SortField) {
     if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -95,14 +98,25 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
         </div>
 
         {canEdit && (
-          <Button
-            size="sm"
-            className="gap-1.5 shrink-0"
-            onClick={() => { setEditSupplier(null); setDialogOpen(true); }}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add supplier
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 shrink-0"
+              onClick={() => setCsvOpen(true)}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Import CSV
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5 shrink-0"
+              onClick={() => { setEditSupplier(null); setDialogOpen(true); }}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add supplier
+            </Button>
+          </div>
         )}
       </div>
 
@@ -228,6 +242,17 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
         onClose={() => { setDialogOpen(false); setEditSupplier(null); }}
         supplier={editSupplier}
         onSuccess={handleSuccess}
+      />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onSuccess={() => startTransition(() => router.refresh())}
+        title="Import suppliers"
+        requiredHeaders={["name", "phone"]}
+        optionalHeaders={["email", "address", "notes"]}
+        exampleRow={["Acme Supplies", "+1 555 0200", "acme@example.com", "456 Trade St", "Reliable vendor"]}
+        onImport={importSuppliers}
       />
     </div>
   );

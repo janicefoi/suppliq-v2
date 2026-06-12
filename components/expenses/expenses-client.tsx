@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Receipt, TrendingDown, Plus, Download, Pencil, Trash2 } from "lucide-react";
+import { Receipt, TrendingDown, Plus, Download, Pencil, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ExpenseDialog } from "@/components/expenses/expense-dialog";
-import { deleteExpense } from "@/lib/actions/expenses";
+import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
+import { deleteExpense, importExpenses } from "@/lib/actions/expenses";
 import { EXPENSE_CATEGORIES } from "@/lib/constants/expenses";
 import type { ExpenseRow, ExpenseStats } from "@/lib/actions/expenses";
 
@@ -56,6 +57,7 @@ export function ExpensesClient({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<ExpenseRow | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
   const [filterBranch, setFilterBranch] = useState("");
@@ -110,10 +112,16 @@ export function ExpensesClient({
           <h1 className="text-xl font-bold text-slate-900">Expenses</h1>
           <p className="text-sm text-slate-500 mt-0.5">Track business costs by category and branch</p>
         </div>
-        <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-1.5">
-          <Plus className="h-4 w-4" />
-          Record expense
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setCsvOpen(true)} className="gap-1.5">
+            <Upload className="h-4 w-4" />
+            Import CSV
+          </Button>
+          <Button onClick={() => { setEditing(null); setDialogOpen(true); }} className="gap-1.5">
+            <Plus className="h-4 w-4" />
+            Record expense
+          </Button>
+        </div>
       </div>
 
       {/* Stats row */}
@@ -294,6 +302,18 @@ export function ExpensesClient({
         branches={branches}
         defaultBranchId={defaultBranchId}
         isAdmin={isAdmin}
+      />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onSuccess={() => router.refresh()}
+        title="Import expenses"
+        requiredHeaders={["description", "amount", "category", "date"]}
+        optionalHeaders={["branch_name"]}
+        exampleRow={["Office rent", "1500", "RENT", "2026-06-01", "Main Branch"]}
+        onImport={importExpenses}
+        notes="Category must be: RENT, SALARIES, UTILITIES, TRANSPORT, MAINTENANCE, MARKETING, or OTHER. Date format: YYYY-MM-DD."
       />
     </div>
   );

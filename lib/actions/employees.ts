@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { checkUserLimit } from "@/lib/plan-limits";
+import { getPlanLimits } from "@/lib/constants/plans";
 import {
   CreateEmployeeSchema,
   UpdateEmployeeSchema,
@@ -175,6 +176,111 @@ export async function toggleEmployeeActive(
     return { success: true };
   } catch (err) {
     return { success: false, error: err instanceof Error ? err.message : "Failed to update status." };
+  }
+}
+
+// ── Import employees (CSV bulk) ───────────────────────────────────────────
+
+export type CsvImportResult = {
+  imported: number;
+  skipped: Array<{ row: number; value: string; reason: string }>;
+  passwords?: Array<{ name: string; email: string; password: string }>;
+};
+
+const VALID_ROLES = ["ADMIN", "MANAGER", "CASHIER"] as const;
+
+function generateTempPassword(): string {
+  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
+  let out = "";
+  for (let i = 0; i < 10; i++) out += chars[Math.floor(Math.random() * chars.length)];
+  return out;
+}
+
+export async function importEmployees(
+  rows: Array<Record<string, string>>
+): Promise<CsvImportResult> {
+  try {
+    const admin = await requireAdmin();
+
+    const org = await db.organization.findUnique({
+      where: { id: admin.organizationId },
+      select: { plan: true },
+    });
+
+    const allBranches = await db.branch.findMany({
+      where: { organizationId: admin.organizationId },
+      select: { id: true, name: true },
+    });
+    const branchByName = new Map(allBranches.map((b) => [b.name.toLowerCase(), b.id]));
+
+    const existingEmails = new Set(
+      (await db.user.findMany({ where: { organizationId: admin.organizationId }, select: { email: true } }))
+        .map((u) => u.email)
+    );
+
+    let currentCount = await db.user.count({ where: { organizationId: admin.organizationId } });
+    const { users: userLimit } = getPlanLimits(org?.plan ?? "FREE");
+
+    let imported = 0;
+    const skipped: CsvImportResult["skipped"] = [];
+    const passwords: NonNullable<CsvImportResult["passwords"]> = [];
+    const seenEmails = new Set<string>();
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+      const name = row.name?.trim();
+      const email = row.email?.trim().toLowerCase();
+      const role = row.role?.trim().toUpperCase();
+
+      if (!name) { skipped.push({ row: rowNum, value: email ?? "", reason: "name is required" }); continue; }
+      if (!email) { skipped.push({ row: rowNum, value: name, reason: "email is required" }); continue; }
+      if (!role || !VALID_ROLES.includes(role as typeof VALID_ROLES[number])) {
+        skipped.push({ row: rowNum, value: name, reason: `role must be ADMIN, MANAGER, or CASHIER (got "${row.role?.trim()}")` }); continue;
+      }
+      if (existingEmails.has(email) || seenEmails.has(email)) {
+        skipped.push({ row: rowNum, value: name, reason: `email ${email} already exists` }); continue;
+      }
+      if (userLimit !== null && currentCount >= userLimit) {
+        skipped.push({ row: rowNum, value: name, reason: "user limit reached for your plan" }); continue;
+      }
+
+      const branchName = row.branch_name?.trim();
+      let branchId: string | null = null;
+      if (branchName) {
+        branchId = branchByName.get(branchName.toLowerCase()) ?? null;
+        if (!branchId) {
+          skipped.push({ row: rowNum, value: name, reason: `branch "${branchName}" not found` }); continue;
+        }
+      }
+
+      const tempPassword = generateTempPassword();
+      const passwordHash = await bcrypt.hash(tempPassword, 12);
+
+      await db.user.create({
+        data: {
+          name,
+          email,
+          role: role as "ADMIN" | "MANAGER" | "CASHIER",
+          passwordHash,
+          branchId,
+          organizationId: admin.organizationId,
+        },
+      });
+
+      seenEmails.add(email);
+      passwords.push({ name, email, password: tempPassword });
+      currentCount++;
+      imported++;
+    }
+
+    if (imported > 0) {
+      revalidatePath("/admin/employees");
+      revalidatePath("/admin/branches");
+    }
+    return { imported, skipped, passwords };
+  } catch (err) {
+    return { imported: 0, skipped: [{ row: 0, value: "", reason: err instanceof Error ? err.message : "Import failed" }] };
   }
 }
 

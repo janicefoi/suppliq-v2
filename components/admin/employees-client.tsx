@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Pencil, Power, KeyRound, UserCog } from "lucide-react";
+import { Plus, Pencil, Power, KeyRound, UserCog, Upload } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmployeeDialog } from "@/components/admin/employee-dialog";
 import { ResetPasswordDialog } from "@/components/admin/reset-password-dialog";
-import { toggleEmployeeActive } from "@/lib/actions/employees";
+import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
+import { toggleEmployeeActive, importEmployees } from "@/lib/actions/employees";
 import type { EmployeeRow } from "@/lib/actions/employees";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function EmployeesClient({ employees, currentUserId, branches }: Props) {
   const [addOpen, setAddOpen] = useState(false);
   const [editEmployee, setEditEmployee] = useState<EmployeeRow | null>(null);
   const [resetEmployee, setResetEmployee] = useState<EmployeeRow | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   function refresh() {
     setAddOpen(false);
@@ -63,10 +65,16 @@ export function EmployeesClient({ employees, currentUserId, branches }: Props) {
         <p className="text-xs text-slate-400">
           {employees.length} employee{employees.length !== 1 ? "s" : ""}
         </p>
-        <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
-          <Plus className="h-3.5 w-3.5" />
-          Add employee
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setCsvOpen(true)}>
+            <Upload className="h-3.5 w-3.5" />
+            Import CSV
+          </Button>
+          <Button size="sm" className="gap-1.5" onClick={() => setAddOpen(true)}>
+            <Plus className="h-3.5 w-3.5" />
+            Add employee
+          </Button>
+        </div>
       </div>
 
       {/* ── Table ────────────────────────────────────────────────────────── */}
@@ -214,6 +222,18 @@ export function EmployeesClient({ employees, currentUserId, branches }: Props) {
           employeeName={resetEmployee.name}
         />
       )}
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onSuccess={() => { startTransition(() => router.refresh()); }}
+        title="Import employees"
+        requiredHeaders={["name", "email", "role"]}
+        optionalHeaders={["branch_name"]}
+        exampleRow={["Alice Smith", "alice@example.com", "CASHIER", "Main Branch"]}
+        onImport={importEmployees}
+        notes="Role must be ADMIN, MANAGER, or CASHIER. Temporary passwords will be shown after import."
+      />
     </div>
   );
 }

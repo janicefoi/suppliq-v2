@@ -4,7 +4,7 @@ import React, { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus, Search, Users, Pencil, ChevronRight,
-  ArrowUpDown, ChevronUp, ChevronDown,
+  ArrowUpDown, ChevronUp, ChevronDown, Upload,
 } from "lucide-react";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CustomerDialog } from "@/components/customers/customer-dialog";
 import { CustomerStats } from "@/components/customers/customer-stats";
-import { getCustomers, getCustomerStats } from "@/lib/actions/customers";
+import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
+import { getCustomers, getCustomerStats, importCustomers } from "@/lib/actions/customers";
 import type { CustomerRow, CustomerStats as CustomerStatsType } from "@/lib/actions/customers";
 import { cn, formatCurrency } from "@/lib/utils";
 
@@ -58,6 +59,7 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
   // Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editCustomer, setEditCustomer] = useState<CustomerRow | null>(null);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   async function handleBranchChange(branchId: string | null) {
     setActiveBranchId(branchId);
@@ -177,10 +179,18 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
           </div>
         </div>
 
-        <Button size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditCustomer(null); setDialogOpen(true); }}>
-          <Plus className="h-3.5 w-3.5" />
-          Add customer
-        </Button>
+        <div className="flex items-center gap-2">
+          {canEdit && (
+            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => setCsvOpen(true)}>
+              <Upload className="h-3.5 w-3.5" />
+              Import CSV
+            </Button>
+          )}
+          <Button size="sm" className="gap-1.5 shrink-0" onClick={() => { setEditCustomer(null); setDialogOpen(true); }}>
+            <Plus className="h-3.5 w-3.5" />
+            Add customer
+          </Button>
+        </div>
       </div>
 
       {/* ── Table ────────────────────────────────────────────────────────── */}
@@ -300,6 +310,17 @@ export function CustomersClient({ customers: initialCustomers, role, branches = 
         onSuccess={handleSuccess}
         branches={branches}
         role={role}
+      />
+
+      <CsvImportDialog
+        open={csvOpen}
+        onClose={() => setCsvOpen(false)}
+        onSuccess={() => startTransition(() => router.refresh())}
+        title="Import customers"
+        requiredHeaders={["name", "phone"]}
+        optionalHeaders={["address"]}
+        exampleRow={["Jane Doe", "+1 555 0100", "123 Main St"]}
+        onImport={importCustomers}
       />
     </div>
   );

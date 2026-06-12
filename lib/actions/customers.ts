@@ -259,6 +259,61 @@ export async function recordCreditPayment(
   }
 }
 
+// ── Import customers (CSV bulk) ───────────────────────────────────────────
+
+export type CsvImportResult = {
+  imported: number;
+  skipped: Array<{ row: number; value: string; reason: string }>;
+  passwords?: Array<{ name: string; email: string; password: string }>;
+};
+
+export async function importCustomers(
+  rows: Array<Record<string, string>>
+): Promise<CsvImportResult> {
+  const session = await auth();
+  if (!session?.user?.id) return { imported: 0, skipped: [{ row: 0, value: "", reason: "Unauthorized" }] };
+  if (session.user.isDemo) return { imported: 0, skipped: [{ row: 0, value: "", reason: "Demo accounts are read-only." }] };
+  const orgId = session.user.organizationId;
+  const branchId = session.user.branchId ?? null;
+
+  const existingPhones = new Set(
+    (await db.customer.findMany({ where: { organizationId: orgId }, select: { phone: true } }))
+      .map((c) => c.phone)
+  );
+
+  let imported = 0;
+  const skipped: CsvImportResult["skipped"] = [];
+  const seenPhones = new Set<string>();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowNum = i + 1;
+    const name = row.name?.trim();
+    const phone = row.phone?.trim();
+
+    if (!name) { skipped.push({ row: rowNum, value: phone ?? "", reason: "name is required" }); continue; }
+    if (!phone) { skipped.push({ row: rowNum, value: name, reason: "phone is required" }); continue; }
+    if (existingPhones.has(phone) || seenPhones.has(phone)) {
+      skipped.push({ row: rowNum, value: name, reason: `phone ${phone} already exists` }); continue;
+    }
+
+    await db.customer.create({
+      data: {
+        name,
+        phone,
+        address: row.address?.trim() || null,
+        branchId,
+        organizationId: orgId,
+      },
+    });
+    seenPhones.add(phone);
+    imported++;
+  }
+
+  if (imported > 0) revalidatePath("/customers");
+  return { imported, skipped };
+}
+
 // ── Get customer detail ───────────────────────────────────────────────────
 
 export async function getCustomerDetail(id: string): Promise<CustomerDetail | null> {
