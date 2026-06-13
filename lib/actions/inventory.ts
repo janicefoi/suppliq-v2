@@ -132,6 +132,7 @@ export type PurchasableItem = {
   sku: string;
   name: string;
   retailPrice: string;
+  wholesalePrice: string;
   stockQty: number;
 };
 
@@ -148,6 +149,7 @@ export async function getPurchasableItems(branchId?: string | null): Promise<Pur
       sku: true,
       name: true,
       retailPrice: true,
+      wholesalePrice: true,
       branchStocks: effectiveBranchId
         ? { where: { branchId: effectiveBranchId }, select: { stockQty: true } }
         : { select: { stockQty: true } },
@@ -160,6 +162,7 @@ export async function getPurchasableItems(branchId?: string | null): Promise<Pur
     sku: item.sku,
     name: item.name,
     retailPrice: item.retailPrice.toString(),
+    wholesalePrice: item.wholesalePrice.toString(),
     stockQty: item.branchStocks.reduce((sum, bs) => sum + bs.stockQty, 0),
   }));
 }

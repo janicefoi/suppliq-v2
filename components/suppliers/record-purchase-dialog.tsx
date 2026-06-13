@@ -228,6 +228,7 @@ export function RecordPurchaseDialog({
                       <div className="flex items-center justify-between px-1 text-[11px] text-slate-400">
                         <span>
                           Stock: <span className="font-medium text-slate-500">{selectedItem.stockQty}</span>
+                          {" · "}Wholesale: <span className="font-medium text-slate-500">{formatCurrency(Number(selectedItem.wholesalePrice), currency)}</span>
                           {" · "}Retail: <span className="font-medium text-slate-500">{formatCurrency(retailPrice, currency)}</span>
                         </span>
                         {lineCost > 0 && (
