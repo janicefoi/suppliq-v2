@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { getPurchasableItems, type PurchasableItem } from "@/lib/actions/inventory";
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -48,16 +49,7 @@ export type POStats = {
 export type SupplierForPO = {
   id: string;
   name: string;
-  items: Array<{
-    id: string;
-    sku: string;
-    name: string;
-    category: string;
-    retailPrice: string;
-    wholesalePrice: string;
-    isActive: boolean;
-    stockQty: number;
-  }>;
+  items: PurchasableItem[];
 };
 
 // ── List POs ───────────────────────────────────────────────────────────────
@@ -138,47 +130,16 @@ export async function getSupplierItems(supplierId: string): Promise<SupplierForP
   if (!session?.user?.id) return null;
   if (session.user.role === "CASHIER") return null;
   const orgId = session.user.organizationId;
-  const branchId = session.user.branchId ?? null;
 
   const supplier = await db.supplier.findFirst({
     where: { id: supplierId, organizationId: orgId },
-    select: {
-      id: true,
-      name: true,
-      items: {
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-          retailPrice: true,
-          wholesalePrice: true,
-          isActive: true,
-          category: { select: { name: true } },
-          branchStocks: branchId
-            ? { where: { branchId }, select: { stockQty: true } }
-            : { select: { stockQty: true } },
-        },
-        orderBy: { name: "asc" },
-      },
-    },
+    select: { id: true, name: true },
   });
-
   if (!supplier) return null;
 
-  return {
-    id: supplier.id,
-    name: supplier.name,
-    items: supplier.items.map((item) => ({
-      id: item.id,
-      sku: item.sku,
-      name: item.name,
-      category: item.category?.name ?? "",
-      retailPrice: item.retailPrice.toString(),
-      wholesalePrice: item.wholesalePrice.toString(),
-      isActive: item.isActive,
-      stockQty: item.branchStocks.reduce((sum, bs) => sum + bs.stockQty, 0),
-    })),
-  };
+  const items = await getPurchasableItems();
+
+  return { id: supplier.id, name: supplier.name, items };
 }
 
 // ── Link supplier invoice to a PO ─────────────────────────────────────────
