@@ -53,6 +53,41 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      // At sign-in: stamp all fields from the user object
+      if (user) {
+        token.id             = user.id;
+        token.role           = (user as { role: string }).role;
+        token.branchId       = (user as { branchId?: string | null }).branchId ?? null;
+        token.organizationId = (user as unknown as { organizationId: string }).organizationId;
+        token.currency       = (user as unknown as { currency: string }).currency ?? "EUR";
+        token.plan           = (user as unknown as { plan?: string }).plan ?? "FREE";
+        token.isDemo         = (user as unknown as { isDemo?: boolean }).isDemo ?? false;
+        token.planCheckedAt  = Date.now();
+        return token;
+      }
+
+      // On subsequent refreshes: re-read plan + currency from DB every 5 minutes
+      // so Stripe-triggered plan changes propagate without requiring a re-login.
+      const now = Date.now();
+      const lastCheck = (token.planCheckedAt as number | undefined) ?? 0;
+      if (now - lastCheck > 5 * 60 * 1000) {
+        const org = await db.organization.findUnique({
+          where: { id: token.organizationId as string },
+          select: { plan: true, currency: true },
+        });
+        if (org) {
+          token.plan          = org.plan;
+          token.currency      = org.currency;
+          token.planCheckedAt = now;
+        }
+      }
+
+      return token;
+    },
+  },
 });
 
 // Deduplicate auth() calls within a single request using React cache
