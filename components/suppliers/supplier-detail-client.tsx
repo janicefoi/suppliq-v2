@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { RecordPurchaseDialog } from "@/components/suppliers/record-purchase-dialog";
 import type { SupplierDetail, SupplierRow } from "@/lib/actions/suppliers";
+import type { PurchasableItem } from "@/lib/actions/inventory";
 import { cn, formatCurrency } from "@/lib/utils";
 
 function fmtDateTime(iso: string) {
@@ -33,9 +34,10 @@ interface Props {
   branches?: { id: string; name: string }[];
   userBranchId?: string | null;
   currency: string;
+  allItems?: PurchasableItem[];
 }
 
-export function SupplierDetailClient({ supplier, role, branches = [], userBranchId, currency }: Props) {
+export function SupplierDetailClient({ supplier, role, branches = [], userBranchId, currency, allItems = [] }: Props) {
   const canEdit = role !== "CASHIER";
   const isAdmin = role === "ADMIN";
   const canRecordPurchase = role !== "CASHIER";
@@ -100,12 +102,8 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
               size="sm"
               className="gap-1.5"
               onClick={() => setPurchaseOpen(true)}
-              disabled={supplier.items.filter((i) => i.isActive).length === 0}
-              title={
-                supplier.items.filter((i) => i.isActive).length === 0
-                  ? "No active items linked to this supplier"
-                  : undefined
-              }
+              disabled={allItems.length === 0}
+              title={allItems.length === 0 ? "No active inventory items found" : undefined}
             >
               <Plus className="h-3.5 w-3.5" />
               Record stock purchase
@@ -327,7 +325,7 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
         onClose={() => setPurchaseOpen(false)}
         supplierId={supplier.id}
         supplierName={supplier.name}
-        items={supplier.items}
+        items={allItems}
         onSuccess={handleSuccess}
         isAdmin={isAdmin}
         branches={branches}

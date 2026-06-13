@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { auth } from "@/auth";
 import { getSupplierDetail } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/branches";
+import { getPurchasableItems } from "@/lib/actions/inventory";
 import { SupplierDetailClient } from "@/components/suppliers/supplier-detail-client";
 
 interface Props {
@@ -16,7 +17,11 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function SupplierDetailPage({ params }: Props) {
   const { id } = await params;
-  const [session, supplier] = await Promise.all([auth(), getSupplierDetail(id)]);
+  const [session, supplier, allItems] = await Promise.all([
+    auth(),
+    getSupplierDetail(id),
+    getPurchasableItems(),
+  ]);
   if (!supplier) notFound();
 
   const role = session?.user?.role ?? "CASHIER";
@@ -30,6 +35,7 @@ export default async function SupplierDetailPage({ params }: Props) {
       branches={branches}
       userBranchId={session?.user?.branchId ?? null}
       currency={session?.user?.currency ?? "EUR"}
+      allItems={allItems}
     />
   );
 }

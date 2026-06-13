@@ -125,6 +125,45 @@ export async function getItems(filters?: ItemFilters, branchId?: string | null):
   return result;
 }
 
+// ── Lean item list for purchase order dialog ───────────────────────────────
+
+export type PurchasableItem = {
+  id: string;
+  sku: string;
+  name: string;
+  retailPrice: string;
+  stockQty: number;
+};
+
+export async function getPurchasableItems(branchId?: string | null): Promise<PurchasableItem[]> {
+  const session = await auth();
+  if (!session?.user?.id) return [];
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId !== undefined ? branchId : (session.user.branchId ?? null);
+
+  const items = await db.item.findMany({
+    where: { organizationId: orgId, isActive: true },
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+      retailPrice: true,
+      branchStocks: effectiveBranchId
+        ? { where: { branchId: effectiveBranchId }, select: { stockQty: true } }
+        : { select: { stockQty: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+
+  return items.map((item) => ({
+    id: item.id,
+    sku: item.sku,
+    name: item.name,
+    retailPrice: item.retailPrice.toString(),
+    stockQty: item.branchStocks.reduce((sum, bs) => sum + bs.stockQty, 0),
+  }));
+}
+
 // ── Items - write ──────────────────────────────────────────────────────────
 
 export async function createItem(data: ItemFormValues): Promise<ActionResult> {

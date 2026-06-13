@@ -17,10 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { recordPurchaseOrder } from "@/lib/actions/suppliers";
 import { PurchaseOrderSchema, type PurchaseOrderInput } from "@/lib/validations/suppliers";
-import type { SupplierDetail } from "@/lib/actions/suppliers";
-
-type SupplierItem = SupplierDetail["items"][number];
-
+import type { PurchasableItem } from "@/lib/actions/inventory";
 import { formatCurrency } from "@/lib/utils";
 
 interface RecordPurchaseDialogProps {
@@ -28,7 +25,7 @@ interface RecordPurchaseDialogProps {
   onClose: () => void;
   supplierId: string;
   supplierName: string;
-  items: SupplierItem[];
+  items: PurchasableItem[];
   onSuccess: () => void;
   isAdmin?: boolean;
   branches?: { id: string; name: string }[];
@@ -51,7 +48,7 @@ export function RecordPurchaseDialog({
   currency = "EUR",
 }: RecordPurchaseDialogProps) {
   const [serverError, setServerError] = useState<string | null>(null);
-  const activeItems = items.filter((i) => i.isActive);
+  const activeItems = items;
 
   const {
     register,

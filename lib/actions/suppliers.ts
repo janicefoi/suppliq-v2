@@ -229,13 +229,10 @@ export async function recordPurchaseOrder(
       for (const line of parsed.data.items) {
         const item = await tx.item.findUnique({
           where: { id: line.itemId },
-          select: { supplierId: true, name: true, isActive: true, organizationId: true },
+          select: { name: true, isActive: true, organizationId: true },
         });
         if (!item || item.organizationId !== orgId) throw new Error(`Item not found.`);
         if (!item.isActive) throw new Error(`"${item.name}" is inactive and cannot be restocked.`);
-        if (item.supplierId !== parsed.data.supplierId) {
-          throw new Error(`"${item.name}" does not belong to this supplier.`);
-        }
       }
 
       // Create the PO with all line items
