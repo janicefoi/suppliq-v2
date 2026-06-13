@@ -354,21 +354,6 @@ export async function getSupplierDetail(id: string): Promise<SupplierDetail | nu
   const supplier = await db.supplier.findFirst({
     where: { id, organizationId: orgId },
     include: {
-      items: {
-        select: {
-          id: true,
-          sku: true,
-          name: true,
-          category: { select: { name: true } },
-          retailPrice: true,
-          wholesalePrice: true,
-          isActive: true,
-          branchStocks: branchId
-            ? { where: { branchId }, select: { stockQty: true } }
-            : { select: { stockQty: true } },
-        },
-        orderBy: { name: "asc" },
-      },
       purchaseOrders: {
         include: {
           items: {
@@ -384,6 +369,32 @@ export async function getSupplierDetail(id: string): Promise<SupplierDetail | nu
   });
 
   if (!supplier) return null;
+
+  // Derive "items supplied" from purchase order history (unique items ever ordered from this supplier)
+  const poItemIds = await db.purchaseOrderItem.findMany({
+    where: { purchaseOrder: { supplierId: id, organizationId: orgId } },
+    select: { itemId: true },
+    distinct: ["itemId"],
+  });
+
+  const suppliedItems = poItemIds.length > 0
+    ? await db.item.findMany({
+        where: { id: { in: poItemIds.map((r) => r.itemId) } },
+        select: {
+          id: true,
+          sku: true,
+          name: true,
+          category: { select: { name: true } },
+          retailPrice: true,
+          wholesalePrice: true,
+          isActive: true,
+          branchStocks: branchId
+            ? { where: { branchId }, select: { stockQty: true } }
+            : { select: { stockQty: true } },
+        },
+        orderBy: { name: "asc" },
+      })
+    : [];
 
   // Flatten PO line items so each row has: item, qty, cost, createdAt, recordedBy
   const flatPOs: SupplierDetail["purchaseOrders"] = supplier.purchaseOrders.flatMap((po) =>
@@ -406,7 +417,7 @@ export async function getSupplierDetail(id: string): Promise<SupplierDetail | nu
     notes: supplier.notes,
     createdAt: supplier.createdAt.toISOString(),
     updatedAt: supplier.updatedAt.toISOString(),
-    items: supplier.items.map((item) => ({
+    items: suppliedItems.map((item) => ({
       id: item.id,
       sku: item.sku,
       name: item.name,
