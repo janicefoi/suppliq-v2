@@ -19,15 +19,15 @@ const STATUS_CONFIG: Record<string, { label: string; style: string }> = {
 
 const PLAN_FEATURES: Record<string, string[]> = {
   FREE: [
-    "Up to 2 branches",
+    "1 branch",
     "Up to 5 users",
     "Unlimited inventory items",
     "Sales, purchase orders & reports",
     "Community support",
   ],
   GROWTH: [
-    "Up to 10 branches",
-    "Up to 25 users",
+    "Up to 5 branches",
+    "Up to 20 users",
     "AI-powered demand forecasting",
     "Advanced reports & analytics",
     "Priority email support",

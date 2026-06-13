@@ -2,8 +2,8 @@
 // null means unlimited.
 
 export const PLAN_LIMITS = {
-  FREE:       { branches: 2,    users: 5,    items: null },
-  GROWTH:     { branches: 10,   users: 25,   items: null },
+  FREE:       { branches: 1,    users: 5,    items: null },
+  GROWTH:     { branches: 5,    users: 20,   items: null },
   ENTERPRISE: { branches: null, users: null, items: null },
 } as const;
 
