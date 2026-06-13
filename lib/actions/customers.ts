@@ -68,7 +68,9 @@ export async function getCustomerStats(branchId?: string | null): Promise<Custom
 
   const baseWhere = {
     organizationId: orgId,
-    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    ...(effectiveBranchId
+      ? { OR: [{ branchId: effectiveBranchId }, { branchId: null }] }
+      : {}),
   };
 
   const [total, withCredit, creditAgg, newThisMonth] = await Promise.all([
@@ -99,7 +101,11 @@ export async function getCustomers(
 
   const where = {
     organizationId: orgId,
-    ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    // When scoped to a branch, also show unassigned (null-branch) customers
+    // so records imported by an admin without a branch are visible to everyone.
+    ...(effectiveBranchId
+      ? { OR: [{ branchId: effectiveBranchId }, { branchId: null }] }
+      : {}),
     ...(filter === "HAS_CREDIT" ? { creditBalance: { gt: 0 } } : {}),
     ...(filter === "NO_CREDIT" ? { creditBalance: { lte: 0 } } : {}),
   };
@@ -274,7 +280,12 @@ export async function importCustomers(
   if (!session?.user?.id) return { imported: 0, skipped: [{ row: 0, value: "", reason: "Unauthorized" }] };
   if (session.user.isDemo) return { imported: 0, skipped: [{ row: 0, value: "", reason: "Demo accounts are read-only." }] };
   const orgId = session.user.organizationId;
-  const branchId = session.user.branchId ?? null;
+
+  const allBranches = await db.branch.findMany({
+    where: { organizationId: orgId },
+    select: { id: true, name: true },
+  });
+  const branchByName = new Map(allBranches.map((b) => [b.name.toLowerCase(), b.id]));
 
   const existingPhones = new Set(
     (await db.customer.findMany({ where: { organizationId: orgId }, select: { phone: true } }))
@@ -295,6 +306,17 @@ export async function importCustomers(
     if (!phone) { skipped.push({ row: rowNum, value: name, reason: "phone is required" }); continue; }
     if (existingPhones.has(phone) || seenPhones.has(phone)) {
       skipped.push({ row: rowNum, value: name, reason: `phone ${phone} already exists` }); continue;
+    }
+
+    // Resolve branch: CSV branch_name > session branchId (for non-admins) > null
+    const branchName = row.branch_name?.trim();
+    let branchId: string | null = session.user.branchId ?? null;
+    if (branchName) {
+      const found = branchByName.get(branchName.toLowerCase());
+      if (!found) {
+        skipped.push({ row: rowNum, value: name, reason: `branch "${branchName}" not found` }); continue;
+      }
+      branchId = found;
     }
 
     await db.customer.create({
