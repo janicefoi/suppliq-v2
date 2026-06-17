@@ -318,6 +318,62 @@ async def update_branch_rop(item_id: str, branch_id: str, rop_value: int) -> boo
         return result != "UPDATE 0"
 
 
+async def get_supplier_avg_lead_times(org_id: str, days: int = 180) -> dict[str, float]:
+    """
+    Avg delivery lead time per supplier, derived from PO history where delivered_at is set.
+    Returns {supplier_id: avg_lead_days}.
+
+    This is the authoritative lead-time source — it reflects actual delivery performance,
+    not a static estimate.  When a supplier slows down, their avg_lead_days rises here,
+    which flows into calculate_rop() and raises the ROP for their items automatically.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                supplier_id,
+                AVG(
+                    EXTRACT(EPOCH FROM (delivered_at - created_at)) / 86400.0
+                )::float AS avg_lead_days
+            FROM purchase_orders
+            WHERE organization_id = $1
+              AND created_at >= NOW() - INTERVAL '1 day' * $2
+              AND delivered_at IS NOT NULL
+              AND delivered_at > created_at
+            GROUP BY supplier_id
+            """,
+            org_id,
+            days,
+        )
+        return {str(r["supplier_id"]): float(r["avg_lead_days"]) for r in rows}
+
+
+async def get_item_preferred_supplier(org_id: str, days: int = 180) -> dict[str, str]:
+    """
+    Most recent supplier per item, from PO history.
+    Returns {item_id: supplier_id}.
+
+    Used to link an item to a supplier's lead-time performance.
+    DISTINCT ON (item_id) picks the latest PO for each item.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (poi.item_id)
+                poi.item_id,
+                po.supplier_id
+            FROM purchase_order_items poi
+            JOIN purchase_orders po ON po.id = poi.purchase_order_id
+            WHERE po.organization_id = $1
+              AND po.created_at >= NOW() - INTERVAL '1 day' * $2
+            ORDER BY poi.item_id, po.created_at DESC
+            """,
+            org_id,
+            days,
+        )
+        return {str(r["item_id"]): str(r["supplier_id"]) for r in rows}
+
+
 async def get_forecast_summary(org_id: str) -> dict:
     """Return a quick summary of the most recent forecast run for an org."""
     async with get_conn() as conn:

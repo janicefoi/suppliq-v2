@@ -16,6 +16,7 @@ The nightly job calls update_reorder_points() immediately after demand forecasti
 so ROPs are always derived from the freshest EMA demand estimate.
 """
 
+import asyncio
 import logging
 import math
 from datetime import datetime, timezone
@@ -24,6 +25,8 @@ from utils.db import (
     get_branch_stock,
     get_latest_forecasts_by_item_branch,
     get_purchase_order_history,
+    get_supplier_avg_lead_times,
+    get_item_preferred_supplier,
     get_org_details,
     update_branch_rop,
 )
@@ -53,21 +56,42 @@ def calculate_rop(avg_daily: float, lead_time: float) -> int:
     return max(rop, MIN_ROP)
 
 
-def _estimate_lead_time(orders: list[dict], item_id: str) -> float:
-    """Avg lead time in days for an item derived from its PO history."""
+def _estimate_lead_time(
+    orders: list[dict],
+    item_id: str,
+    supplier_lead_times: dict[str, float] | None = None,
+    item_preferred_supplier: dict[str, str] | None = None,
+) -> float:
+    """
+    Lead time estimate with three-tier priority:
+
+    1. Supplier-level avg lead time (most accurate — reflects actual delivery reliability)
+       Slow supplier → higher lead time → higher ROP → earlier reorder trigger.
+    2. Item-level avg lead time from raw PO history (cross-supplier fallback).
+    3. DEFAULT_LEAD_TIME_DAYS (no delivered POs at all).
+    """
+    # 1. Supplier-level (preferred): find this item's most-recent supplier, use their avg
+    if supplier_lead_times and item_preferred_supplier:
+        sid = item_preferred_supplier.get(item_id)
+        if sid and sid in supplier_lead_times:
+            return supplier_lead_times[sid]
+
+    # 2. Item-level fallback: average across all suppliers who have delivered this item
     item_orders = [
         o for o in orders
         if o["item_id"] == item_id
         and o.get("delivered_at") and o.get("created_at")
     ]
-    if not item_orders:
-        return DEFAULT_LEAD_TIME_DAYS
-    lead_times = [
-        (o["delivered_at"] - o["created_at"]).days
-        for o in item_orders
-        if (o["delivered_at"] - o["created_at"]).days >= 0
-    ]
-    return sum(lead_times) / len(lead_times) if lead_times else DEFAULT_LEAD_TIME_DAYS
+    if item_orders:
+        lead_times = [
+            (o["delivered_at"] - o["created_at"]).days
+            for o in item_orders
+            if (o["delivered_at"] - o["created_at"]).days >= 0
+        ]
+        if lead_times:
+            return sum(lead_times) / len(lead_times)
+
+    return DEFAULT_LEAD_TIME_DAYS
 
 
 def _calculate_eoq(annual_demand: float, unit_cost: float) -> int:
@@ -112,14 +136,29 @@ async def update_reorder_points(org_id: str) -> dict:
         logger.info("ROP update: no fresh forecasts for org=%s — skipping", org_id)
         return {"updated": 0, "skipped": 0, "elapsed_seconds": 0.0, "reason": "no_fresh_forecasts"}
 
-    orders = await get_purchase_order_history(org_id, days=180)
+    # Fetch PO history, supplier lead times, and item→supplier mapping in parallel.
+    # Supplier lead times are the primary source — they reflect actual delivery reliability.
+    orders, supplier_lead_times, item_preferred_supplier = await asyncio.gather(
+        get_purchase_order_history(org_id, days=180),
+        get_supplier_avg_lead_times(org_id),
+        get_item_preferred_supplier(org_id),
+    )
+
+    logger.info(
+        "ROP update: org=%s  suppliers_with_lead_data=%d  items_with_known_supplier=%d",
+        org_id, len(supplier_lead_times), len(item_preferred_supplier),
+    )
 
     updated = 0
     skipped = 0
 
     for (item_id, branch_id), demand_data in forecasts.items():
         avg_daily  = demand_data["avg_daily_demand"]
-        lead_time  = _estimate_lead_time(orders, item_id)
+        lead_time  = _estimate_lead_time(
+            orders, item_id,
+            supplier_lead_times=supplier_lead_times,
+            item_preferred_supplier=item_preferred_supplier,
+        )
         rop        = calculate_rop(avg_daily, lead_time)
 
         was_updated = await update_branch_rop(item_id, branch_id, rop)
@@ -157,9 +196,13 @@ async def get_reorder_recommendations(org_id: str) -> list[dict]:
     org      = await get_org_details(org_id)
     currency = org["currency"] if org else "EUR"
 
-    stocks    = await get_branch_stock(org_id)
-    orders    = await get_purchase_order_history(org_id, days=180)
-    forecasts = await get_latest_forecasts_by_item_branch(org_id)
+    stocks, orders, forecasts, supplier_lead_times, item_preferred_supplier = await asyncio.gather(
+        get_branch_stock(org_id),
+        get_purchase_order_history(org_id, days=180),
+        get_latest_forecasts_by_item_branch(org_id),
+        get_supplier_avg_lead_times(org_id),
+        get_item_preferred_supplier(org_id),
+    )
 
     recommendations = []
 
@@ -185,7 +228,11 @@ async def get_reorder_recommendations(org_id: str) -> list[dict]:
         days_until_stockout = (current_qty / avg_daily) if avg_daily > 0 else None
         annual_demand       = avg_daily * 365
         eoq                 = _calculate_eoq(annual_demand, unit_cost)
-        lead_time           = _estimate_lead_time(orders, item_id)
+        lead_time           = _estimate_lead_time(
+            orders, item_id,
+            supplier_lead_times=supplier_lead_times,
+            item_preferred_supplier=item_preferred_supplier,
+        )
         suggested_qty       = max(eoq, math.ceil(avg_daily * lead_time * 2))
 
         reasoning = await generate_reorder_reasoning(
