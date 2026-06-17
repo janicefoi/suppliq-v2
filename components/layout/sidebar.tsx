@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { NAV_ITEMS, ROLE_LABELS } from "@/components/layout/nav-items";
 import { PLAN_DISPLAY } from "@/lib/constants/plans";
+import { planAtLeast, type Plan } from "@/lib/plans";
 
 interface SidebarUser {
   name?: string | null;
@@ -52,7 +53,7 @@ function roleBadgeClass(role: string) {
 // ── Shared sidebar content ─────────────────────────────────────────────────
 function SidebarContent({
   user,
-  plan = "FREE",
+  plan = "STARTER",
   onNavClick,
 }: {
   user: SidebarUser;
@@ -70,8 +71,10 @@ function SidebarContent({
       .catch(() => {});
   }, [user.role]);
 
-  const visibleLinks = NAV_ITEMS.filter((item) =>
-    item.roles.includes(user.role)
+  const visibleLinks = NAV_ITEMS.filter(
+    (item) =>
+      item.roles.includes(user.role) &&
+      planAtLeast(plan, (item.minPlan ?? "STARTER") as Plan)
   );
 
   return (

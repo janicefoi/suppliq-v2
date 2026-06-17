@@ -13,7 +13,7 @@ datasource db {
 // ============================================================
 
 enum OrgPlan {
-  FREE
+  STARTER
   GROWTH
   ENTERPRISE
 }
@@ -109,8 +109,9 @@ model Organization {
   timezone  String   @default("Europe/Paris")
   vatRate   Decimal  @default(20) @db.Decimal(5, 2)
 
-  plan      OrgPlan  @default(FREE)
-  isActive  Boolean  @default(true)
+  plan         OrgPlan  @default(STARTER)
+  trialEndsAt  DateTime?
+  isActive     Boolean  @default(true)
 
   // Stripe billing
   stripeCustomerId     String?

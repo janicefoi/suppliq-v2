@@ -38,7 +38,7 @@ export function BillingActions({ plan, subscriptionStatus, stripeCustomerId }: P
     }
   }
 
-  const isSubscribed = plan !== "FREE" && stripeCustomerId;
+  const isSubscribed = plan !== "STARTER" && stripeCustomerId;
   const isPastDue = subscriptionStatus === "past_due";
 
   return (
@@ -76,7 +76,7 @@ export function BillingActions({ plan, subscriptionStatus, stripeCustomerId }: P
         </Button>
       )}
 
-      {plan === "FREE" && (
+      {plan === "STARTER" && (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button
             onClick={() => handleCheckout(process.env.NEXT_PUBLIC_STRIPE_GROWTH_MONTHLY_PRICE_ID ?? "")}

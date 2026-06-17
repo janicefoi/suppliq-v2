@@ -9,6 +9,7 @@ declare module "next-auth" {
       organizationId: string;
       currency: string;
       plan: string;
+      trialEndsAt: string | null;
       isDemo: boolean;
     } & DefaultSession["user"];
   }

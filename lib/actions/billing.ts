@@ -37,7 +37,7 @@ export async function getPlanStatus(): Promise<PlanStatus | null> {
     stripeSubscriptionId: org.stripeSubscriptionId,
     subscriptionStatus: org.subscriptionStatus,
     currentPeriodEnd: org.currentPeriodEnd?.toISOString() ?? null,
-    isActive: org.plan !== "FREE" && org.subscriptionStatus === "active",
+    isActive: org.plan !== "STARTER" && org.subscriptionStatus === "active",
   };
 }
 

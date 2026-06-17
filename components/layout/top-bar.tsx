@@ -21,6 +21,7 @@ interface TopBarProps {
   user: TopBarUser;
   onMenuClick: () => void;
   lowStockCount: number;
+  plan: string;
 }
 
 function initials(name?: string | null) {
@@ -126,7 +127,7 @@ function LowStockPopover({
   );
 }
 
-export function TopBar({ user, onMenuClick, lowStockCount }: TopBarProps) {
+export function TopBar({ user, onMenuClick, lowStockCount, plan }: TopBarProps) {
   const pathname = usePathname();
   const title = PAGE_TITLES[pathname] ?? "Dashboard";
 
@@ -145,7 +146,7 @@ export function TopBar({ user, onMenuClick, lowStockCount }: TopBarProps) {
       <h1 className="flex-1 text-base font-semibold text-slate-900 truncate">{title}</h1>
 
       <div className="flex items-center gap-2 shrink-0">
-        <AnomalyAlertButton />
+        {plan === "ENTERPRISE" && <AnomalyAlertButton />}
         <LowStockPopover count={lowStockCount} branchId={user.branchId} />
 
         <div className="flex items-center gap-2.5">

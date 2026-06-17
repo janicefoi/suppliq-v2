@@ -13,7 +13,7 @@ export async function checkBranchLimit(orgId: string, plan: string): Promise<Lim
 
   const count = await db.branch.count({ where: { organizationId: orgId } });
   if (count >= limit) {
-    const next = plan === "FREE" ? "Growth" : "Enterprise";
+    const next = plan === "STARTER" ? "Growth" : "Enterprise";
     return {
       allowed: false,
       error: `Your ${planLabel(plan)} plan allows up to ${limit} branch${limit > 1 ? "es" : ""}. Upgrade to ${next} to add more.`,
@@ -28,7 +28,7 @@ export async function checkUserLimit(orgId: string, plan: string): Promise<Limit
 
   const count = await db.user.count({ where: { organizationId: orgId } });
   if (count >= limit) {
-    const next = plan === "FREE" ? "Growth" : "Enterprise";
+    const next = plan === "STARTER" ? "Growth" : "Enterprise";
     return {
       allowed: false,
       error: `Your ${planLabel(plan)} plan allows up to ${limit} user${limit > 1 ? "s" : ""}. Upgrade to ${next} to add more.`,

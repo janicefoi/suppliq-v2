@@ -72,7 +72,15 @@ export async function registerOrganization(formData: FormData) {
 
   await db.$transaction(async (tx) => {
     const org = await tx.organization.create({
-      data: { name: orgName, slug, industry, country, currency, timezone },
+      data: {
+        name: orgName,
+        slug,
+        industry,
+        country,
+        currency,
+        timezone,
+        trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+      },
     });
 
     const branch = await tx.branch.create({

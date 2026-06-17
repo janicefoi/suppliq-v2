@@ -44,7 +44,8 @@ export const authConfig: NextAuthConfig = {
         token.branchId = (user as { branchId?: string | null }).branchId ?? null;
         token.organizationId = (user as unknown as { organizationId: string }).organizationId;
         token.currency = (user as unknown as { currency: string }).currency ?? "EUR";
-        token.plan = (user as unknown as { plan?: string }).plan ?? "FREE";
+        token.plan = (user as unknown as { plan?: string }).plan ?? "STARTER";
+        token.trialEndsAt = (user as unknown as { trialEndsAt?: string | null }).trialEndsAt ?? null;
         token.isDemo = (user as unknown as { isDemo?: boolean }).isDemo ?? false;
       }
       return token;
@@ -55,7 +56,8 @@ export const authConfig: NextAuthConfig = {
       session.user.branchId = (token.branchId ?? null) as string | null;
       session.user.organizationId = token.organizationId as string;
       session.user.currency = (token.currency ?? "EUR") as string;
-      session.user.plan = (token.plan ?? "FREE") as string;
+      session.user.plan = (token.plan ?? "STARTER") as string;
+      session.user.trialEndsAt = (token.trialEndsAt ?? null) as string | null;
       session.user.isDemo = (token.isDemo ?? false) as boolean;
       return session;
     },

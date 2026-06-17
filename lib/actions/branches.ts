@@ -68,7 +68,7 @@ export async function createBranch(data: BranchInput): Promise<ActionResult> {
 
   // Plan limit check
   const org = await db.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
-  const limit = await checkBranchLimit(orgId, org?.plan ?? "FREE");
+  const limit = await checkBranchLimit(orgId, org?.plan ?? "STARTER");
   if (!limit.allowed) return { success: false, error: limit.error };
 
   const exists = await db.branch.findFirst({
@@ -139,7 +139,7 @@ export async function importBranches(
     const orgId = admin.organizationId;
 
     const org = await db.organization.findUnique({ where: { id: orgId }, select: { plan: true } });
-    const { branches: branchLimit } = getPlanLimits(org?.plan ?? "FREE");
+    const { branches: branchLimit } = getPlanLimits(org?.plan ?? "STARTER");
 
     let currentCount = await db.branch.count({ where: { organizationId: orgId } });
 

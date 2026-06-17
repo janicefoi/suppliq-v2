@@ -21,12 +21,15 @@ import {
   Globe,
   type LucideIcon,
 } from "lucide-react";
+import type { Plan } from "@/lib/plans";
 
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
   roles: string[];
+  /** Minimum plan required to see this item. Defaults to "STARTER" (always visible). */
+  minPlan?: Plan;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -89,48 +92,56 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/insights/reorder",
     icon: PackageSearch,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "GROWTH",
   },
   {
     label: "Overstock",
     href: "/insights/overstock",
     icon: TrendingDown,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "Transfer Hints",
     href: "/insights/transfer-recommendations",
     icon: Route,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "ABC Analysis",
     href: "/insights/abc",
     icon: Layers,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "Anomaly Alerts",
     href: "/insights/anomalies",
     icon: ShieldAlert,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "Cash Flow",
     href: "/insights/cash-flow",
     icon: Banknote,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "AI Briefing",
     href: "/insights/briefing",
     icon: Newspaper,
     roles: ["ADMIN"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "Market",
     href: "/insights/market",
     icon: Globe,
     roles: ["ADMIN", "MANAGER"],
+    minPlan: "ENTERPRISE",
   },
   {
     label: "Employees",

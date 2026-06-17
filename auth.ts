@@ -30,7 +30,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
             isActive: true,
             branchId: true,
             organizationId: true,
-            organization: { select: { currency: true, plan: true } },
+            organization: { select: { currency: true, plan: true, trialEndsAt: true } },
           },
         });
 
@@ -48,6 +48,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
           organizationId: user.organizationId,
           currency: user.organization.currency,
           plan: user.organization.plan,
+          trialEndsAt: user.organization.trialEndsAt?.toISOString() ?? null,
           isDemo: user.email === "demo@suppliq.com",
         };
       },
@@ -63,7 +64,8 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
         token.branchId       = (user as { branchId?: string | null }).branchId ?? null;
         token.organizationId = (user as unknown as { organizationId: string }).organizationId;
         token.currency       = (user as unknown as { currency: string }).currency ?? "EUR";
-        token.plan           = (user as unknown as { plan?: string }).plan ?? "FREE";
+        token.plan           = (user as unknown as { plan?: string }).plan ?? "STARTER";
+        token.trialEndsAt    = (user as unknown as { trialEndsAt?: string | null }).trialEndsAt ?? null;
         token.isDemo         = (user as unknown as { isDemo?: boolean }).isDemo ?? false;
         token.planCheckedAt  = Date.now();
         return token;
@@ -76,11 +78,12 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
       if (now - lastCheck > 5 * 60 * 1000) {
         const org = await db.organization.findUnique({
           where: { id: token.organizationId as string },
-          select: { plan: true, currency: true },
+          select: { plan: true, currency: true, trialEndsAt: true },
         });
         if (org) {
           token.plan          = org.plan;
           token.currency      = org.currency;
+          token.trialEndsAt   = org.trialEndsAt?.toISOString() ?? null;
           token.planCheckedAt = now;
         }
       }

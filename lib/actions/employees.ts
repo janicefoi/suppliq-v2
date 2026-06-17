@@ -75,7 +75,7 @@ export async function createEmployee(
       where: { id: admin.organizationId },
       select: { plan: true },
     });
-    const limit = await checkUserLimit(admin.organizationId, org?.plan ?? "FREE");
+    const limit = await checkUserLimit(admin.organizationId, org?.plan ?? "STARTER");
     if (!limit.allowed) return { success: false, error: limit.error };
 
     const existing = await db.user.findUnique({ where: { email: parsed.data.email } });
@@ -219,7 +219,7 @@ export async function importEmployees(
     );
 
     let currentCount = await db.user.count({ where: { organizationId: admin.organizationId } });
-    const { users: userLimit } = getPlanLimits(org?.plan ?? "FREE");
+    const { users: userLimit } = getPlanLimits(org?.plan ?? "STARTER");
 
     let imported = 0;
     const skipped: CsvImportResult["skipped"] = [];

@@ -47,7 +47,7 @@ async function handleSubscriptionUpdate(sub: Stripe.Subscription) {
   await db.organization.update({
     where: { id: org.id },
     data: {
-      plan: sub.status === "canceled" ? "FREE" : resolvePlan(sub),
+      plan: sub.status === "canceled" ? "STARTER" : resolvePlan(sub),
       subscriptionStatus: sub.status,
       currentPeriodEnd: getSubPeriodEnd(sub),
     },
@@ -64,7 +64,7 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
   await db.organization.update({
     where: { id: org.id },
     data: {
-      plan: "FREE",
+      plan: "STARTER",
       subscriptionStatus: "canceled",
       stripeSubscriptionId: null,
       currentPeriodEnd: null,
@@ -88,7 +88,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
   });
 }
 
-function resolvePlan(sub: Stripe.Subscription): "FREE" | "GROWTH" | "ENTERPRISE" {
+function resolvePlan(sub: Stripe.Subscription): "STARTER" | "GROWTH" | "ENTERPRISE" {
   const priceId = sub.items.data[0]?.price.id;
   if (priceId === process.env.STRIPE_ENTERPRISE_PRICE_ID) return "ENTERPRISE";
   return "GROWTH";
