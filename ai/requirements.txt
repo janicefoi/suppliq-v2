@@ -15,6 +15,9 @@ httpx
 feedparser
 beautifulsoup4
 
+# ── Scheduler ─────────────────────────────────────────────────────────────
+apscheduler
+
 # ── Utilities ─────────────────────────────────────────────────────────────
 python-dotenv
 

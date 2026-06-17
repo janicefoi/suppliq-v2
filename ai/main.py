@@ -31,6 +31,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import settings
 from utils.db import init_pool, close_pool
+from scheduler import init_scheduler, shutdown_scheduler
 from routers.health import router as health_router
 from routers.forecast import router as forecast_router
 from routers.intelligence import router as intelligence_router
@@ -41,7 +42,9 @@ from routers.anomalies import router as anomalies_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_pool()
+    init_scheduler()
     yield
+    shutdown_scheduler()
     await close_pool()
 
 

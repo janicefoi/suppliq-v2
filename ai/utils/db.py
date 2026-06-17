@@ -49,6 +49,15 @@ async def health_check() -> bool:
         return False
 
 
+# ── Organisation helpers ───────────────────────────────────────────────────
+
+async def get_all_org_ids() -> list[str]:
+    """Return all organisation IDs. Used by the nightly scheduler to fan out jobs."""
+    async with get_conn() as conn:
+        rows = await conn.fetch("SELECT id FROM organizations ORDER BY created_at")
+        return [str(r["id"]) for r in rows]
+
+
 # ── Sales analytics ────────────────────────────────────────────────────────
 
 async def get_sales_history(
@@ -251,3 +260,22 @@ async def upsert_forecast(forecast: dict) -> None:
             forecast.get("suggested_qty"),
             forecast.get("model_version", "v0.1"),
         )
+
+
+async def get_forecast_summary(org_id: str) -> dict:
+    """Return a quick summary of the most recent forecast run for an org."""
+    async with get_conn() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT
+                COUNT(*)::int           AS total_forecasts,
+                MAX(generated_at)       AS last_run_at,
+                MIN(period_start)       AS period_start,
+                MAX(period_end)         AS period_end,
+                MAX(model_version)      AS model_version
+            FROM forecasts
+            WHERE organization_id = $1
+            """,
+            org_id,
+        )
+        return dict(row) if row else {}

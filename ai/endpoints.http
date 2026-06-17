@@ -69,6 +69,16 @@ Content-Type: application/json
 ### Cash flow forecast — 30-day projection with Claude commentary
 GET {{host}}/forecast/cash-flow/{{org_id}}
 
+###
+
+### Trigger nightly job now — runs all orgs in background, returns immediately
+POST {{host}}/forecast/run-all?horizon_days=30
+
+###
+
+### Last run status — verify the job wrote data for the demo org
+GET {{host}}/forecast/last-run/{{org_id}}
+
 
 ### ───────────────────────────────────────────────────────────────
 ###  MARKET INTELLIGENCE
