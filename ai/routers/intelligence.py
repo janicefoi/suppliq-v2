@@ -12,26 +12,38 @@ router = APIRouter(prefix="/intelligence", tags=["Market Intelligence"])
 @router.get("/news")
 async def supply_chain_news(
     organization_id: str = Query(..., description="Org ID for personalised relevance scoring"),
-    limit: int = Query(20, ge=1, le=50),
+    limit: int = Query(10, ge=1, le=20),
 ):
     """
     Aggregated supply chain news feed, enriched by Claude.
 
     Sources: Reuters, Supply Chain Dive, FreightWaves, NewsAPI, Logistics Manager.
-    Each article is scored for relevance to the org (derived from DB), tagged,
-    and summarised by Claude.
+    Each article is scored for relevance to the org's industry and country,
+    summarised, tagged (disruption/pricing/logistics/regulatory/…), and sorted
+    by relevance_score descending.
 
-    Returns articles sorted by relevance score (highest first).
+    Results are cached in-process for 2 hours to avoid re-running Claude on
+    every page refresh. Pass limit ≤ 10 for dashboard use.
     """
-    org = await get_org_details(organization_id)
+    org     = await get_org_details(organization_id)
+    country = ""
     if org:
+        country  = org.get("country", "")
         industry = org.get("industry") or "supply chain and inventory management"
-        country = org.get("country", "EU")
-        org_context = f"{org['name']} — a business in {country} operating in {industry}"
+        name     = org.get("name", "A business")
+        org_context = (
+            f"{name} — a business"
+            + (f" in {country}" if country else "")
+            + f" operating in {industry}"
+        )
     else:
-        org_context = "A European business managing inventory and supply chain operations"
+        org_context = "A business managing inventory and supply chain operations"
 
-    articles = await get_supply_chain_news(org_context=org_context, limit=limit)
+    articles = await get_supply_chain_news(
+        org_context=org_context,
+        limit=limit,
+        country=country,
+    )
     return {"organization_id": organization_id, "articles": articles, "count": len(articles)}
 
 
