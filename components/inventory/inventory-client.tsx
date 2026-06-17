@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getItems, getItemBranchStocks, toggleItemActive, type ItemBranchStock, type InventoryStats } from "@/lib/actions/inventory";
+import { getItems, getItemBranchStocks, getStockoutRisks, toggleItemActive, type ItemBranchStock, type InventoryStats, type StockoutRisk, type StockoutRiskLevel } from "@/lib/actions/inventory";
 import {
   Plus, Pencil, Power, AlertTriangle, Search, Package, Tag, Lock,
   PackagePlus, Download, ArrowUpDown, ChevronUp, ChevronDown,
@@ -50,6 +50,40 @@ interface Props {
   userRole: string;
   branches?: { id: string; name: string }[];
   currency: string;
+  initialRiskScores?: Record<string, StockoutRisk>;
+}
+
+const RISK_CONFIG: Record<StockoutRiskLevel, { label: string; className: string }> = {
+  CRITICAL: { label: "Critical", className: "bg-red-100 text-red-700 border-red-300" },
+  HIGH:     { label: "High",     className: "bg-amber-100 text-amber-700 border-amber-300" },
+  MEDIUM:   { label: "Medium",   className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
+  LOW:      { label: "Low",      className: "bg-green-50 text-green-700 border-green-200" },
+  UNKNOWN:  { label: "?",        className: "bg-slate-100 text-slate-400 border-slate-200" },
+};
+
+function RiskBadge({ risk }: { risk: StockoutRisk | undefined }) {
+  if (!risk) {
+    return (
+      <span className="text-[10px] text-slate-300" title="Run AI demand forecast to see stockout risk">
+        —
+      </span>
+    );
+  }
+  const { label, className } = RISK_CONFIG[risk.level];
+  const tooltip =
+    risk.daysOfStock !== null
+      ? `${risk.daysOfStock}d of stock · avg ${risk.avgDailyDemand}/day`
+      : risk.avgDailyDemand === 0
+      ? "No recent demand — safe"
+      : undefined;
+  return (
+    <span
+      title={tooltip}
+      className={cn("inline-flex items-center px-1.5 py-0 rounded-full text-[10px] font-semibold border", className)}
+    >
+      {label}
+    </span>
+  );
 }
 
 type SortField = "sku" | "name" | "category" | "retailPrice" | "stockQty";
@@ -83,7 +117,7 @@ function SortHeader({
   );
 }
 
-export function InventoryClient({ initialItems, initialStats, suppliers, categories, userRole, branches = [], currency }: Props) {
+export function InventoryClient({ initialItems, initialStats, suppliers, categories, userRole, branches = [], currency, initialRiskScores = {} }: Props) {
   const isAdmin = userRole === "ADMIN";
   const isManager = userRole === "MANAGER";
   const canStockIn = isAdmin || isManager;
@@ -98,6 +132,8 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   const [stats, setStats] = useState<InventoryStats>(initialStats);
   const [isSwitching, setIsSwitching] = useState(false);
 
+  const [riskScores, setRiskScores] = useState<Record<string, StockoutRisk>>(initialRiskScores);
+
   // Expand row - per-branch stock
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedStocks, setExpandedStocks] = useState<Record<string, ItemBranchStock[]>>({});
@@ -107,8 +143,12 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
     setSelectedBranchId(branchId);
     setIsSwitching(true);
     setExpandedId(null);
-    const [result] = await Promise.all([getItems(undefined, branchId)]);
+    const [result, risks] = await Promise.all([
+      getItems(undefined, branchId),
+      getStockoutRisks(branchId),
+    ]);
     setItems(result);
+    setRiskScores(risks);
     setIsSwitching(false);
   }
 
@@ -128,6 +168,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [supplierFilter, setSupplierFilter] = useState("all");
   const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "low" | "out">("all");
+  const [riskFilter, setRiskFilter] = useState<"all" | StockoutRiskLevel>("all");
   const [showInactive, setShowInactive] = useState(false);
 
   // Sorting
@@ -160,10 +201,15 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
       if (stockStatus === "out" && item.stockQty !== 0) return false;
       if (stockStatus === "low" && (item.stockQty === 0 || item.stockQty > item.lowStockThreshold)) return false;
       if (stockStatus === "in_stock" && item.stockQty <= item.lowStockThreshold) return false;
+      if (riskFilter !== "all") {
+        const risk = riskScores[item.id];
+        const level: StockoutRiskLevel = risk?.level ?? "UNKNOWN";
+        if (level !== riskFilter) return false;
+      }
       if (q && !item.name.toLowerCase().includes(q) && !item.sku.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [items, search, categoryFilter, supplierFilter, stockStatus, showInactive]);
+  }, [items, search, categoryFilter, supplierFilter, stockStatus, riskFilter, riskScores, showInactive]);
 
   const sortedItems = useMemo(() => {
     return [...filteredItems].sort((a, b) => {
@@ -312,6 +358,18 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
             <option value="out">Out of stock</option>
           </select>
 
+          <select
+            value={riskFilter}
+            onChange={(e) => setRiskFilter(e.target.value as typeof riskFilter)}
+            className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          >
+            <option value="all">All risk levels</option>
+            <option value="CRITICAL">Critical risk</option>
+            <option value="HIGH">High risk</option>
+            <option value="MEDIUM">Medium risk</option>
+            <option value="LOW">Low risk</option>
+          </select>
+
           <label className="flex items-center gap-1.5 text-sm text-slate-600 cursor-pointer select-none">
             <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="rounded" />
             Show inactive
@@ -364,6 +422,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
               <TableHead className="w-28 text-right whitespace-nowrap">Wholesale</TableHead>
               <TableHead className="w-28 text-right whitespace-nowrap">Special</TableHead>
               <SortHeader field="stockQty"   label="Stock"     className="w-16 text-right" {...sortProps} />
+              <TableHead className="w-20 whitespace-nowrap">Risk</TableHead>
               <TableHead className="w-20 whitespace-nowrap">Status</TableHead>
               <TableHead className="w-20 text-right whitespace-nowrap">Actions</TableHead>
             </TableRow>
@@ -371,7 +430,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
           <TableBody>
             {sortedItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="py-10 text-center text-slate-400">
+                <TableCell colSpan={10} className="py-10 text-center text-slate-400">
                   <Package className="h-7 w-7 mx-auto mb-1.5 opacity-30" />
                   <p className="text-xs">
                     {search || categoryFilter !== "all" || supplierFilter !== "all" || stockStatus !== "all"
@@ -446,6 +505,10 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                     </TableCell>
 
                     <TableCell className="whitespace-nowrap">
+                      <RiskBadge risk={riskScores[item.id]} />
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap">
                       <Badge
                         className={cn(
                           "text-[10px] font-medium border px-1.5 py-0",
@@ -510,7 +573,7 @@ export function InventoryClient({ initialItems, initialStats, suppliers, categor
                   {/* ── Expanded branch stock breakdown ─────────────────── */}
                   {expandedId === item.id && (
                     <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
-                      <TableCell colSpan={9} className="py-3 px-6">
+                      <TableCell colSpan={10} className="py-3 px-6">
                         {loadingExpandId === item.id ? (
                           <div className="flex items-center gap-2 text-xs text-slate-400">
                             <Loader2 className="h-3.5 w-3.5 animate-spin" />

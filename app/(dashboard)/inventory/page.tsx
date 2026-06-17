@@ -1,5 +1,5 @@
 ﻿import { auth } from "@/auth";
-import { getItems, getInventoryStats, getCategories } from "@/lib/actions/inventory";
+import { getItems, getInventoryStats, getCategories, getStockoutRisks } from "@/lib/actions/inventory";
 import { getSuppliers } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/branches";
 import { InventoryClient } from "@/components/inventory/inventory-client";
@@ -11,12 +11,13 @@ export default async function InventoryPage() {
   const role = session?.user?.role ?? "CASHIER";
   const isAdmin = role === "ADMIN";
 
-  const [items, suppliers, categories, branches, stats] = await Promise.all([
+  const [items, suppliers, categories, branches, stats, riskScores] = await Promise.all([
     getItems(undefined, isAdmin ? null : undefined),
     getSuppliers(),
     getCategories(),
     isAdmin ? getBranches() : Promise.resolve([]),
     getInventoryStats(isAdmin ? null : undefined),
+    getStockoutRisks(isAdmin ? null : undefined),
   ]);
 
   return (
@@ -28,6 +29,7 @@ export default async function InventoryPage() {
       userRole={role}
       branches={branches}
       currency={session?.user?.currency ?? "EUR"}
+      initialRiskScores={riskScores}
     />
   );
 }

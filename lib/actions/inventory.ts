@@ -167,6 +167,98 @@ export async function getPurchasableItems(branchId?: string | null): Promise<Pur
   }));
 }
 
+// ── Stockout risk scores ───────────────────────────────────────────────────
+// Derived from the AI-generated forecasts table + current branch stock.
+// No AI service call needed at render time — pure Prisma reads.
+
+export type StockoutRiskLevel = "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "UNKNOWN";
+
+export type StockoutRisk = {
+  level: StockoutRiskLevel;
+  daysOfStock: number | null;    // null when demand is 0 (safe) or data missing
+  avgDailyDemand: number | null; // null when no forecast exists
+  confidenceScore: number | null;
+};
+
+const LEAD_TIME_DAYS = 7;   // default assumed reorder lead time
+const HORIZON_DAYS = 30;    // must match demand.py MODEL_HORIZON
+
+export async function getStockoutRisks(
+  branchId?: string | null
+): Promise<Record<string, StockoutRisk>> {
+  const session = await auth();
+  if (!session?.user?.id) return {};
+
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId !== undefined ? branchId : (session.user.branchId ?? null);
+  // Only use forecasts generated in the last 48 h — stale forecasts mislead more than no data
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+  // Sum predicted demand per item across branches (or for one branch)
+  const forecastGroups = await db.forecast.groupBy({
+    by: ["itemId"],
+    where: {
+      organizationId: orgId,
+      generatedAt: { gte: since },
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    },
+    _sum: { predictedDemand: true },
+    _avg: { confidenceScore: true },
+  });
+
+  if (forecastGroups.length === 0) return {};
+
+  const itemIds = forecastGroups.map((g) => g.itemId);
+
+  // Sum current stock per item across branches (or for one branch)
+  const stockGroups = await db.branchStock.groupBy({
+    by: ["itemId"],
+    where: {
+      item: { organizationId: orgId },
+      itemId: { in: itemIds },
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    },
+    _sum: { stockQty: true },
+  });
+
+  const stockByItem: Record<string, number> = Object.fromEntries(
+    stockGroups.map((s) => [s.itemId, Number(s._sum.stockQty ?? 0)])
+  );
+
+  const risks: Record<string, StockoutRisk> = {};
+
+  for (const g of forecastGroups) {
+    const totalDemand = Number(g._sum.predictedDemand ?? 0);
+    const confidence  = Number(g._avg.confidenceScore ?? 0);
+    const stockQty    = stockByItem[g.itemId] ?? 0;
+
+    if (totalDemand <= 0) {
+      // Item has no recent sales → demand is zero → no risk from stockout
+      risks[g.itemId] = { level: "LOW", daysOfStock: null, avgDailyDemand: 0, confidenceScore: confidence };
+      continue;
+    }
+
+    const avgDailyDemand = totalDemand / HORIZON_DAYS;
+    const daysOfStock    = stockQty > 0 ? stockQty / avgDailyDemand : 0;
+
+    let level: StockoutRiskLevel;
+    if (stockQty === 0)                         level = "CRITICAL";
+    else if (daysOfStock <= LEAD_TIME_DAYS)     level = "CRITICAL";
+    else if (daysOfStock <= LEAD_TIME_DAYS * 2) level = "HIGH";
+    else if (daysOfStock <= LEAD_TIME_DAYS * 3) level = "MEDIUM";
+    else                                         level = "LOW";
+
+    risks[g.itemId] = {
+      level,
+      daysOfStock:     Math.round(daysOfStock),
+      avgDailyDemand:  Math.round(avgDailyDemand * 10) / 10,
+      confidenceScore: Math.round(confidence * 100) / 100,
+    };
+  }
+
+  return risks;
+}
+
 // ── Items - write ──────────────────────────────────────────────────────────
 
 export async function createItem(data: ItemFormValues): Promise<ActionResult> {
