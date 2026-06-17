@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle, PackageSearch, Wifi, RefreshCw, ChevronDown, ChevronUp,
+  AlertTriangle, PackageSearch, Wifi, RefreshCw, ChevronDown, ChevronUp, Lock,
 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,6 +87,7 @@ interface Props {
   unavailable: boolean;
   criticalCount: number;
   highCount: number;
+  plan: string;
 }
 
 // ── Main component ─────────────────────────────────────────────────────────
@@ -100,14 +102,19 @@ export function ReorderClient({
   unavailable,
   criticalCount,
   highCount,
+  plan,
 }: Props) {
   const router = useRouter();
   const [selected, setSelected] = useState<ReorderRecommendation | null>(null);
   const [priorityFilter, setPriorityFilter] = useState<"all" | "critical" | "high" | "medium" | "low">("all");
 
+  const isGrowthMode = plan === "GROWTH";
+  const displayedRecs = isGrowthMode ? recommendations.slice(0, 5) : recommendations;
+  const totalCount = recommendations.length;
+
   const filtered = priorityFilter === "all"
-    ? recommendations
-    : recommendations.filter((r) => r.priority === priorityFilter);
+    ? displayedRecs
+    : displayedRecs.filter((r) => r.priority === priorityFilter);
 
   function handleSuccess() {
     setSelected(null);
@@ -150,7 +157,7 @@ export function ReorderClient({
 
   return (
     <div className="space-y-4">
-      <PageHeader count={recommendations.length} criticalCount={criticalCount} highCount={highCount} />
+      <PageHeader count={totalCount} criticalCount={criticalCount} highCount={highCount} />
 
       {/* Stats + filter row */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -196,14 +203,14 @@ export function ReorderClient({
               <TableHead className="w-24 text-right">Stock / ROP</TableHead>
               <TableHead className="w-24 text-right">Days left</TableHead>
               <TableHead className="w-24 text-right">Suggest qty</TableHead>
-              <TableHead className="min-w-[200px]">AI reasoning</TableHead>
+              {!isGrowthMode && <TableHead className="min-w-[200px]">AI reasoning</TableHead>}
               <TableHead className="w-28 text-right">Action</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-slate-400 text-xs">
+                <TableCell colSpan={isGrowthMode ? 7 : 8} className="py-10 text-center text-slate-400 text-xs">
                   No items match this filter.
                 </TableCell>
               </TableRow>
@@ -250,9 +257,11 @@ export function ReorderClient({
                       <p className="text-[9px] text-slate-400">avg {rec.avg_daily_demand}/day</p>
                     </TableCell>
 
-                    <TableCell>
-                      <ReasoningCell text={rec.reasoning} />
-                    </TableCell>
+                    {!isGrowthMode && (
+                      <TableCell>
+                        <ReasoningCell text={rec.reasoning} />
+                      </TableCell>
+                    )}
 
                     <TableCell className="text-right">
                       <Button
@@ -273,9 +282,19 @@ export function ReorderClient({
         </Table>
       </div>
 
-      <p className="text-[11px] text-slate-400">
-        Showing {filtered.length} of {recommendations.length} items · Reorder points are AI-calculated from demand forecasts
-      </p>
+      {isGrowthMode && totalCount > 5 ? (
+        <Link
+          href="/settings/billing"
+          className="flex items-center gap-2 text-xs text-slate-500 border border-dashed border-slate-300 rounded-lg px-4 py-2.5 hover:bg-slate-50 transition-colors w-fit"
+        >
+          <Lock className="h-3.5 w-3.5 text-slate-400" />
+          Showing top 5 of {totalCount} items. Upgrade to Enterprise for the full list with AI reasoning.
+        </Link>
+      ) : (
+        <p className="text-[11px] text-slate-400">
+          Showing {filtered.length} of {totalCount} items · Reorder points are AI-calculated from demand forecasts
+        </p>
+      )}
 
       <QuickReorderDialog
         rec={selected}

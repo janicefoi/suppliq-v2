@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { BriefingClient } from "@/components/insights/briefing-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "AI Briefing | SUPPLIQ" };
 
@@ -34,6 +36,10 @@ export default async function BriefingPage({
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_briefing")) {
+    return <UpgradePrompt feature="AI Weekly Briefing" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const { force } = await searchParams;
   const orgId = session.user.organizationId;

@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { AbcAnalysisClient } from "@/components/insights/abc-analysis-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "ABC Analysis | SUPPLIQ" };
 
@@ -34,6 +36,10 @@ export default async function AbcAnalysisPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_abc")) {
+    return <UpgradePrompt feature="ABC / XYZ Analysis" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId = session.user.organizationId;
 

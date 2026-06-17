@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { AnomaliesClient } from "@/components/insights/anomalies-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "Anomaly Alerts | SUPPLIQ" };
 
@@ -23,6 +25,10 @@ export default async function AnomaliesPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_anomalies")) {
+    return <UpgradePrompt feature="Anomaly Alerts" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId = session.user.organizationId;
 

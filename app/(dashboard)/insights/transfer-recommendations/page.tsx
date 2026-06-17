@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { TransferRecommendationsClient } from "@/components/insights/transfer-recommendations-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "Transfer Hints | SUPPLIQ" };
 
@@ -31,6 +33,10 @@ export default async function TransferRecommendationsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_transfers")) {
+    return <UpgradePrompt feature="Transfer Hints" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId = session.user.organizationId;
 

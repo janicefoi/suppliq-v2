@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { OverstockClient } from "@/components/insights/overstock-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "Overstock | SUPPLIQ" };
 
@@ -41,6 +43,10 @@ export default async function OverstockPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_overstock")) {
+    return <UpgradePrompt feature="Overstock Analysis" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId   = session.user.organizationId;
   const isAdmin = session.user.role === "ADMIN";

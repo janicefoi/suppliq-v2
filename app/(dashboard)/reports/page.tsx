@@ -18,7 +18,12 @@ export default async function ReportsPage() {
         <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
         <p className="text-sm text-slate-500 mt-0.5">Sales history and profit &amp; loss</p>
       </div>
-      <ReportTabs role={role} branches={branches} currency={session?.user?.currency ?? "EUR"} />
+      <ReportTabs
+        role={role}
+        branches={branches}
+        currency={session?.user?.currency ?? "EUR"}
+        plan={session?.user?.plan ?? "STARTER"}
+      />
     </div>
   );
 }

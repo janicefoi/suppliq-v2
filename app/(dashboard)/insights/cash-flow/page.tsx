@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { CashFlowClient } from "@/components/insights/cash-flow-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "Cash Flow | SUPPLIQ" };
 
@@ -36,6 +38,10 @@ export default async function CashFlowPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_cash_flow")) {
+    return <UpgradePrompt feature="Cash Flow Projection" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId = session.user.organizationId;
 

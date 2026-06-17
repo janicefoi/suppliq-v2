@@ -2,6 +2,8 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ai } from "@/lib/ai/client";
 import { MarketClient } from "@/components/insights/market-client";
+import { canAccess } from "@/lib/plans";
+import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
 export const metadata = { title: "Market Intelligence | SUPPLIQ" };
 
@@ -37,6 +39,10 @@ export default async function MarketPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
   if (session.user.role === "CASHIER") redirect("/dashboard");
+
+  if (!canAccess(session.user.plan, "ai_market")) {
+    return <UpgradePrompt feature="Market Intelligence" requiredPlan="ENTERPRISE" currentPlan={session.user.plan} />;
+  }
 
   const orgId = session.user.organizationId;
 

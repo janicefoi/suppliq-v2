@@ -56,6 +56,7 @@ export default async function ReorderPage() {
       unavailable={unavailable}
       criticalCount={criticalCount}
       highCount={highCount}
+      plan={session.user.plan ?? "STARTER"}
     />
   );
 }
