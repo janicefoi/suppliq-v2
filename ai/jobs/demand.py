@@ -10,6 +10,7 @@ import logging
 from datetime import datetime, timezone
 
 from services.forecasting.demand import run_demand_forecast
+from services.optimization.reorder import update_reorder_points
 from utils.db import get_all_org_ids, upsert_forecast
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ async def run_all_orgs(horizon_days: int = FORECAST_HORIZON_DAYS) -> dict:
 
     for org_id in org_ids:
         try:
+            # Step 1: demand forecast
             results = await run_demand_forecast(
                 org_id=org_id,
                 item_id=None,
@@ -45,30 +47,41 @@ async def run_all_orgs(horizon_days: int = FORECAST_HORIZON_DAYS) -> dict:
             )
             for r in results:
                 await upsert_forecast(r)
+            logger.info("  ✓  demand  org=%s  written=%d", org_id, len(results))
 
-            logger.info("  ✓  org=%s  written=%d", org_id, len(results))
-            summary[org_id] = {"forecasts_written": len(results), "error": None}
+            # Step 2: update ROPs from fresh demand (runs immediately after so data is hot)
+            rop_summary = await update_reorder_points(org_id)
+            logger.info(
+                "  ✓  rop     org=%s  updated=%d  skipped=%d",
+                org_id, rop_summary["updated"], rop_summary["skipped"],
+            )
+
+            summary[org_id] = {
+                "forecasts_written": len(results),
+                "rop_updated":       rop_summary["updated"],
+                "error":             None,
+            }
 
         except Exception as exc:
             logger.error("  ✗  org=%s  error=%s", org_id, exc, exc_info=True)
-            summary[org_id] = {"forecasts_written": 0, "error": str(exc)}
+            summary[org_id] = {"forecasts_written": 0, "rop_updated": 0, "error": str(exc)}
 
     elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
-    total_written = sum(v["forecasts_written"] for v in summary.values())
-    failed_orgs   = sum(1 for v in summary.values() if v["error"])
+    total_written  = sum(v["forecasts_written"] for v in summary.values())
+    total_rop      = sum(v.get("rop_updated", 0) for v in summary.values())
+    failed_orgs    = sum(1 for v in summary.values() if v["error"])
 
     logger.info(
-        "Demand forecast job complete — total_written=%d  failed_orgs=%d  elapsed=%.1fs",
-        total_written,
-        failed_orgs,
-        elapsed,
+        "Nightly job complete — forecasts=%d  rop_updates=%d  failed_orgs=%d  elapsed=%.1fs",
+        total_written, total_rop, failed_orgs, elapsed,
     )
 
     return {
-        "started_at":     started_at.isoformat(),
-        "elapsed_seconds": round(elapsed, 2),
-        "orgs_processed": len(org_ids),
-        "total_written":  total_written,
-        "failed_orgs":    failed_orgs,
-        "detail":         summary,
+        "started_at":       started_at.isoformat(),
+        "elapsed_seconds":  round(elapsed, 2),
+        "orgs_processed":   len(org_ids),
+        "total_written":    total_written,
+        "total_rop_updated": total_rop,
+        "failed_orgs":      failed_orgs,
+        "detail":           summary,
     }

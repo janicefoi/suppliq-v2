@@ -262,6 +262,62 @@ async def upsert_forecast(forecast: dict) -> None:
         )
 
 
+async def get_latest_forecasts_by_item_branch(org_id: str) -> dict[tuple[str, str], dict]:
+    """
+    Returns the freshest forecast row per (item_id, branch_id) from the last 48 h.
+
+    Result dict key:   (item_id, branch_id)
+    Result dict value: { "avg_daily_demand": float, "confidence_score": float, "predicted_demand": float }
+
+    Used by the ROP calculator so it works from real demand, not placeholders.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT DISTINCT ON (item_id, branch_id)
+                item_id,
+                branch_id,
+                predicted_demand,
+                confidence_score,
+                EXTRACT(DAY FROM (period_end - period_start))::float AS horizon_days
+            FROM forecasts
+            WHERE organization_id = $1
+              AND generated_at >= NOW() - INTERVAL '48 hours'
+            ORDER BY item_id, branch_id, generated_at DESC
+            """,
+            org_id,
+        )
+        result = {}
+        for r in rows:
+            horizon = float(r["horizon_days"]) if r["horizon_days"] and r["horizon_days"] > 0 else 30.0
+            avg_daily = float(r["predicted_demand"]) / horizon
+            result[(str(r["item_id"]), str(r["branch_id"]))] = {
+                "avg_daily_demand": avg_daily,
+                "confidence_score": float(r["confidence_score"]),
+                "predicted_demand": float(r["predicted_demand"]),
+            }
+        return result
+
+
+async def update_branch_rop(item_id: str, branch_id: str, rop_value: int) -> bool:
+    """
+    Write an AI-calculated ROP back to branch_stocks.low_stock_threshold.
+    Returns True if a row was updated, False if the (item, branch) row does not exist.
+    """
+    async with get_conn() as conn:
+        result = await conn.execute(
+            """
+            UPDATE branch_stocks
+            SET low_stock_threshold = $1
+            WHERE item_id = $2 AND branch_id = $3
+            """,
+            rop_value,
+            item_id,
+            branch_id,
+        )
+        return result != "UPDATE 0"
+
+
 async def get_forecast_summary(org_id: str) -> dict:
     """Return a quick summary of the most recent forecast run for an org."""
     async with get_conn() as conn:

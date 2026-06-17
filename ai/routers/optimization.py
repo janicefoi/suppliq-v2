@@ -1,6 +1,6 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, BackgroundTasks
 
-from services.optimization.reorder import get_reorder_recommendations
+from services.optimization.reorder import get_reorder_recommendations, update_reorder_points
 
 router = APIRouter(prefix="/optimize", tags=["Optimization"])
 
@@ -28,4 +28,23 @@ async def reorder_recommendations(organization_id: str):
         "count": len(recommendations),
         "critical_count": sum(1 for r in recommendations if r["priority"] == "critical"),
         "high_count": sum(1 for r in recommendations if r["priority"] == "high"),
+    }
+
+
+@router.post("/apply-rop/{organization_id}")
+async def apply_reorder_points(organization_id: str, background_tasks: BackgroundTasks):
+    """
+    Manually trigger ROP recalculation for one organisation.
+
+    Reads the latest demand forecasts (must be < 48 h old) and writes
+    AI-calculated thresholds back to branch_stocks.low_stock_threshold.
+
+    The nightly job calls this automatically after demand forecasting,
+    so you only need this endpoint to force a refresh mid-day.
+    """
+    background_tasks.add_task(update_reorder_points, organization_id)
+    return {
+        "status": "triggered",
+        "organization_id": organization_id,
+        "message": "ROP recalculation running in background — check branch_stocks.low_stock_threshold in a few seconds",
     }

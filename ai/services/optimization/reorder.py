@@ -1,49 +1,60 @@
-﻿"""
+"""
 Reorder Point Optimisation Service
 
-What this will do:
-  1. For every (item, branch) combination:
-       a. Get current stock from branch_stocks
-       b. Get demand forecast for the next 30 days
-       c. Estimate lead time from PO history for that item's supplier
-       d. Calculate:
-            - Reorder Point (ROP) = avg daily demand × lead time + safety stock
-            - Safety stock = Z × σ_demand × √lead_time  (Z=1.65 for 95% service level)
-            - Economic Order Quantity (EOQ) = √(2DS/H)
-               D = annual demand, S = order cost (est. 50 currency units), H = holding cost (est. 20% of item cost)
-  2. Flag items where current_stock ≤ ROP as "needs reorder"
-  3. Estimate days until stockout = current_stock / avg_daily_demand
-  4. Generate reorder recommendation with Claude reasoning
-  5. Write suggested_qty back to the forecasts table
+Dynamic ROP formula (Phase 1 — EMA demand):
+    ROP = avg_daily_demand × lead_time × 1.5
+    (the 1.5× factor is a simplified safety stock: 100% of lead-time demand + 50% buffer)
 
-Priority levels:
-  critical  - stockout in ≤3 days
-  high      - stockout in 4-7 days OR stock already 0
-  medium    - stockout in 8-14 days
-  low       - below ROP but >14 days of cover
+Phase 2 upgrade path:
+    safety_stock = Z × σ_demand × √lead_time   (Z=1.65 for 95% service level)
+    Requires per-item demand variance, which we'll have once we accumulate forecast history.
 
-Phase 2:
-  - Use actual supplier lead times from PO history (not estimates)
-  - Add MOQ (minimum order quantity) constraints per supplier
-  - Bundle recommendations into suggested purchase orders
-  - Account for pending purchase orders already in-flight
+EOQ formula (currency-agnostic):
+    √(2DS / H)    where S = ORDER_COST_RATIO × unit_cost,  H = HOLDING_COST_PCT × unit_cost
+
+The nightly job calls update_reorder_points() immediately after demand forecasting,
+so ROPs are always derived from the freshest EMA demand estimate.
 """
 
+import logging
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 
-from utils.db import get_branch_stock, get_purchase_order_history, get_org_details
+from utils.db import (
+    get_branch_stock,
+    get_latest_forecasts_by_item_branch,
+    get_purchase_order_history,
+    get_org_details,
+    update_branch_rop,
+)
 from utils.llm import generate_reorder_reasoning
 
+logger = logging.getLogger(__name__)
 
-DEFAULT_LEAD_TIME_DAYS = 5     # assumed if no PO history
-ORDER_COST_RATIO = 0.02        # estimated admin cost per order = 2% of unit cost (currency-agnostic)
-HOLDING_COST_PCT = 0.20        # 20% of unit cost per year
-SERVICE_LEVEL_Z = 1.65         # 95% service level
+DEFAULT_LEAD_TIME_DAYS = 5
+ORDER_COST_RATIO       = 0.02   # 2% of unit cost — currency-agnostic
+HOLDING_COST_PCT       = 0.20   # 20% annual holding cost
+SAFETY_BUFFER          = 0.5    # 50% of lead-time demand added as safety stock
+MIN_ROP                = 2      # never set threshold below 2 units
+
+
+# ── Pure calculation helpers ───────────────────────────────────────────────
+
+def calculate_rop(avg_daily: float, lead_time: float) -> int:
+    """
+    ROP = ceil(avg_daily × lead_time × (1 + SAFETY_BUFFER))
+
+    Phase 1 approximation.  Phase 2 will replace SAFETY_BUFFER with
+    Z × coefficient_of_variation × √lead_time once we have demand variance.
+    """
+    if avg_daily <= 0:
+        return MIN_ROP
+    rop = math.ceil(avg_daily * lead_time * (1 + SAFETY_BUFFER))
+    return max(rop, MIN_ROP)
 
 
 def _estimate_lead_time(orders: list[dict], item_id: str) -> float:
-    """Estimate avg lead time in days for an item from its PO history."""
+    """Avg lead time in days for an item derived from its PO history."""
     item_orders = [
         o for o in orders
         if o["item_id"] == item_id
@@ -60,13 +71,11 @@ def _estimate_lead_time(orders: list[dict], item_id: str) -> float:
 
 
 def _calculate_eoq(annual_demand: float, unit_cost: float) -> int:
-    """Economic Order Quantity formula. ORDER_COST derived as ratio of unit_cost so it's currency-agnostic."""
     if annual_demand <= 0 or unit_cost <= 0:
         return 0
-    order_cost = max(unit_cost * ORDER_COST_RATIO, 1.0)
+    S = max(unit_cost * ORDER_COST_RATIO, 1.0)
     H = unit_cost * HOLDING_COST_PCT
-    eoq = math.sqrt((2 * annual_demand * order_cost) / H)
-    return max(1, round(eoq))
+    return max(1, round(math.sqrt((2 * annual_demand * S) / H)))
 
 
 def _priority(days_until_stockout: float | None) -> str:
@@ -83,72 +92,139 @@ def _priority(days_until_stockout: float | None) -> str:
     return "low"
 
 
+# ── ROP write-back ─────────────────────────────────────────────────────────
+
+async def update_reorder_points(org_id: str) -> dict:
+    """
+    Calculate AI-driven ROPs from fresh demand forecasts and write them
+    back to branch_stocks.low_stock_threshold.
+
+    Called automatically by the nightly job after demand forecasting.
+    Also callable manually via POST /optimize/apply-rop/{org_id}.
+
+    Returns a summary:
+        { "updated": N, "skipped": N, "elapsed_seconds": f }
+    """
+    started_at = datetime.now(timezone.utc)
+
+    forecasts = await get_latest_forecasts_by_item_branch(org_id)
+    if not forecasts:
+        logger.info("ROP update: no fresh forecasts for org=%s — skipping", org_id)
+        return {"updated": 0, "skipped": 0, "elapsed_seconds": 0.0, "reason": "no_fresh_forecasts"}
+
+    orders = await get_purchase_order_history(org_id, days=180)
+
+    updated = 0
+    skipped = 0
+
+    for (item_id, branch_id), demand_data in forecasts.items():
+        avg_daily  = demand_data["avg_daily_demand"]
+        lead_time  = _estimate_lead_time(orders, item_id)
+        rop        = calculate_rop(avg_daily, lead_time)
+
+        was_updated = await update_branch_rop(item_id, branch_id, rop)
+        if was_updated:
+            updated += 1
+            logger.debug(
+                "  ROP  item=%s  branch=%s  avg_daily=%.2f  lead_time=%.1fd  rop=%d",
+                item_id, branch_id, avg_daily, lead_time, rop,
+            )
+        else:
+            skipped += 1
+
+    elapsed = (datetime.now(timezone.utc) - started_at).total_seconds()
+    logger.info(
+        "ROP update complete — org=%s  updated=%d  skipped=%d  elapsed=%.1fs",
+        org_id, updated, skipped, elapsed,
+    )
+    return {
+        "updated":         updated,
+        "skipped":         skipped,
+        "elapsed_seconds": round(elapsed, 2),
+    }
+
+
+# ── Reorder recommendations ────────────────────────────────────────────────
+
 async def get_reorder_recommendations(org_id: str) -> list[dict]:
     """
     Returns reorder recommendations sorted by priority (critical first).
-    Each recommendation includes Claude-generated reasoning.
+
+    Uses real AI demand forecasts (not placeholders).  The ROP in
+    branch_stocks.low_stock_threshold is already AI-calculated if
+    update_reorder_points() has run at least once.
     """
-    org = await get_org_details(org_id)
+    org      = await get_org_details(org_id)
     currency = org["currency"] if org else "EUR"
 
-    stocks = await get_branch_stock(org_id)
-    orders = await get_purchase_order_history(org_id, days=180)
-
-    # Build a quick lookup of forecast demand per (item_id, branch_id)
-    # In production this reads from the forecasts table; here we use a simple
-    # daily average from the stock data as a placeholder.
-    # TODO: JOIN against forecasts table for proper demand data
+    stocks    = await get_branch_stock(org_id)
+    orders    = await get_purchase_order_history(org_id, days=180)
+    forecasts = await get_latest_forecasts_by_item_branch(org_id)
 
     recommendations = []
 
     for stock in stocks:
-        item_id = stock["item_id"]
-        current_qty = stock["stock_qty"]
-        reorder_point = stock.get("low_stock_threshold", 5)
-        unit_cost = float(stock.get("wholesale_price", stock.get("retail_price", 0))) * 0.7
+        item_id    = stock["item_id"]
+        branch_id  = stock["branch_id"]
+        current_qty   = stock["stock_qty"]
+        reorder_point = stock.get("low_stock_threshold", MIN_ROP)
+        unit_cost     = float(stock.get("wholesale_price") or stock.get("retail_price") or 0) * 0.7
 
-        lead_time = _estimate_lead_time(orders, item_id)
-
-        # Rough daily demand estimate: use 2% of reorder_point as placeholder
-        # Will be replaced with actual forecast data in Phase 2
-        avg_daily_demand = max(0.5, reorder_point * 0.15)
-
-        if avg_daily_demand > 0:
-            days_until_stockout = current_qty / avg_daily_demand
+        # Real demand from forecast table; fall back to heuristic if no forecast yet
+        demand_data = forecasts.get((item_id, branch_id))
+        if demand_data:
+            avg_daily    = demand_data["avg_daily_demand"]
+            confidence   = demand_data["confidence_score"]
         else:
-            days_until_stockout = None
+            avg_daily    = max(0.5, reorder_point * 0.10)   # heuristic fallback
+            confidence   = 0.4
 
-        # Only surface items at or below reorder point
         if current_qty > reorder_point:
-            continue
+            continue  # stock is healthy — nothing to do
 
-        annual_demand = avg_daily_demand * 365
-        eoq = _calculate_eoq(annual_demand, unit_cost)
-        suggested_qty = max(eoq, reorder_point * 2)  # at least 2× reorder point
+        days_until_stockout = (current_qty / avg_daily) if avg_daily > 0 else None
+        annual_demand       = avg_daily * 365
+        eoq                 = _calculate_eoq(annual_demand, unit_cost)
+        lead_time           = _estimate_lead_time(orders, item_id)
+        suggested_qty       = max(eoq, math.ceil(avg_daily * lead_time * 2))
 
-        # Claude reasoning
         reasoning = await generate_reorder_reasoning(
-            item={"name": stock["item_name"], "sku": stock["sku"], "reorder_point": reorder_point, "unit_cost": unit_cost},
-            stock={"stock_qty": current_qty, "branch_name": stock["branch_name"]},
-            forecast={"predicted_demand": round(avg_daily_demand * 30, 1), "confidence_score": 0.6},
+            item={
+                "name":          stock["item_name"],
+                "sku":           stock["sku"],
+                "reorder_point": reorder_point,
+                "unit_cost":     unit_cost,
+            },
+            stock={
+                "stock_qty":   current_qty,
+                "branch_name": stock["branch_name"],
+            },
+            forecast={
+                "predicted_demand": round(avg_daily * 30, 1),
+                "confidence_score": confidence,
+            },
             currency=currency,
         )
 
         recommendations.append({
-            "item_id": item_id,
-            "item_name": stock["item_name"],
-            "sku": stock["sku"],
-            "branch_id": stock["branch_id"],
-            "branch_name": stock["branch_name"],
-            "current_stock": current_qty,
-            "reorder_point": reorder_point,
-            "suggested_order_qty": suggested_qty,
-            "estimated_days_until_stockout": round(days_until_stockout, 1) if days_until_stockout else None,
-            "priority": _priority(days_until_stockout),
-            "reasoning": reasoning,
+            "item_id":                   item_id,
+            "item_name":                 stock["item_name"],
+            "sku":                       stock["sku"],
+            "branch_id":                 branch_id,
+            "branch_name":               stock["branch_name"],
+            "current_stock":             current_qty,
+            "reorder_point":             reorder_point,
+            "suggested_order_qty":       suggested_qty,
+            "estimated_days_until_stockout": (
+                round(days_until_stockout, 1) if days_until_stockout is not None else None
+            ),
+            "avg_daily_demand":          round(avg_daily, 2),
+            "lead_time_days":            round(lead_time, 1),
+            "priority":                  _priority(days_until_stockout),
+            "confidence_score":          round(confidence, 2),
+            "reasoning":                 reasoning,
         })
 
-    # Sort: critical → high → medium → low
     priority_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
     recommendations.sort(key=lambda r: priority_order.get(r["priority"], 4))
     return recommendations

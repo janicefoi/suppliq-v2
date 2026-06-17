@@ -107,10 +107,14 @@ GET {{host}}/intelligence/supplier-scores/{{org_id}}
 ###  OPTIMIZATION
 ### ───────────────────────────────────────────────────────────────
 
-### Reorder recommendations — critical stockouts first
-###   Each recommendation includes Claude-generated reasoning,
-###   days until stockout, EOQ suggested order quantity, and priority.
+### Reorder recommendations — critical stockouts first (uses real AI demand)
 GET {{host}}/optimize/reorder/{{org_id}}
+
+###
+
+### Apply dynamic ROPs — writes AI-calculated low_stock_threshold to branch_stocks
+###   (nightly job does this automatically; use this for a mid-day refresh)
+POST {{host}}/optimize/apply-rop/{{org_id}}
 
 
 ### ───────────────────────────────────────────────────────────────
