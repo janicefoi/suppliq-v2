@@ -36,12 +36,19 @@ RST  = "\033[0m"
 # ── Helpers ────────────────────────────────────────────────────────────────
 
 async def get_org_id() -> tuple[str, str]:
-    """Return (org_id, org_name) from the DB, or fall back to a fake value."""
+    """Return (org_id, org_name) for the demo org, or fall back to a fake value."""
     try:
         import asyncpg  # type: ignore
         db_url = os.getenv("DATABASE_URL", "")
         conn = await asyncpg.connect(dsn=db_url)
-        row = await conn.fetchrow("SELECT id, name FROM organizations LIMIT 1")
+        # Use the demo user's org — demo@suppliq.com always lives in the seed demo org
+        row = await conn.fetchrow("""
+            SELECT o.id, o.name
+            FROM organizations o
+            JOIN users u ON u.organization_id = o.id
+            WHERE u.email = 'demo@suppliq.com'
+            LIMIT 1
+        """)
         await conn.close()
         if row:
             return str(row["id"]), str(row["name"])
