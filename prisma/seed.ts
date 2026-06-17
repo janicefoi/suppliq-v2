@@ -1,6 +1,7 @@
 ﻿import {
   PrismaClient,
   Role,
+  OrgPlan,
   PurchaseOrderStatus,
   StockMovementReason,
 } from "@prisma/client";
@@ -42,7 +43,7 @@ async function main() {
   // ── Organization ───────────────────────────────────────────────────────────
   const org = await prisma.organization.upsert({
     where: { slug: "meridian" },
-    update: {},
+    update: { plan: OrgPlan.ENTERPRISE },
     create: {
       id: "seed-org-meridian",
       name: "Meridian Electronics Ltd",
@@ -50,6 +51,7 @@ async function main() {
       industry: "Electronics Distribution",
       country: "GB",
       currency: "GBP",
+      plan: OrgPlan.ENTERPRISE,
     },
   });
   console.log(`✓ Organization: ${org.name}`);

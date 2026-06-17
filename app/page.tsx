@@ -15,13 +15,19 @@ import {
   Zap,
   ArrowRight,
   ScanSearch,
+  Banknote,
+  Newspaper,
+  Layers,
+  Route,
+  TrendingDown,
+  ShieldAlert,
 } from "lucide-react";
 import { FadeIn } from "@/components/landing/fade-in";
 
 export const metadata = {
   title: "Suppliq: AI-powered operations for wholesale and retail",
   description:
-    "An AI-first operations platform for wholesale and retail businesses. A complete ERP foundation with an AI layer that turns your data into forecasts, alerts, and decisions.",
+    "A complete ERP foundation with an AI layer that turns your data into forecasts, alerts, and decisions. Start free for 14 days.",
 };
 
 export default async function LandingPage() {
@@ -88,10 +94,10 @@ function Navbar() {
             Sign in
           </Link>
           <Link
-            href="/register"
+            href="/signup"
             className="rounded-lg bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-blue-400"
           >
-            Get started free
+            Start free trial
           </Link>
         </div>
       </div>
@@ -111,19 +117,16 @@ function Hero() {
         backgroundSize: "36px 36px",
       }}
     >
-      {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/2 top-0 h-[600px] w-[900px] -translate-x-1/2 -translate-y-1/3 rounded-full bg-blue-600/10 blur-3xl" />
       </div>
 
       <div className="relative mx-auto max-w-4xl text-center">
-        {/* Badge */}
         <div className="anim-1 mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/60">
           <span className="inline-block h-2 w-2 rounded-full bg-violet-400" />
           AI-first operations platform
         </div>
 
-        {/* Headline */}
         <h1 className="anim-2 mb-6 text-5xl font-bold leading-[1.08] tracking-tight text-white md:text-7xl">
           Not just another ERP.{" "}
           <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">
@@ -131,20 +134,19 @@ function Hero() {
           </span>
         </h1>
 
-        {/* Sub */}
         <p className="anim-3 mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/50">
-          Suppliq starts with a complete operations layer that captures every
-          sale, purchase, and stock movement. The AI sits on top of that and
-          turns your real data into forecasts, recommendations, and decisions.
+          Suppliq captures every sale, purchase, and stock movement, then sits
+          Claude AI on top of that data to deliver demand forecasts, anomaly
+          alerts, cash flow projections, and a weekly briefing written in plain
+          English. Starts at €29/month.
         </p>
 
-        {/* CTAs */}
         <div className="anim-4 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            href="/register"
+            href="/signup"
             className="flex items-center gap-2 rounded-xl bg-blue-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-400 hover:shadow-xl hover:shadow-blue-500/30"
           >
-            Start for free
+            Start 14-day free trial
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
@@ -163,11 +165,9 @@ function Hero() {
 
       {/* Dashboard preview */}
       <div className="anim-6 relative mx-auto mt-16 max-w-5xl">
-        {/* Glow under screenshot */}
         <div className="absolute -bottom-8 left-1/2 h-28 w-3/4 -translate-x-1/2 rounded-full bg-blue-500/15 blur-3xl" />
 
         <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/60">
-          {/* Browser chrome */}
           <div className="flex items-center gap-1.5 border-b border-white/10 bg-white/[0.04] px-4 py-3">
             <div className="h-3 w-3 rounded-full bg-red-400/60" />
             <div className="h-3 w-3 rounded-full bg-yellow-400/60" />
@@ -175,14 +175,13 @@ function Hero() {
             <span className="ml-3 text-xs text-white/25">app.suppliq.com/dashboard</span>
           </div>
 
-          {/* Mini dashboard */}
           <div className="bg-slate-900 px-6 py-8">
             <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { label: "Revenue (30d)", value: "€84,230", change: "+12.4%", color: "text-emerald-400" },
+                { label: "Revenue (30d)", value: "£84,230", change: "+12.4%", color: "text-emerald-400" },
                 { label: "Active Items", value: "1,284", change: "+3 today", color: "text-blue-400" },
                 { label: "Customers", value: "347", change: "+8 this week", color: "text-violet-400" },
-                { label: "Pending POs", value: "12", change: "€23,400 value", color: "text-amber-400" },
+                { label: "Pending POs", value: "12", change: "£23,400 value", color: "text-amber-400" },
               ].map((stat) => (
                 <div key={stat.label} className="rounded-xl border border-white/5 bg-slate-800/80 p-4">
                   <p className="mb-1 text-[11px] text-slate-400">{stat.label}</p>
@@ -210,17 +209,17 @@ function Hero() {
                 </div>
               </div>
               <div className="rounded-xl border border-white/5 bg-slate-800/80 p-4">
-                <p className="mb-3 text-[11px] font-medium text-slate-400">Top items</p>
+                <p className="mb-3 text-[11px] font-medium text-slate-400">AI alerts</p>
                 <div className="space-y-2.5">
                   {[
-                    ["USB-C Hub 7-in-1", "142"],
-                    ["CAT6 Patch 5m", "98"],
-                    ["LED Driver 24W", "76"],
-                    ["RTX 4060 Ti", "64"],
-                  ].map(([item, count]) => (
-                    <div key={item} className="flex items-center justify-between gap-2">
-                      <p className="truncate text-[11px] text-slate-400">{item}</p>
-                      <p className="shrink-0 text-[11px] font-medium text-blue-400">{count}</p>
+                    ["3 items critical reorder", "text-red-400"],
+                    ["Overstock: 8 SKUs", "text-amber-400"],
+                    ["Sales spike: CAT6 +240%", "text-violet-400"],
+                    ["Cash flow positive 30d", "text-emerald-400"],
+                  ].map(([label, color]) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${color.replace("text-", "bg-")}`} />
+                      <p className={`truncate text-[11px] ${color}`}>{label}</p>
                     </div>
                   ))}
                 </div>
@@ -268,26 +267,66 @@ const AI_CAPABILITIES = [
   {
     icon: TrendingUp,
     iconBg: "bg-violet-600 text-white",
-    tag: "Forecasting",
-    title: "Know what is coming before it arrives",
+    tag: "Demand forecasting",
+    title: "Know what to order before you run out",
     description:
-      "Demand forecasts, reorder recommendations, and revenue projections built on your real sales history, seasonal patterns, and supplier lead times. The more data Suppliq has, the sharper the predictions get.",
-  },
-  {
-    icon: Sparkles,
-    iconBg: "bg-blue-600 text-white",
-    tag: "Business intelligence",
-    title: "Answers without building reports",
-    description:
-      "Ask questions about your business and get back analysis, trends, and comparisons without manually building dashboards. Margin breakdowns, supplier performance, slow-moving stock, and much more surfaced automatically.",
+      "AI-driven reorder alerts ranked by priority with suggested quantities, estimated days until stockout, and full Claude reasoning. Growth plan shows your top 5 risks; Enterprise unlocks every SKU.",
   },
   {
     icon: ScanSearch,
-    iconBg: "bg-indigo-600 text-white",
+    iconBg: "bg-red-600 text-white",
     tag: "Anomaly detection",
     title: "Catch problems before they escalate",
     description:
-      "Unusual sales patterns, stock discrepancies, supplier delays, and margin compression surface the moment they appear. You find out straight away, not at month-end when it is too late to act.",
+      "Unusual sales spikes, sudden stock drops, expense outliers, and shrinkage surface the moment they appear with severity scoring and a plain-language explanation. You find out straight away, not at month-end.",
+  },
+  {
+    icon: TrendingDown,
+    iconBg: "bg-amber-600 text-white",
+    tag: "Overstock analysis",
+    title: "Free up capital tied in slow stock",
+    description:
+      "Identifies excess inventory with days-of-cover calculations, capital-tied values, and markdown or inter-branch transfer suggestions to move stock where it will actually sell.",
+  },
+  {
+    icon: Route,
+    iconBg: "bg-emerald-600 text-white",
+    tag: "Transfer recommendations",
+    title: "Balance stock across all your locations",
+    description:
+      "Pinpoints which items should move between branches to prevent stockouts at one site while clearing overstock at another. Capital freed and reorder savings calculated for every suggestion.",
+  },
+  {
+    icon: Layers,
+    iconBg: "bg-indigo-600 text-white",
+    tag: "ABC / XYZ classification",
+    title: "Know which inventory actually drives revenue",
+    description:
+      "Pareto-ranks every SKU by revenue contribution (A/B/C) and demand volatility (X/Y/Z). See your high-value, high-risk items at a glance and apply the right replenishment strategy to each class.",
+  },
+  {
+    icon: Banknote,
+    iconBg: "bg-teal-600 text-white",
+    tag: "Cash flow projection",
+    title: "30-day cash flow before it happens",
+    description:
+      "Combines demand forecasts, upcoming reorder commitments, and expense run rates into a daily projection with a Claude CFO commentary. Know your net cash position 30 days out.",
+  },
+  {
+    icon: Newspaper,
+    iconBg: "bg-blue-600 text-white",
+    tag: "Weekly AI briefing",
+    title: "Monday morning digest, written by AI",
+    description:
+      "Every Monday, Claude writes a plain-prose briefing for your admin: top stockout risks, the biggest anomaly from last week, your supplier to watch, and one operational recommendation. Delivered in-app.",
+  },
+  {
+    icon: Sparkles,
+    iconBg: "bg-fuchsia-600 text-white",
+    tag: "Market intelligence",
+    title: "Supply chain news scored for your business",
+    description:
+      "Curated supply chain news enriched by Claude for relevance to your industry and region. Live commodity prices and FX rates for your supplier currencies alongside disruption, pricing, and logistics tags.",
   },
 ];
 
@@ -313,14 +352,24 @@ const FOUNDATION_FEATURES = [
     description: "Credit balances, payment history, and overdue invoice reminders all in one place. No chasing records across three systems.",
   },
   {
+    icon: BarChart3,
+    title: "Reports",
+    description: "Sales report on every plan. Growth and above adds Profit & Loss and Stock Movements with full filtering and CSV export.",
+  },
+  {
     icon: Globe2,
-    title: "Multi-currency support",
-    description: "EUR, GBP, USD and 15+ currencies with locale-aware formatting. Works whether your suppliers are local or international.",
+    title: "Multi-currency & multi-locale",
+    description: "EUR, GBP, USD and 15+ currencies. Regional supply chain keywords, commodity prices, and FX rates tuned to your country.",
   },
   {
     icon: Building2,
     title: "Role-based access",
-    description: "Admins, managers, and cashiers each get exactly the view they need. Permissions go down to branch level.",
+    description: "Admins, managers, and cashiers each see exactly what they need. Permissions go down to branch level.",
+  },
+  {
+    icon: ShieldAlert,
+    title: "Audit log",
+    description: "Immutable record of every create, update, void, and login across your whole organisation. Know who did what and when.",
   },
 ];
 
@@ -328,43 +377,41 @@ function Features() {
   return (
     <section id="features" className="px-6 py-24">
       <div className="mx-auto max-w-7xl">
-        {/* Header */}
         <FadeIn className="mb-16 text-center">
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-violet-600">
             The AI layer
           </p>
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 md:text-5xl">
-            Where operations data becomes intelligence.
+            Eight AI capabilities, one platform.
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-gray-500">
-            Most business software just records what happened. Suppliq uses that data to tell you what is coming, where the problems are, and what to do next. And there is much more on the way.
+            Every insight below runs on your actual transaction history, not
+            industry benchmarks or demo data. The longer you use Suppliq, the
+            sharper they get.
           </p>
         </FadeIn>
 
-        {/* AI capability cards */}
-        <div className="mb-6 grid gap-5 md:grid-cols-3">
+        <div className="mb-6 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
           {AI_CAPABILITIES.map(({ icon: Icon, iconBg, tag, title, description }, i) => (
-            <FadeIn key={title} delay={i * 80}>
-              <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-7 shadow-sm transition-shadow hover:shadow-md">
-                <div className={`mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconBg}`}>
+            <FadeIn key={title} delay={i * 55}>
+              <div className="flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+                <div className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-xl ${iconBg}`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">{tag}</p>
-                <h3 className="mb-3 text-xl font-bold leading-snug text-gray-900">{title}</h3>
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-gray-400">{tag}</p>
+                <h3 className="mb-2 text-base font-bold leading-snug text-gray-900">{title}</h3>
                 <p className="flex-1 text-sm leading-relaxed text-gray-500">{description}</p>
               </div>
             </FadeIn>
           ))}
         </div>
 
-        {/* "More coming" note */}
         <FadeIn>
           <p className="mb-16 text-center text-sm text-gray-400">
-            New AI capabilities ship continuously. The model learns from your data patterns the longer you use it.
+            All AI features are available on the Enterprise plan. Reorder Alerts (top 5) are included in Growth.
           </p>
         </FadeIn>
 
-        {/* Foundation layer divider */}
         <FadeIn>
           <div className="mb-10 flex items-center gap-5">
             <div className="flex-1 border-t border-gray-100" />
@@ -380,10 +427,9 @@ function Features() {
           </div>
         </FadeIn>
 
-        {/* Foundation features */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {FOUNDATION_FEATURES.map(({ icon: Icon, title, description }, i) => (
-            <FadeIn key={title} delay={i * 55}>
+            <FadeIn key={title} delay={i * 40}>
               <div className="flex items-start gap-4 rounded-xl border border-gray-100 bg-gray-50/60 p-5 transition-all hover:bg-white hover:shadow-sm">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-gray-100 bg-white text-gray-700 shadow-sm">
                   <Icon className="h-4 w-4" />
@@ -410,17 +456,19 @@ const PLANS = [
     period: "/month",
     description: "One location, getting started.",
     badge: null,
+    highlighted: false,
     features: [
-      "1 branch",
-      "Up to 5 users",
-      "Inventory management",
-      "Point of sale",
-      "Basic reports & CSV export",
+      "1 branch · up to 3 users · 100 items",
+      "Inventory & stock management",
+      "Point of sale (retail, wholesale, credit)",
       "Customer & supplier records",
+      "Purchase orders & expense tracking",
+      "Sales reports & CSV export",
       "Email support",
     ],
+    locked: [],
     cta: "Start free trial",
-    highlighted: false,
+    ctaHref: "/signup",
   },
   {
     name: "Growth",
@@ -428,37 +476,41 @@ const PLANS = [
     period: "/month",
     description: "Multiple sites, growing fast.",
     badge: "Most popular",
+    highlighted: true,
     features: [
-      "Up to 5 branches",
-      "Up to 20 users",
+      "Up to 3 branches · 10 users · 1,000 items",
       "Everything in Starter",
-      "Multi-branch dashboard",
-      "Purchase orders",
-      "Expense tracking",
-      "Advanced analytics",
+      "P&L and Stock Movement reports",
+      "Multi-branch stock transfers",
+      "Reorder Alerts (top 5 items, AI-driven)",
       "Priority support",
     ],
+    locked: [],
     cta: "Start free trial",
-    highlighted: true,
+    ctaHref: "/signup",
   },
   {
     name: "Enterprise",
     price: "€199",
     period: "/month",
-    description: "Unlimited scale, AI included.",
+    description: "Unlimited scale, full AI suite.",
     badge: null,
-    features: [
-      "Unlimited branches",
-      "Unlimited users",
-      "Everything in Growth",
-      "AI demand forecasting",
-      "Anomaly detection",
-      "API access",
-      "Dedicated account manager",
-      "99.9% uptime SLA",
-    ],
-    cta: "Contact sales",
     highlighted: false,
+    features: [
+      "Unlimited branches, users, and items",
+      "Everything in Growth",
+      "Full AI reorder (all items + reasoning)",
+      "Overstock analysis & transfer hints",
+      "ABC / XYZ inventory classification",
+      "Anomaly detection",
+      "30-day cash flow projection",
+      "Weekly AI briefing",
+      "Market intelligence & news feed",
+      "Dedicated account manager · 99.9% SLA",
+    ],
+    locked: [],
+    cta: "Start free trial",
+    ctaHref: "/signup",
   },
 ];
 
@@ -528,7 +580,7 @@ function Pricing() {
                 </ul>
 
                 <Link
-                  href={plan.cta === "Contact sales" ? "mailto:sales@suppliq.com" : "/register"}
+                  href={plan.ctaHref}
                   className={`block rounded-xl py-3 text-center text-sm font-semibold transition-all ${
                     plan.highlighted
                       ? "bg-blue-500 text-white hover:bg-blue-400"
@@ -544,7 +596,7 @@ function Pricing() {
 
         <FadeIn delay={200}>
           <p className="mt-8 text-center text-sm text-gray-400">
-            All prices in EUR · Billed monthly · Annual billing saves 20%
+            All prices in EUR · Billed monthly · Annual billing saves ~17%
           </p>
         </FadeIn>
       </div>
@@ -576,11 +628,13 @@ function CtaBanner() {
             Ready to put your business data to work?
           </h2>
           <p className="mb-10 text-lg text-white/45">
-            Get set up in under 10 minutes. The more you use Suppliq, the more the AI understands your business. Start now and it only gets better from here.
+            Get set up in under 10 minutes. The more you use Suppliq, the more
+            the AI understands your business. Start the free trial now and it
+            only gets better from here.
           </p>
           <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/register"
+              href="/signup"
               className="flex items-center gap-2 rounded-xl bg-blue-500 px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-400 hover:shadow-xl hover:shadow-blue-500/30"
             >
               Start free, no card needed
@@ -614,7 +668,9 @@ function Footer() {
               <span className="font-bold text-gray-900">Suppliq</span>
             </Link>
             <p className="text-sm text-gray-400">
-              A proper operations platform for wholesale and retail businesses. Inventory, purchasing, and sales, all connected.
+              A complete ERP with an AI layer that forecasts demand, detects
+              anomalies, and briefs you every Monday. Built for wholesale and
+              retail teams.
             </p>
           </div>
 
@@ -625,6 +681,7 @@ function Footer() {
                 <li><a href="#features" className="hover:text-gray-700">Features</a></li>
                 <li><a href="#pricing" className="hover:text-gray-700">Pricing</a></li>
                 <li><Link href="/login?demo=true" className="hover:text-gray-700">Live demo</Link></li>
+                <li><Link href="/signup" className="hover:text-gray-700">Start free trial</Link></li>
               </ul>
             </div>
             <div>
@@ -632,7 +689,7 @@ function Footer() {
               <ul className="space-y-2.5 text-sm text-gray-400">
                 <li><a href="#" className="hover:text-gray-700">About</a></li>
                 <li><a href="mailto:hello@suppliq.com" className="hover:text-gray-700">Contact</a></li>
-                <li><a href="mailto:sales@suppliq.com" className="hover:text-gray-700">Sales</a></li>
+                <li><a href="mailto:sales@suppliq.com" className="hover:text-gray-700">Enterprise sales</a></li>
               </ul>
             </div>
             <div>
