@@ -169,6 +169,16 @@ async def get_purchase_order_history(org_id: str, days: int = 180) -> list[dict]
         return [dict(r) for r in rows]
 
 
+async def get_org_details(org_id: str) -> dict | None:
+    """Fetches org name, currency, country, and industry for AI context."""
+    async with get_conn() as conn:
+        row = await conn.fetchrow(
+            "SELECT name, currency, country, industry FROM organizations WHERE id = $1",
+            org_id,
+        )
+        return dict(row) if row else None
+
+
 async def get_items_for_org(org_id: str) -> list[dict]:
     """Returns all active items with category for an org."""
     async with get_conn() as conn:

@@ -26,7 +26,7 @@ TODO phases:
   Phase 4: Factor in outstanding credit balances from customers
 """
 
-from utils.db import get_sales_history, get_expense_summary
+from utils.db import get_sales_history, get_expense_summary, get_org_details
 from utils.llm import generate_cash_flow_commentary
 
 
@@ -34,8 +34,8 @@ async def run_cash_flow_forecast(org_id: str) -> dict:
     """
     Returns a 30-day cash flow projection with Claude commentary.
     """
-    # TODO: implement full forecasting logic in Phase 1
-    # For now: fetch the data and return a stub structure
+    org = await get_org_details(org_id)
+    currency = org["currency"] if org else "EUR"
 
     sales = await get_sales_history(org_id, days=30)
     expenses = await get_expense_summary(org_id, days=30)
@@ -43,7 +43,7 @@ async def run_cash_flow_forecast(org_id: str) -> dict:
     total_revenue = sum(float(r["total_revenue"]) for r in sales)
     total_expenses = sum(float(e["total"]) for e in expenses)
 
-    # Placeholder - will be replaced with trend-based projection
+    # Placeholder - will be replaced with trend-based projection in Phase 2
     projected_revenue_30d = total_revenue
     projected_expenses_30d = total_expenses
     projected_purchases_30d = 0.0   # populated once reorder optimizer runs
@@ -54,9 +54,11 @@ async def run_cash_flow_forecast(org_id: str) -> dict:
         revenue_trend=sales[-7:] if len(sales) >= 7 else sales,
         expense_summary=expenses,
         projected_purchases=projected_purchases_30d,
+        currency=currency,
     )
 
     return {
+        "currency": currency,
         "projected_revenue_30d": round(projected_revenue_30d, 2),
         "projected_expenses_30d": round(projected_expenses_30d, 2),
         "projected_purchases_30d": round(projected_purchases_30d, 2),

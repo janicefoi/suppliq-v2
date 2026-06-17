@@ -26,7 +26,7 @@ Phase 2:
 
 from datetime import datetime
 
-from utils.db import get_sales_history, get_branch_stock, get_expense_summary
+from utils.db import get_sales_history, get_branch_stock, get_expense_summary, get_org_details
 from utils.llm import explain_anomaly
 
 
@@ -34,18 +34,21 @@ async def detect_anomalies(org_id: str) -> list[dict]:
     """
     Runs all anomaly detectors and returns a unified list sorted by severity.
     """
+    org = await get_org_details(org_id)
+    currency = org["currency"] if org else "EUR"
+
     anomalies: list[dict] = []
 
-    anomalies.extend(await _detect_sales_anomalies(org_id))
+    anomalies.extend(await _detect_sales_anomalies(org_id, currency))
     anomalies.extend(await _detect_stock_discrepancies(org_id))
-    anomalies.extend(await _detect_expense_anomalies(org_id))
+    anomalies.extend(await _detect_expense_anomalies(org_id, currency))
 
     severity_order = {"critical": 0, "warning": 1, "info": 2}
     anomalies.sort(key=lambda a: severity_order.get(a["severity"], 3))
     return anomalies
 
 
-async def _detect_sales_anomalies(org_id: str) -> list[dict]:
+async def _detect_sales_anomalies(org_id: str, currency: str = "EUR") -> list[dict]:
     """
     Flags (item, branch) with today's qty > mean + 2σ or < mean - 2σ.
     """
@@ -88,6 +91,7 @@ async def _detect_sales_anomalies(org_id: str) -> list[dict]:
             anomaly_type,
             f"item {key[0]} at branch {key[1]}",
             {"today": today, "mean": round(mean, 1), "std": round(std, 1), "z_score": round(z_score, 2)},
+            currency=currency,
         )
 
         anomalies.append({
@@ -135,7 +139,7 @@ async def _detect_stock_discrepancies(org_id: str) -> list[dict]:
     return anomalies
 
 
-async def _detect_expense_anomalies(org_id: str) -> list[dict]:
+async def _detect_expense_anomalies(org_id: str, currency: str = "EUR") -> list[dict]:
     """
     Flags expense categories where this month's total > 3× 3-month average.
     """
@@ -158,9 +162,9 @@ async def _detect_expense_anomalies(org_id: str) -> list[dict]:
                 "entity_type": "expense",
                 "entity_id": cat,
                 "entity_name": cat,
-                "description": f"{cat} expenses this month ({recent_total:,.0f}) are "
+                "description": f"{cat} expenses this month ({currency} {recent_total:,.2f}) are "
                                f"{recent_total/monthly_avg:.1f}× the 3-month average "
-                               f"({monthly_avg:,.0f}/month).",
+                               f"({currency} {monthly_avg:,.2f}/month).",
                 "suggested_action": "Review individual expense entries for this category.",
                 "detected_at": datetime.utcnow().isoformat(),
             })

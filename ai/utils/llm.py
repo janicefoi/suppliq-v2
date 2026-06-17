@@ -62,7 +62,12 @@ Only return valid JSON, nothing else."""
     return json.loads(message.content[0].text)
 
 
-async def generate_reorder_reasoning(item: dict, stock: dict, forecast: dict) -> str:
+async def generate_reorder_reasoning(
+    item: dict,
+    stock: dict,
+    forecast: dict,
+    currency: str = "EUR",
+) -> str:
     """
     Generates a plain-English explanation for why a reorder is recommended.
     e.g. "Based on your 30-day sales trend, you sell ~14 units/week.
@@ -70,6 +75,8 @@ async def generate_reorder_reasoning(item: dict, stock: dict, forecast: dict) ->
           you will stock out in ~4 days. Order 60 units to cover 4 weeks."
     """
     client = get_client()
+    unit_cost = item.get("unit_cost")
+    cost_line = f"Unit cost: {currency} {unit_cost:.2f}" if unit_cost else ""
     prompt = f"""You are a supply chain advisor. Generate a concise 2-3 sentence reorder recommendation.
 
 Item: {item['name']} (SKU: {item['sku']})
@@ -77,8 +84,10 @@ Current stock: {stock['stock_qty']} units at {stock['branch_name']}
 Predicted demand next 30 days: {forecast['predicted_demand']} units
 Confidence: {forecast['confidence_score']*100:.0f}%
 Reorder point: {item.get('reorder_point', 'not set')}
+{cost_line}
+Currency: {currency}
 
-Be specific with numbers. Be direct. No preamble."""
+Be specific with numbers. Use {currency} for any monetary values. Be direct. No preamble."""
 
     message = await client.messages.create(
         model=settings.claude_model,
@@ -88,12 +97,18 @@ Be specific with numbers. Be direct. No preamble."""
     return message.content[0].text.strip()
 
 
-async def score_supplier(supplier_name: str, metrics: dict) -> str:
+async def score_supplier(
+    supplier_name: str,
+    metrics: dict,
+    currency: str = "EUR",
+) -> str:
     """
     Takes computed supplier metrics (avg lead time, price variance, fill rate, etc.)
     and returns a risk narrative + recommendation.
     """
     client = get_client()
+    total_spend = metrics.get("total_spend")
+    spend_line = f"- Total spend analysed: {currency} {total_spend:,.2f}" if total_spend else ""
     prompt = f"""You are a procurement analyst. Write a 3-sentence supplier assessment.
 
 Supplier: {supplier_name}
@@ -102,9 +117,11 @@ Metrics:
 - Price variance across orders: {metrics.get('price_variance_pct', 'unknown')}%
 - Order fill rate: {metrics.get('fill_rate_pct', 'unknown')}%
 - Total orders analysed: {metrics.get('order_count', 0)}
+{spend_line}
+Currency: {currency}
 
 End with one clear recommendation (diversify, maintain, prefer, or review).
-Be specific and data-driven."""
+Use {currency} for any monetary values. Be specific and data-driven."""
 
     message = await client.messages.create(
         model=settings.claude_model,
@@ -114,7 +131,12 @@ Be specific and data-driven."""
     return message.content[0].text.strip()
 
 
-async def explain_anomaly(anomaly_type: str, entity: str, data: dict) -> str:
+async def explain_anomaly(
+    anomaly_type: str,
+    entity: str,
+    data: dict,
+    currency: str = "EUR",
+) -> str:
     """Returns a plain-English explanation of a detected anomaly."""
     client = get_client()
     prompt = f"""You are a business analyst. Explain this anomaly in 2 sentences and suggest one action.
@@ -122,8 +144,9 @@ async def explain_anomaly(anomaly_type: str, entity: str, data: dict) -> str:
 Anomaly type: {anomaly_type}
 Entity: {entity}
 Data: {data}
+Currency: {currency}
 
-Be concise and actionable."""
+Use {currency} for any monetary values. Be concise and actionable."""
 
     message = await client.messages.create(
         model=settings.claude_model,
@@ -137,6 +160,7 @@ async def generate_cash_flow_commentary(
     revenue_trend: list[dict],
     expense_summary: list[dict],
     projected_purchases: float,
+    currency: str = "EUR",
 ) -> str:
     """
     Produces a short CFO-style commentary on cash flow outlook.
@@ -147,10 +171,11 @@ async def generate_cash_flow_commentary(
 
 Revenue trend (last 30 days): {revenue_trend}
 Expense breakdown: {expense_summary}
-Upcoming purchase commitments: {projected_purchases:,.0f} (in org currency)
+Upcoming purchase commitments: {currency} {projected_purchases:,.0f}
+Currency: {currency}
 
 Focus on: trend direction, biggest cost driver, and one risk to watch.
-Be specific with numbers."""
+Use {currency} for all monetary values. Be specific with numbers."""
 
     message = await client.messages.create(
         model=settings.claude_model,

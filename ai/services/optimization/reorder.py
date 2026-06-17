@@ -32,12 +32,12 @@ Phase 2:
 import math
 from datetime import datetime
 
-from utils.db import get_branch_stock, get_purchase_order_history
+from utils.db import get_branch_stock, get_purchase_order_history, get_org_details
 from utils.llm import generate_reorder_reasoning
 
 
 DEFAULT_LEAD_TIME_DAYS = 5     # assumed if no PO history
-ORDER_COST = 50                # estimated admin cost per order placed (in org currency)
+ORDER_COST_RATIO = 0.02        # estimated admin cost per order = 2% of unit cost (currency-agnostic)
 HOLDING_COST_PCT = 0.20        # 20% of unit cost per year
 SERVICE_LEVEL_Z = 1.65         # 95% service level
 
@@ -60,11 +60,12 @@ def _estimate_lead_time(orders: list[dict], item_id: str) -> float:
 
 
 def _calculate_eoq(annual_demand: float, unit_cost: float) -> int:
-    """Economic Order Quantity formula."""
+    """Economic Order Quantity formula. ORDER_COST derived as ratio of unit_cost so it's currency-agnostic."""
     if annual_demand <= 0 or unit_cost <= 0:
         return 0
+    order_cost = max(unit_cost * ORDER_COST_RATIO, 1.0)
     H = unit_cost * HOLDING_COST_PCT
-    eoq = math.sqrt((2 * annual_demand * ORDER_COST) / H)
+    eoq = math.sqrt((2 * annual_demand * order_cost) / H)
     return max(1, round(eoq))
 
 
@@ -87,6 +88,9 @@ async def get_reorder_recommendations(org_id: str) -> list[dict]:
     Returns reorder recommendations sorted by priority (critical first).
     Each recommendation includes Claude-generated reasoning.
     """
+    org = await get_org_details(org_id)
+    currency = org["currency"] if org else "EUR"
+
     stocks = await get_branch_stock(org_id)
     orders = await get_purchase_order_history(org_id, days=180)
 
@@ -124,9 +128,10 @@ async def get_reorder_recommendations(org_id: str) -> list[dict]:
 
         # Claude reasoning
         reasoning = await generate_reorder_reasoning(
-            item={"name": stock["item_name"], "sku": stock["sku"], "reorder_point": reorder_point},
+            item={"name": stock["item_name"], "sku": stock["sku"], "reorder_point": reorder_point, "unit_cost": unit_cost},
             stock={"stock_qty": current_qty, "branch_name": stock["branch_name"]},
             forecast={"predicted_demand": round(avg_daily_demand * 30, 1), "confidence_score": 0.6},
+            currency=currency,
         )
 
         recommendations.append({

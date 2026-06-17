@@ -50,6 +50,24 @@ DEFAULT_COMMODITIES = ["brent_crude", "wheat", "corn", "sugar"]
 DEFAULT_FX_PAIRS = ["EUR/USD", "GBP/USD", "EUR/GBP", "EUR/JPY"]
 
 
+def get_fx_pairs_for_currency(base: str) -> list[str]:
+    """
+    Returns the most relevant FX pairs for a given org base currency.
+    Always includes the base vs USD and EUR (the dominant trade currencies).
+    """
+    base = base.upper()
+    pairs = {
+        "EUR": ["EUR/USD", "EUR/GBP", "EUR/JPY", "EUR/CHF"],
+        "GBP": ["GBP/USD", "GBP/EUR", "GBP/JPY", "GBP/CHF"],
+        "USD": ["USD/EUR", "USD/GBP", "USD/JPY", "USD/CHF"],
+        "KES": ["KES/USD", "KES/EUR", "KES/GBP", "USD/KES"],
+        "NGN": ["NGN/USD", "USD/NGN", "EUR/NGN", "GBP/NGN"],
+        "ZAR": ["ZAR/USD", "ZAR/EUR", "USD/ZAR", "GBP/ZAR"],
+        "GHS": ["GHS/USD", "USD/GHS", "GHS/EUR", "GHS/GBP"],
+    }
+    return pairs.get(base, [f"{base}/USD", f"{base}/EUR", "EUR/USD", "GBP/USD"])
+
+
 async def _fetch_alpha_vantage_commodity(symbol: str) -> Optional[dict]:
     """Fetch latest commodity price from Alpha Vantage."""
     if not settings.alpha_vantage_api_key:

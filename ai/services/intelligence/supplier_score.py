@@ -24,7 +24,7 @@ Phase 2:
   - Detect if a supplier is a single point of failure (>60% of item sourcing)
 """
 
-from utils.db import get_purchase_order_history, get_suppliers_for_org
+from utils.db import get_purchase_order_history, get_suppliers_for_org, get_org_details
 from utils.llm import score_supplier
 
 
@@ -106,10 +106,13 @@ async def score_all_suppliers(org_id: str) -> list[dict]:
     """
     Returns scored supplier list for an org, enriched with Claude narrative.
     """
-    [orders, suppliers] = await __import__("asyncio").gather(
+    import asyncio
+    [org, orders, suppliers] = await asyncio.gather(
+        get_org_details(org_id),
         get_purchase_order_history(org_id, days=180),
         get_suppliers_for_org(org_id),
     )
+    currency = org["currency"] if org else "EUR"
 
     results = []
     for supplier in suppliers:
@@ -119,7 +122,7 @@ async def score_all_suppliers(org_id: str) -> list[dict]:
             continue  # skip suppliers with no orders
 
         overall, delivery, pricing, fill = _compute_score(metrics)
-        narrative = await score_supplier(supplier["name"], metrics)
+        narrative = await score_supplier(supplier["name"], metrics, currency=currency)
 
         results.append({
             "supplier_id": sid,
