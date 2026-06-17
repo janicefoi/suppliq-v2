@@ -11,6 +11,7 @@ import {
   UserCog,
   ClipboardList,
   GitBranch,
+  PackageSearch,
   type LucideIcon,
 } from "lucide-react";
 
@@ -77,6 +78,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Reorder Alerts",
+    href: "/insights/reorder",
+    icon: PackageSearch,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -106,6 +113,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/transfers": "Transfers",
   "/expenses": "Expenses",
   "/reports": "Reports",
+  "/insights/reorder": "Reorder Alerts",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",
