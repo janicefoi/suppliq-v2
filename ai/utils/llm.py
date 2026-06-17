@@ -179,22 +179,29 @@ async def generate_cash_flow_commentary(
     revenue_trend: list[dict],
     expense_summary: list[dict],
     projected_purchases: float,
+    projected_revenue_30d: float = 0.0,
+    projected_net_30d: float = 0.0,
     currency: str = "EUR",
 ) -> str:
     """
-    Produces a short CFO-style commentary on cash flow outlook.
-    Used in the dashboard insights panel.
+    Produces a CFO-style 3-sentence commentary on the 30-day cash flow outlook.
     """
     client = get_client()
-    prompt = f"""You are a CFO advisor. Write a 3-sentence cash flow commentary.
+    total_expenses = sum(float(e.get("total", 0)) for e in expense_summary)
+    top_expense = max(expense_summary, key=lambda e: float(e.get("total", 0)), default={})
+    prompt = f"""You are a CFO advisor for a retail/wholesale business.
+Write exactly 3 sentences of cash flow commentary covering: (1) the 30-day revenue outlook and trend, (2) the biggest cost driver and purchase commitments, (3) the key risk or opportunity to act on.
 
-Revenue trend (last 30 days): {revenue_trend}
-Expense breakdown: {expense_summary}
-Upcoming purchase commitments: {currency} {projected_purchases:,.0f}
-Currency: {currency}
+30-day projections:
+- Projected revenue:    {currency} {projected_revenue_30d:,.0f}
+- Expense run rate:     {currency} {total_expenses:,.0f}
+- Purchase commitments: {currency} {projected_purchases:,.0f}
+- Net cash position:    {currency} {projected_net_30d:,.0f} ({'surplus' if projected_net_30d >= 0 else 'deficit'})
+- Largest expense category: {top_expense.get('category', 'N/A')} ({currency} {float(top_expense.get('total', 0)):,.0f})
 
-Focus on: trend direction, biggest cost driver, and one risk to watch.
-Use {currency} for all monetary values. Be specific with numbers."""
+Recent daily revenue (last 7 days): {[{'date': str(r.get('date', '')), 'revenue': round(float(r.get('revenue', 0)), 0)} for r in revenue_trend[-7:]]}
+
+Use {currency} for all monetary values. Be direct, specific, and data-driven. 3 sentences only."""
 
     message = await client.messages.create(
         model=settings.claude_model,

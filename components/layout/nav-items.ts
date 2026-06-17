@@ -16,6 +16,7 @@ import {
   Route,
   Layers,
   ShieldAlert,
+  Banknote,
   type LucideIcon,
 } from "lucide-react";
 
@@ -112,6 +113,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Cash Flow",
+    href: "/insights/cash-flow",
+    icon: Banknote,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -146,6 +153,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/insights/transfer-recommendations": "Transfer Hints",
   "/insights/abc": "ABC Analysis",
   "/insights/anomalies": "Anomaly Alerts",
+  "/insights/cash-flow": "Cash Flow",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",

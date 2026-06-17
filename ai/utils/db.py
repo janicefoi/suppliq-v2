@@ -391,6 +391,32 @@ async def get_item_weekly_variability(org_id: str, days: int = 180) -> dict[str,
         }
 
 
+async def get_daily_revenue_agg(org_id: str, days: int = 30) -> list[dict]:
+    """
+    Aggregates daily revenue across all items and branches.
+    Returns [{date, revenue}] sorted ascending — used for the cash flow trend.
+    Different from get_sales_history which is per-item-per-branch.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                DATE(s.created_at AT TIME ZONE 'UTC')           AS date,
+                SUM(si.quantity * si.unit_price)::float         AS revenue
+            FROM sale_items si
+            JOIN sales s ON s.id = si.sale_id
+            WHERE s.organization_id = $1
+              AND s.status = 'COMPLETED'
+              AND s.created_at >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY DATE(s.created_at AT TIME ZONE 'UTC')
+            ORDER BY date ASC
+            """,
+            org_id,
+            days,
+        )
+        return [dict(r) for r in rows]
+
+
 async def get_branch_names(org_id: str) -> dict[str, str]:
     """Returns {branch_id: branch_name} for all branches in an org."""
     async with get_conn() as conn:
