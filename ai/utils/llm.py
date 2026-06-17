@@ -136,24 +136,43 @@ async def explain_anomaly(
     entity: str,
     data: dict,
     currency: str = "EUR",
-) -> str:
-    """Returns a plain-English explanation of a detected anomaly."""
+) -> dict:
+    """
+    Explains a detected anomaly in plain English and suggests one action.
+    Returns {"explanation": str, "action": str}.
+    Falls back to generic text if Claude is unavailable or returns invalid JSON.
+    """
     client = get_client()
-    prompt = f"""You are a business analyst. Explain this anomaly in 2 sentences and suggest one action.
+    prompt = f"""You are a business analyst for a retail/wholesale business.
+Explain this anomaly in 2 sentences and suggest exactly one concrete action.
 
 Anomaly type: {anomaly_type}
 Entity: {entity}
 Data: {data}
 Currency: {currency}
 
-Use {currency} for any monetary values. Be concise and actionable."""
+Return only valid JSON (no markdown, no preamble):
+{{"explanation": "2-sentence plain-English explanation of what happened and why it is unusual", "action": "one short concrete action the manager should take"}}
 
-    message = await client.messages.create(
-        model=settings.claude_model,
-        max_tokens=150,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return message.content[0].text.strip()
+Use {currency} for monetary values. Be specific with the numbers from Data."""
+
+    try:
+        import json
+        message = await client.messages.create(
+            model=settings.claude_model,
+            max_tokens=200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        text = message.content[0].text.strip()
+        # strip markdown code fences if Claude adds them
+        if text.startswith("```"):
+            text = text.split("```")[1].lstrip("json").strip()
+        return json.loads(text)
+    except Exception:
+        return {
+            "explanation": f"Anomaly detected for {entity}: {anomaly_type}.",
+            "action": "Review the affected records and investigate.",
+        }
 
 
 async def generate_cash_flow_commentary(

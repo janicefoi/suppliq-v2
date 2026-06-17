@@ -391,6 +391,78 @@ async def get_item_weekly_variability(org_id: str, days: int = 180) -> dict[str,
         }
 
 
+async def get_branch_names(org_id: str) -> dict[str, str]:
+    """Returns {branch_id: branch_name} for all branches in an org."""
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            "SELECT id, name FROM branches WHERE organization_id = $1",
+            org_id,
+        )
+        return {str(r["id"]): r["name"] for r in rows}
+
+
+async def get_stock_shrinkage_logs(org_id: str, days: int = 7) -> list[dict]:
+    """
+    Returns MANUAL_ADJUSTMENT stock log entries with net-negative quantity.
+    Grouped per (item, branch): if the sum of all adjustments in the window
+    is negative, the item lost stock for a reason that wasn't a sale or transfer.
+    This is the canonical signal for shrinkage / theft / spoilage.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                sl.item_id,
+                i.name            AS item_name,
+                i.sku,
+                COALESCE(i.wholesale_price, 0)::float AS unit_cost,
+                sl.branch_id,
+                b.name            AS branch_name,
+                SUM(sl.quantity)::int   AS net_qty,
+                COUNT(*)::int           AS adjustment_count,
+                MIN(sl.created_at)      AS first_at
+            FROM stock_logs sl
+            JOIN items i ON i.id = sl.item_id
+            LEFT JOIN branches b ON b.id = sl.branch_id
+            WHERE sl.organization_id = $1
+              AND sl.reason = 'MANUAL_ADJUSTMENT'
+              AND sl.quantity < 0
+              AND sl.created_at >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY sl.item_id, i.name, i.sku, i.wholesale_price, sl.branch_id, b.name
+            HAVING SUM(sl.quantity) < 0
+            ORDER BY SUM(sl.quantity) ASC
+            """,
+            org_id,
+            days,
+        )
+        return [dict(r) for r in rows]
+
+
+async def get_expense_by_period(
+    org_id: str, start_days_ago: int, end_days_ago: int
+) -> dict[str, float]:
+    """
+    Returns total spend per expense category for the window
+    [NOW() - start_days_ago, NOW() - end_days_ago].
+    Example: start_days_ago=30, end_days_ago=0 → last 30 days.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT category, SUM(amount)::float AS total
+            FROM expenses
+            WHERE organization_id = $1
+              AND date >= NOW() - INTERVAL '1 day' * $2
+              AND date <  NOW() - INTERVAL '1 day' * $3
+            GROUP BY category
+            """,
+            org_id,
+            start_days_ago,
+            end_days_ago,
+        )
+        return {r["category"]: float(r["total"]) for r in rows}
+
+
 async def get_supplier_avg_lead_times(org_id: str, days: int = 180) -> dict[str, float]:
     """
     Avg delivery lead time per supplier, derived from PO history where delivered_at is set.

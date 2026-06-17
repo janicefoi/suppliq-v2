@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PAGE_TITLES } from "@/components/layout/nav-items";
 import { getLowStockAlerts, type LowStockAlert } from "@/lib/actions/dashboard";
+import { AnomalyAlertButton } from "@/components/layout/anomaly-alert-button";
 import { cn } from "@/lib/utils";
 
 interface TopBarUser {
@@ -144,6 +145,7 @@ export function TopBar({ user, onMenuClick, lowStockCount }: TopBarProps) {
       <h1 className="flex-1 text-base font-semibold text-slate-900 truncate">{title}</h1>
 
       <div className="flex items-center gap-2 shrink-0">
+        <AnomalyAlertButton />
         <LowStockPopover count={lowStockCount} branchId={user.branchId} />
 
         <div className="flex items-center gap-2.5">

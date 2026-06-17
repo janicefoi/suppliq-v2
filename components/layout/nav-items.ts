@@ -15,6 +15,7 @@ import {
   TrendingDown,
   Route,
   Layers,
+  ShieldAlert,
   type LucideIcon,
 } from "lucide-react";
 
@@ -105,6 +106,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Anomaly Alerts",
+    href: "/insights/anomalies",
+    icon: ShieldAlert,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -138,6 +145,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/insights/overstock": "Overstock",
   "/insights/transfer-recommendations": "Transfer Hints",
   "/insights/abc": "ABC Analysis",
+  "/insights/anomalies": "Anomaly Alerts",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",
