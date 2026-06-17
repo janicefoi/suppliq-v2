@@ -318,6 +318,79 @@ async def update_branch_rop(item_id: str, branch_id: str, rop_value: int) -> boo
         return result != "UPDATE 0"
 
 
+async def get_item_revenue(org_id: str, days: int = 180) -> dict[str, dict]:
+    """
+    Total revenue and quantity sold per item over the last `days` days.
+    Returns {item_id: {"revenue": float, "total_qty_sold": int}}.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                si.item_id,
+                SUM(si.quantity * si.unit_price)::float  AS revenue,
+                SUM(si.quantity)::int                    AS total_qty_sold
+            FROM sale_items si
+            JOIN sales s ON s.id = si.sale_id
+            WHERE s.organization_id = $1
+              AND s.status = 'COMPLETED'
+              AND s.created_at >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY si.item_id
+            """,
+            org_id,
+            days,
+        )
+        return {
+            str(r["item_id"]): {
+                "revenue":        float(r["revenue"]),
+                "total_qty_sold": int(r["total_qty_sold"]),
+            }
+            for r in rows
+        }
+
+
+async def get_item_weekly_variability(org_id: str, days: int = 180) -> dict[str, dict]:
+    """
+    Weekly demand variability per item: avg, std dev, and week count.
+    Used to compute CV = std / avg for XYZ classification.
+    Returns {item_id: {"avg_weekly": float, "std_weekly": float, "week_count": int}}.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            WITH weekly AS (
+                SELECT
+                    si.item_id,
+                    DATE_TRUNC('week', s.created_at AT TIME ZONE 'UTC') AS week,
+                    SUM(si.quantity)::float AS weekly_qty
+                FROM sale_items si
+                JOIN sales s ON s.id = si.sale_id
+                WHERE s.organization_id = $1
+                  AND s.status = 'COMPLETED'
+                  AND s.created_at >= NOW() - INTERVAL '1 day' * $2
+                GROUP BY si.item_id, DATE_TRUNC('week', s.created_at AT TIME ZONE 'UTC')
+            )
+            SELECT
+                item_id,
+                AVG(weekly_qty)::float                      AS avg_weekly,
+                COALESCE(STDDEV(weekly_qty)::float, 0.0)   AS std_weekly,
+                COUNT(*)::int                               AS week_count
+            FROM weekly
+            GROUP BY item_id
+            """,
+            org_id,
+            days,
+        )
+        return {
+            str(r["item_id"]): {
+                "avg_weekly":  float(r["avg_weekly"]),
+                "std_weekly":  float(r["std_weekly"]),
+                "week_count":  int(r["week_count"]),
+            }
+            for r in rows
+        }
+
+
 async def get_supplier_avg_lead_times(org_id: str, days: int = 180) -> dict[str, float]:
     """
     Avg delivery lead time per supplier, derived from PO history where delivered_at is set.

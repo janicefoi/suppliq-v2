@@ -11,6 +11,7 @@ Capabilities:
   /intelligence/supplier-scores - Supplier risk scoring with Claude narrative
   /optimize/reorder         - Reorder recommendations (ROP + EOQ) with Claude reasoning
   /anomalies                - Sales, stock, and expense anomaly detection
+  /analytics/abc-xyz        - ABC/XYZ inventory classification (Pareto + demand variability)
   /health                   - Liveness + readiness probe
 
 All endpoints are organisation-scoped.
@@ -37,6 +38,7 @@ from routers.forecast import router as forecast_router
 from routers.intelligence import router as intelligence_router
 from routers.optimization import router as optimization_router
 from routers.anomalies import router as anomalies_router
+from routers.analytics import router as analytics_router
 
 
 @asynccontextmanager
@@ -68,3 +70,4 @@ app.include_router(forecast_router)
 app.include_router(intelligence_router)
 app.include_router(optimization_router)
 app.include_router(anomalies_router)
+app.include_router(analytics_router)

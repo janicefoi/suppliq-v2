@@ -14,6 +14,7 @@ import {
   PackageSearch,
   TrendingDown,
   Route,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
 
@@ -98,6 +99,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "ABC Analysis",
+    href: "/insights/abc",
+    icon: Layers,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -130,6 +137,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/insights/reorder": "Reorder Alerts",
   "/insights/overstock": "Overstock",
   "/insights/transfer-recommendations": "Transfer Hints",
+  "/insights/abc": "ABC Analysis",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",
