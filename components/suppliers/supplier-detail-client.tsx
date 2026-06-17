@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { RecordPurchaseDialog } from "@/components/suppliers/record-purchase-dialog";
+import { SupplierScoreCard } from "@/components/suppliers/supplier-score";
+import type { SupplierScore } from "@/components/suppliers/supplier-score";
 import type { SupplierDetail, SupplierRow } from "@/lib/actions/suppliers";
 import type { PurchasableItem } from "@/lib/actions/inventory";
 import { cn, formatCurrency } from "@/lib/utils";
@@ -35,9 +37,10 @@ interface Props {
   userBranchId?: string | null;
   currency: string;
   allItems?: PurchasableItem[];
+  score?: SupplierScore | null;
 }
 
-export function SupplierDetailClient({ supplier, role, branches = [], userBranchId, currency, allItems = [] }: Props) {
+export function SupplierDetailClient({ supplier, role, branches = [], userBranchId, currency, allItems = [], score }: Props) {
   const canEdit = role !== "CASHIER";
   const isAdmin = role === "ADMIN";
   const canRecordPurchase = role !== "CASHIER";
@@ -176,6 +179,9 @@ export function SupplierDetailClient({ supplier, role, branches = [], userBranch
           )}
         </div>
       </div>
+
+      {/* ── AI Reliability Score ─────────────────────────────────────────── */}
+      <SupplierScoreCard score={score} />
 
       {/* ── Items supplied ───────────────────────────────────────────────── */}
       <section>

@@ -15,7 +15,9 @@ import { SupplierDialog } from "@/components/suppliers/supplier-dialog";
 import { SupplierStats } from "@/components/suppliers/supplier-stats";
 import { CsvImportDialog } from "@/components/ui/csv-import-dialog";
 import { importSuppliers } from "@/lib/actions/suppliers";
+import { SupplierScoreBadge } from "@/components/suppliers/supplier-score";
 import type { SupplierRow, SupplierStats as SupplierStatsType } from "@/lib/actions/suppliers";
+import type { SupplierScore } from "@/components/suppliers/supplier-score";
 
 type SortField = "name" | "items" | "orders";
 type SortDir = "asc" | "desc";
@@ -26,9 +28,10 @@ interface Props {
   stats: SupplierStatsType;
   branches: { id: string; name: string }[];
   currency: string;
+  scoreMap?: Record<string, SupplierScore>;
 }
 
-export function SuppliersClient({ suppliers, role, stats, branches, currency }: Props) {
+export function SuppliersClient({ suppliers, role, stats, branches, currency, scoreMap = {} }: Props) {
   const canEdit = role !== "CASHIER";
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -146,13 +149,14 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
               >
                 Orders <SortIcon field="orders" />
               </TableHead>
+              <TableHead className="w-24 text-right whitespace-nowrap">AI Score</TableHead>
               <TableHead className="w-16 text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sorted.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="py-12 text-center text-slate-400">
+                <TableCell colSpan={8} className="py-12 text-center text-slate-400">
                   <Truck className="h-7 w-7 mx-auto mb-1.5 opacity-30" />
                   <p className="text-xs">
                     {search
@@ -210,6 +214,10 @@ export function SuppliersClient({ suppliers, role, stats, branches, currency }: 
 
                   <TableCell className="text-right">
                     <span className="text-xs text-slate-500 tabular-nums">{s._count.purchaseOrders}</span>
+                  </TableCell>
+
+                  <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                    <SupplierScoreBadge score={scoreMap[s.id]} />
                   </TableCell>
 
                   <TableCell className="text-right">
