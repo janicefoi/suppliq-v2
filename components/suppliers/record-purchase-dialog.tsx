@@ -18,6 +18,7 @@ import { Separator } from "@/components/ui/separator";
 import { recordPurchaseOrder } from "@/lib/actions/suppliers";
 import { PurchaseOrderSchema, type PurchaseOrderInput } from "@/lib/validations/suppliers";
 import type { PurchasableItem } from "@/lib/actions/inventory";
+import { ForecastMiniPanel } from "@/components/ai/forecast-mini-panel";
 import { formatCurrency } from "@/lib/utils";
 
 interface RecordPurchaseDialogProps {
@@ -68,7 +69,8 @@ export function RecordPurchaseDialog({
 
   const { fields, append, remove } = useFieldArray({ control, name: "items" });
 
-  const watchedItems = watch("items");
+  const watchedItems   = watch("items");
+  const watchedBranchId = watch("branchId");
 
   useEffect(() => {
     if (open) {
@@ -235,6 +237,14 @@ export function RecordPurchaseDialog({
                           <span className="font-medium text-slate-600">{formatCurrency(lineCost, currency)}</span>
                         )}
                       </div>
+                    )}
+
+                    {/* AI demand forecast panel */}
+                    {selectedItem && (
+                      <ForecastMiniPanel
+                        itemId={selectedItem.id}
+                        branchId={watchedBranchId ?? null}
+                      />
                     )}
 
                     {/* Cost > retail warning */}

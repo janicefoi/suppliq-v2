@@ -259,6 +259,81 @@ export async function getStockoutRisks(
   return risks;
 }
 
+// ── Per-item forecast data for the PO form ────────────────────────────────
+
+export type ItemForecastData = {
+  itemId: string;
+  demand30d: number;
+  demand60d: number;
+  demand90d: number;
+  avgDailyDemand: number;
+  confidenceScore: number; // 0–100 integer
+  generatedAt: string;
+  stockQty: number;
+  daysOfStock: number | null;   // null when avg demand is 0
+  suggestedOrderQty: number | null;
+};
+
+export async function getItemForecastData(
+  itemId: string,
+  branchId?: string | null
+): Promise<ItemForecastData | null> {
+  const session = await auth();
+  if (!session?.user?.id) return null;
+
+  const orgId = session.user.organizationId;
+  const effectiveBranchId = branchId !== undefined ? branchId : (session.user.branchId ?? null);
+  const since = new Date(Date.now() - 48 * 60 * 60 * 1000);
+
+  const groups = await db.forecast.groupBy({
+    by: ["itemId"],
+    where: {
+      organizationId: orgId,
+      itemId,
+      generatedAt: { gte: since },
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    },
+    _sum: { predictedDemand: true },
+    _avg: { confidenceScore: true },
+    _max: { generatedAt: true },
+  });
+
+  if (groups.length === 0) return null;
+
+  const g = groups[0];
+  const demand30d = Math.round(Number(g._sum.predictedDemand ?? 0));
+  const confidence = Math.round(Number(g._avg.confidenceScore ?? 0) * 100);
+  const avgDaily   = demand30d / 30;
+
+  const stockGroups = await db.branchStock.groupBy({
+    by: ["itemId"],
+    where: {
+      item: { organizationId: orgId },
+      itemId,
+      ...(effectiveBranchId ? { branchId: effectiveBranchId } : {}),
+    },
+    _sum: { stockQty: true },
+  });
+
+  const stockQty   = Number(stockGroups[0]?._sum?.stockQty ?? 0);
+  const daysOfStock   = avgDaily > 0 ? Math.round(stockQty / avgDaily) : null;
+  // How many more units to cover the next 30d horizon beyond current stock
+  const suggestedOrderQty = avgDaily > 0 ? Math.max(0, Math.round(demand30d - stockQty)) : null;
+
+  return {
+    itemId,
+    demand30d,
+    demand60d: Math.round(avgDaily * 60),
+    demand90d: Math.round(avgDaily * 90),
+    avgDailyDemand: Math.round(avgDaily * 10) / 10,
+    confidenceScore: confidence,
+    generatedAt: g._max.generatedAt?.toISOString() ?? new Date().toISOString(),
+    stockQty,
+    daysOfStock,
+    suggestedOrderQty,
+  };
+}
+
 // ── Items - write ──────────────────────────────────────────────────────────
 
 export async function createItem(data: ItemFormValues): Promise<ActionResult> {
