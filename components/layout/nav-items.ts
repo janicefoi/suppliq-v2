@@ -13,6 +13,7 @@ import {
   GitBranch,
   PackageSearch,
   TrendingDown,
+  Route,
   type LucideIcon,
 } from "lucide-react";
 
@@ -91,6 +92,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Transfer Hints",
+    href: "/insights/transfer-recommendations",
+    icon: Route,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -122,6 +129,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/reports": "Reports",
   "/insights/reorder": "Reorder Alerts",
   "/insights/overstock": "Overstock",
+  "/insights/transfer-recommendations": "Transfer Hints",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",

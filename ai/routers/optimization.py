@@ -2,6 +2,7 @@ from fastapi import APIRouter, BackgroundTasks
 
 from services.optimization.reorder import get_reorder_recommendations, update_reorder_points
 from services.optimization.overstock import get_overstock_analysis
+from services.optimization.transfer_recommendations import get_transfer_recommendations
 
 router = APIRouter(prefix="/optimize", tags=["Optimization"])
 
@@ -46,6 +47,28 @@ async def overstock_detection(organization_id: str):
     Requires fresh demand forecasts (<48 h); items without a forecast are skipped.
     """
     result = await get_overstock_analysis(org_id=organization_id)
+    return result
+
+
+@router.get("/transfer-recommendations/{organization_id}")
+async def transfer_recommendations(organization_id: str):
+    """
+    Inter-branch transfer recommendations.
+
+    Finds (source, destination) branch pairs for the same item where:
+      - Source has > 30 days of cover (can afford to share)
+      - Destination is at risk (below ROP or < 14 days cover)
+
+    For each recommended transfer:
+      - transfer_qty    : amount that brings dest to ~30d cover without depleting source below 21d
+      - capital_freed   : transfer_qty × unit_cost (slow stock unlocked at source)
+      - reorder_savings : approximate cost of emergency reorder avoided at destination
+
+    Uses a lower source threshold than overstock detection (30d vs 60d) to surface
+    more opportunities.  For each (item, destination) pair the best (most-excess)
+    source is chosen.  Results sorted critical-first, then by capital_freed DESC.
+    """
+    result = await get_transfer_recommendations(org_id=organization_id)
     return result
 
 
