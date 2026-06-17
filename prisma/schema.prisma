@@ -132,8 +132,9 @@ model Organization {
   stockTransfers StockTransfer[]
   expenses       Expense[]
   stockLogs      StockLog[]
-  forecasts      Forecast[]
-  auditLogs      AuditLog[]
+  forecasts        Forecast[]
+  auditLogs        AuditLog[]
+  weeklyBriefings  WeeklyBriefing[]
 
   @@map("organizations")
 }
@@ -605,4 +606,26 @@ model AuditLog {
   @@index([entity])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ============================================================
+// WEEKLY BRIEFING  (AI-generated Monday digest — one per org per week)
+// ============================================================
+
+model WeeklyBriefing {
+  id             String   @id @default(cuid())
+  organizationId String
+  weekStart      DateTime // Monday 00:00 UTC of the briefing week
+  prose          String   @db.Text  // full Claude-written briefing (plain prose)
+  stockoutRisks  Json              // [{item_name, sku, branch, days_left, stock_qty}]
+  biggestAnomaly Json?             // {type, entity_name, severity, description} | null
+  supplierWatch  Json?             // {supplier_name, avg_lead_days, order_count} | null
+  recommendation String            // single operational action sentence
+  generatedAt    DateTime @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([organizationId, weekStart])
+  @@index([organizationId])
+  @@map("weekly_briefings")
 }

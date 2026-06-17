@@ -391,6 +391,118 @@ async def get_item_weekly_variability(org_id: str, days: int = 180) -> dict[str,
         }
 
 
+async def get_all_org_ids() -> list[str]:
+    """Returns all active organization IDs — used by scheduled jobs."""
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            'SELECT id FROM organizations WHERE "isActive" = true'
+        )
+        return [str(r["id"]) for r in rows]
+
+
+async def get_supplier_lead_times(org_id: str, limit: int = 5) -> list[dict]:
+    """
+    Returns suppliers sorted by avg lead time descending (slowest first).
+    Lead time = days between PO creation and receiving (updatedAt when status=RECEIVED).
+    Only includes suppliers with >= 2 received POs in the last 180 days.
+    """
+    async with get_conn() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT
+                s.name                                                  AS supplier_name,
+                COUNT(po.id)::int                                       AS order_count,
+                ROUND(AVG(
+                    EXTRACT(EPOCH FROM (po."updatedAt" - po."createdAt")) / 86400
+                )::numeric, 1)::float                                   AS avg_lead_days
+            FROM purchase_orders po
+            JOIN suppliers s ON s.id = po."supplierId"
+            WHERE po."organizationId" = $1
+              AND po.status = 'RECEIVED'
+              AND po."createdAt" >= NOW() - INTERVAL '180 days'
+            GROUP BY s.id, s.name
+            HAVING COUNT(po.id) >= 2
+            ORDER BY avg_lead_days DESC NULLS LAST
+            LIMIT $2
+            """,
+            org_id,
+            limit,
+        )
+        return [dict(r) for r in rows]
+
+
+async def upsert_weekly_briefing(
+    org_id: str,
+    week_start: str,          # ISO date string "YYYY-MM-DD"
+    prose: str,
+    stockout_risks: list,
+    biggest_anomaly: dict | None,
+    supplier_watch: dict | None,
+    recommendation: str,
+) -> None:
+    """
+    Inserts or replaces the weekly briefing for an org/week pair.
+    week_start must be the Monday of the target week.
+    """
+    import json as _json
+    async with get_conn() as conn:
+        await conn.execute(
+            """
+            INSERT INTO weekly_briefings
+                (id, "organizationId", "weekStart", prose, "stockoutRisks",
+                 "biggestAnomaly", "supplierWatch", recommendation, "generatedAt")
+            VALUES (
+                gen_random_uuid()::text, $1,
+                $2::timestamptz,
+                $3, $4::jsonb, $5::jsonb, $6::jsonb, $7, NOW()
+            )
+            ON CONFLICT ("organizationId", "weekStart")
+            DO UPDATE SET
+                prose            = EXCLUDED.prose,
+                "stockoutRisks"  = EXCLUDED."stockoutRisks",
+                "biggestAnomaly" = EXCLUDED."biggestAnomaly",
+                "supplierWatch"  = EXCLUDED."supplierWatch",
+                recommendation   = EXCLUDED.recommendation,
+                "generatedAt"    = NOW()
+            """,
+            org_id,
+            week_start,
+            prose,
+            _json.dumps(stockout_risks),
+            _json.dumps(biggest_anomaly) if biggest_anomaly is not None else None,
+            _json.dumps(supplier_watch) if supplier_watch is not None else None,
+            recommendation,
+        )
+
+
+async def get_weekly_briefing(org_id: str, week_start: str) -> dict | None:
+    """
+    Returns the stored briefing for the given org/week, or None if not generated yet.
+    week_start: "YYYY-MM-DD" Monday of the target week.
+    """
+    import json as _json
+    async with get_conn() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT id, "organizationId", "weekStart", prose,
+                   "stockoutRisks", "biggestAnomaly", "supplierWatch",
+                   recommendation, "generatedAt"
+            FROM weekly_briefings
+            WHERE "organizationId" = $1
+              AND "weekStart" = $2::timestamptz
+            """,
+            org_id,
+            week_start,
+        )
+        if not row:
+            return None
+        d = dict(row)
+        for col in ("stockoutRisks", "biggestAnomaly", "supplierWatch"):
+            if d.get(col) and isinstance(d[col], str):
+                d[col] = _json.loads(d[col])
+        return d
+
+
 async def get_daily_revenue_agg(org_id: str, days: int = 30) -> list[dict]:
     """
     Aggregates daily revenue across all items and branches.

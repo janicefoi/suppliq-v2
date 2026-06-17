@@ -17,6 +17,7 @@ import {
   Layers,
   ShieldAlert,
   Banknote,
+  Newspaper,
   type LucideIcon,
 } from "lucide-react";
 
@@ -119,6 +120,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "AI Briefing",
+    href: "/insights/briefing",
+    icon: Newspaper,
+    roles: ["ADMIN"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -154,6 +161,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/insights/abc": "ABC Analysis",
   "/insights/anomalies": "Anomaly Alerts",
   "/insights/cash-flow": "Cash Flow",
+  "/insights/briefing": "AI Briefing",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",

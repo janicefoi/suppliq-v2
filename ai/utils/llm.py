@@ -175,6 +175,96 @@ Use {currency} for monetary values. Be specific with the numbers from Data."""
         }
 
 
+async def generate_weekly_briefing_prose(
+    org_name: str,
+    week_start: str,
+    stockout_risks: list[dict],
+    biggest_anomaly: dict | None,
+    supplier_to_watch: dict | None,
+    currency: str = "EUR",
+) -> dict:
+    """
+    Writes a Monday morning briefing entirely in prose — no tables, no bullets.
+    Returns {"prose": str, "recommendation": str}.
+    """
+    client = get_client()
+
+    stockout_text = (
+        "\n".join(
+            f"  - {r['item_name']} ({r.get('sku', '')}) at {r.get('branch', 'main branch')}: "
+            f"{r['days_left']} days of stock left ({r['stock_qty']} units)"
+            for r in stockout_risks
+        )
+        or "  No items critically low on stock."
+    )
+    anomaly_text = (
+        f"  Type: {biggest_anomaly.get('type', 'unknown')}\n"
+        f"  Entity: {biggest_anomaly.get('entity_name', '?')}\n"
+        f"  Severity: {biggest_anomaly.get('severity', '?')}\n"
+        f"  Detail: {biggest_anomaly.get('description', '')}"
+        if biggest_anomaly
+        else "  No anomalies detected last week."
+    )
+    supplier_text = (
+        f"  {supplier_to_watch['supplier_name']}: avg {supplier_to_watch['avg_lead_days']} days "
+        f"across {supplier_to_watch['order_count']} orders"
+        if supplier_to_watch
+        else "  No supplier concerns flagged."
+    )
+
+    prompt = f"""You are the AI business advisor for {org_name}.
+Write a Monday morning briefing for the admin covering the week of {week_start}.
+
+Rules:
+- Plain prose only — no bullet points, no numbered lists, no headers, no bold, no markdown.
+- Exactly 4 short paragraphs (2-3 sentences each).
+- Use "your business" or "your team", not "the business".
+- Be specific with the numbers given below. Use {currency} for money.
+
+Data:
+Top stockout risks:
+{stockout_text}
+
+Biggest anomaly last week:
+{anomaly_text}
+
+Supplier to watch:
+{supplier_text}
+
+Write the 4 paragraphs in this order:
+1. Open with the most urgent stockout risk — name the item, how many days of stock remain, and why it needs action this week.
+2. Describe what the anomaly means for the business and what likely caused it.
+3. Address the supplier situation and what it means for upcoming orders.
+4. Give ONE specific operational recommendation — a concrete action the admin should take today or this week.
+
+After the 4 paragraphs, output a single line starting with "RECOMMENDATION:" followed by a 1-sentence summary of the action from paragraph 4. This line is for structured extraction only.
+
+Output only the 4 paragraphs and the RECOMMENDATION: line. Nothing else."""
+
+    message = await client.messages.create(
+        model=settings.claude_model,
+        max_tokens=600,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = message.content[0].text.strip()
+
+    # Split prose from the structured recommendation line
+    lines = raw.splitlines()
+    rec_line = next((l for l in reversed(lines) if l.startswith("RECOMMENDATION:")), None)
+    if rec_line:
+        recommendation = rec_line.replace("RECOMMENDATION:", "").strip()
+        prose = "\n\n".join(
+            p.strip() for p in "\n".join(
+                l for l in lines if not l.startswith("RECOMMENDATION:")
+            ).split("\n\n") if p.strip()
+        )
+    else:
+        prose = raw
+        recommendation = ""
+
+    return {"prose": prose, "recommendation": recommendation}
+
+
 async def generate_cash_flow_commentary(
     revenue_trend: list[dict],
     expense_summary: list[dict],

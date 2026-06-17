@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/ui/logo";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut } from "next-auth/react";
 import { LogOut, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,15 @@ function SidebarContent({
   onNavClick?: () => void;
 }) {
   const pathname = usePathname();
+  const [hasBriefing, setHasBriefing] = useState(false);
+
+  useEffect(() => {
+    if (user.role !== "ADMIN") return;
+    fetch("/api/briefing/status")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setHasBriefing(d?.has_current_briefing ?? false))
+      .catch(() => {});
+  }, [user.role]);
 
   const visibleLinks = NAV_ITEMS.filter((item) =>
     item.roles.includes(user.role)
@@ -98,7 +108,12 @@ function SidebarContent({
                   isActive ? "text-white" : "text-slate-400 group-hover:text-white"
                 )}
               />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.href === "/insights/briefing" && hasBriefing && !isActive && (
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500 text-white leading-none">
+                  NEW
+                </span>
+              )}
             </Link>
           );
         })}

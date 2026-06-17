@@ -3,6 +3,7 @@ from fastapi import APIRouter, Query
 from services.intelligence.news import get_supply_chain_news
 from services.intelligence.market import get_market_prices, get_fx_pairs_for_currency, DEFAULT_COMMODITIES
 from services.intelligence.supplier_score import score_all_suppliers
+from services.intelligence.briefing import generate_briefing_for_org
 from utils.db import get_org_details
 
 router = APIRouter(prefix="/intelligence", tags=["Market Intelligence"])
@@ -77,3 +78,23 @@ async def supplier_scores(organization_id: str):
         "count": len(scores),
         "high_risk_count": sum(1 for s in scores if s["risk_level"] == "high"),
     }
+
+
+@router.get("/weekly-briefing/{organization_id}")
+async def weekly_briefing(
+    organization_id: str,
+    force: bool = Query(False, description="Regenerate even if a briefing already exists this week"),
+):
+    """
+    Returns the current week's AI briefing for an organisation.
+
+    On first call (or if force=True), generates the briefing by gathering:
+      - Top 3 stockout risks (from demand forecasts × current stock)
+      - Biggest anomaly detected this week
+      - Supplier with longest average lead time
+    Then calls Claude once to write the entire briefing as plain prose.
+
+    Subsequent calls in the same week return the cached DB row instantly.
+    The scheduler triggers this automatically every Monday at 08:00 UTC.
+    """
+    return await generate_briefing_for_org(org_id=organization_id, force=force)
