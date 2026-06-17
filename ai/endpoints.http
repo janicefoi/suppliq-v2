@@ -1,0 +1,112 @@
+### ═══════════════════════════════════════════════════════════════
+###  SUPPLIQ AI Service — Endpoint Reference
+###  VS Code: install "REST Client" extension, then click
+###  "Send Request" above any block to see the response inline.
+###
+###  Service must be running:
+###    cd ai && python -m uvicorn main:app --reload --port 8000
+###
+###  Interactive Swagger UI (browser):
+###    http://localhost:8000/docs
+### ═══════════════════════════════════════════════════════════════
+
+@host   = http://localhost:8000
+@org_id = seed-org-meridian
+
+
+### ───────────────────────────────────────────────────────────────
+###  CORE
+### ───────────────────────────────────────────────────────────────
+
+### Root — service info
+GET {{host}}/
+
+###
+
+### Health — db_connected + claude_configured
+GET {{host}}/health
+
+
+### ───────────────────────────────────────────────────────────────
+###  FORECASTING
+### ───────────────────────────────────────────────────────────────
+
+### Demand forecast — 30 days, all items & branches
+POST {{host}}/forecast/demand
+Content-Type: application/json
+
+{
+  "organization_id": "{{org_id}}",
+  "horizon_days": 30
+}
+
+###
+
+### Demand forecast — 60 days, all items & branches
+POST {{host}}/forecast/demand
+Content-Type: application/json
+
+{
+  "organization_id": "{{org_id}}",
+  "horizon_days": 60
+}
+
+###
+
+### Demand forecast — 90 days, single item (replace item_id)
+POST {{host}}/forecast/demand
+Content-Type: application/json
+
+{
+  "organization_id": "{{org_id}}",
+  "horizon_days": 90,
+  "item_id": null,
+  "branch_id": null
+}
+
+###
+
+### Cash flow forecast — 30-day projection with Claude commentary
+GET {{host}}/forecast/cash-flow/{{org_id}}
+
+
+### ───────────────────────────────────────────────────────────────
+###  MARKET INTELLIGENCE
+### ───────────────────────────────────────────────────────────────
+
+### Supply chain news — 5 articles, scored & summarised by Claude
+GET {{host}}/intelligence/news?organization_id={{org_id}}&limit=5
+
+###
+
+### Supply chain news — 20 articles (max useful set)
+GET {{host}}/intelligence/news?organization_id={{org_id}}&limit=20
+
+###
+
+### Market prices & FX rates (FX pairs derived from org currency)
+GET {{host}}/intelligence/market-prices/{{org_id}}
+
+###
+
+### Supplier reliability scores — all suppliers, worst first
+GET {{host}}/intelligence/supplier-scores/{{org_id}}
+
+
+### ───────────────────────────────────────────────────────────────
+###  OPTIMIZATION
+### ───────────────────────────────────────────────────────────────
+
+### Reorder recommendations — critical stockouts first
+###   Each recommendation includes Claude-generated reasoning,
+###   days until stockout, EOQ suggested order quantity, and priority.
+GET {{host}}/optimize/reorder/{{org_id}}
+
+
+### ───────────────────────────────────────────────────────────────
+###  ANOMALY DETECTION
+### ───────────────────────────────────────────────────────────────
+
+### All anomalies — sales spikes/drops, stock discrepancies, expense outliers
+###   Sorted: critical → warning → info
+GET {{host}}/anomalies/{{org_id}}
