@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks
 
 from services.optimization.reorder import get_reorder_recommendations, update_reorder_points
+from services.optimization.overstock import get_overstock_analysis
 
 router = APIRouter(prefix="/optimize", tags=["Optimization"])
 
@@ -29,6 +30,23 @@ async def reorder_recommendations(organization_id: str):
         "critical_count": sum(1 for r in recommendations if r["priority"] == "critical"),
         "high_count": sum(1 for r in recommendations if r["priority"] == "high"),
     }
+
+
+@router.get("/overstock/{organization_id}")
+async def overstock_detection(organization_id: str):
+    """
+    Flags items where current_stock exceeds 60 days of demand cover.
+
+    For each overstocked item returns:
+      - days_of_cover, excess_units, capital_tied, turnover_rate, severity
+      - markdown_suggestion: discount % and suggested retail price
+      - transfer_suggestion: destination branch where same item is below its ROP
+
+    Results sorted by capital_tied DESC (most expensive overstock first).
+    Requires fresh demand forecasts (<48 h); items without a forecast are skipped.
+    """
+    result = await get_overstock_analysis(org_id=organization_id)
+    return result
 
 
 @router.post("/apply-rop/{organization_id}")

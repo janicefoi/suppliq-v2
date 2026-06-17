@@ -12,6 +12,7 @@ import {
   ClipboardList,
   GitBranch,
   PackageSearch,
+  TrendingDown,
   type LucideIcon,
 } from "lucide-react";
 
@@ -84,6 +85,12 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ADMIN", "MANAGER"],
   },
   {
+    label: "Overstock",
+    href: "/insights/overstock",
+    icon: TrendingDown,
+    roles: ["ADMIN", "MANAGER"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: UserCog,
@@ -114,6 +121,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "/expenses": "Expenses",
   "/reports": "Reports",
   "/insights/reorder": "Reorder Alerts",
+  "/insights/overstock": "Overstock",
   "/admin/employees": "Employees",
   "/admin/audit-log": "Audit Log",
   "/admin/branches": "Branches",

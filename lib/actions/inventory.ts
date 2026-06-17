@@ -454,6 +454,34 @@ export async function updateItem(id: string, data: ItemFormValues): Promise<Acti
   }
 }
 
+export async function markdownItem(
+  itemId: string,
+  newRetailPrice: number
+): Promise<ActionResult> {
+  const adminResult = await requireAdmin();
+  if ("error" in adminResult) return adminResult;
+  const orgId = adminResult.organizationId;
+
+  if (newRetailPrice <= 0) return { success: false, error: "Price must be greater than zero." };
+
+  const existing = await db.item.findUnique({
+    where: { id: itemId },
+    select: { organizationId: true },
+  });
+  if (!existing || existing.organizationId !== orgId) {
+    return { success: false, error: "Item not found." };
+  }
+
+  await db.item.update({
+    where: { id: itemId },
+    data: { retailPrice: newRetailPrice },
+  });
+
+  revalidatePath("/inventory");
+  revalidatePath("/insights/overstock");
+  return { success: true };
+}
+
 export async function stockIn(itemId: string, quantity: number, targetBranchId?: string): Promise<ActionResult> {
   const managerResult = await requireManager();
   if ("error" in managerResult) return managerResult;
