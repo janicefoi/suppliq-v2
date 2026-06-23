@@ -1,12 +1,6 @@
-# ERP System
+# Suppliq
 
-A full-stack, production-grade Enterprise Resource Planning (ERP) system built with **TypeScript** end-to-end. Designed for a small-to-medium retail and wholesale motorcycle spare parts business, it covers the complete operational lifecycle — point of sale, inventory, supplier procurement, customer credit tracking, multi-branch management, and admin reporting.
-
-Built as a real-world client solution and presented here as a portfolio piece demonstrating practical TypeScript, Next.js App Router, and database design skills.
-
----
-
-![Admin Dashboard](screenshots/AdminDashboard-Screenshot.png)
+A multi-tenant SaaS ERP for electronics and industrial distributors. Covers the full operational cycle — point of sale, inventory, procurement, supplier invoice matching, stock transfers, expense tracking, customer credit, and an AI layer that turns historical data into actionable intelligence.
 
 ---
 
@@ -14,16 +8,31 @@ Built as a real-world client solution and presented here as a portfolio piece de
 
 | Layer | Technology |
 |---|---|
-| Language | TypeScript (strict mode, end-to-end) |
-| Framework | Next.js 14 (App Router) |
+| Language | TypeScript (strict, end-to-end) |
+| Framework | Next.js 14 App Router |
 | Styling | Tailwind CSS + shadcn/ui |
-| Database | PostgreSQL (Supabase) |
+| Database | PostgreSQL |
 | ORM | Prisma 5 |
-| Authentication | NextAuth.js v5 (credentials provider, JWT) |
+| Authentication | NextAuth.js v5 (credentials, JWT) |
 | State management | Zustand (POS cart) |
 | Charts | Recharts |
 | Validation | Zod + React Hook Form |
-| Runtime | Node.js |
+| AI microservice | Python + FastAPI |
+| AI model | Claude (Anthropic) |
+| Billing | Stripe |
+| Email | Resend |
+
+---
+
+## Plans
+
+Three tiers gated in `lib/plans.ts` and enforced at the page level:
+
+| Plan | Price | Included |
+|---|---|---|
+| **Starter** | €29/mo (14-day trial) | Full core ERP + Sales report |
+| **Growth** | — | + P&L report, Stock Movements report, Reorder Alerts (top 5) |
+| **Enterprise** | — | + all AI modules with full Claude reasoning |
 
 ---
 
@@ -31,208 +40,217 @@ Built as a real-world client solution and presented here as a portfolio piece de
 
 ### Point of Sale
 
-![Point of Sale](screenshots/POS-Screenshot.png)
-
-- Live item search by name or SKU (debounced, up to 15 results, branch-scoped)
-- Three dynamic price tiers per item: **Retail**, **Wholesale**, and **Special** (special is optional; POS hides it for items where it isn't configured)
-- Sale type switcher — all cart prices update instantly when switching between retail and wholesale
-- Attach a customer to any sale; mark the sale as **Paid** or **On Credit**
-- Discount input and amount-given field with live change calculation
-- Stock validation before completing a sale — the server checks branch stock and rejects the sale if any item is unavailable
-- Atomic sale completion: creates the sale record, decrements branch stock, and updates the customer credit balance in a single database transaction
-
-**Thermal receipt printing**
-
-- Unique receipt number in format `RCP-YYYYMMDD-XXXX` (e.g. `RCP-20260601-0042`)
-- Shop header: name, address, phone — pulled from the branch that made the sale
-- Served-by name, date, and time
-- Itemised list with SKU, quantities, and unit prices (price snapshot — historic receipts are never affected by future price changes)
-- Subtotal (ex-VAT), extracted VAT (16% Kenya VAT), total, discount, and change
-- Customer name and credit status on credit sales
-- QR code linking to the branch WhatsApp number
-- VAT code footer: `CODE V: VAT= 16%  CODE E: EXEMPT= 0%`
+- Live item search by name or SKU (debounced, branch-scoped)
+- Three price tiers per item: **Retail**, **Wholesale**, **Special** — cart reprices instantly when switching
+- Attach a customer, set payment as **Paid** or **On Credit**
+- Discount input with live change calculation
+- Stock validation on the server before committing — rejects the sale if any item is unavailable
+- Atomic transaction: sale record + stock decrement + credit balance update in a single `$transaction()`
+- Printable thermal receipt: receipt number (`RCP-YYYYMMDD-XXXX`), served-by, itemised lines with SKU and price snapshot, VAT breakdown, QR code for branch WhatsApp
 
 ---
 
 ### Dashboard
 
-**Admin view — multi-branch comparison**
+**Admin view**
+- System-wide totals across all branches
+- Per-branch cards: today's revenue, sales count, outstanding credit, low-stock alert count, 7-day revenue bar chart, top 5 items by quantity, top 5 debtors
 
-![Admin Dashboard](screenshots/AdminDashboard-Screenshot.png)
-
-- System-wide totals at a glance
-- Per-branch cards, each showing:
-  - Today's revenue and sales count
-  - Outstanding customer credit
-  - Low-stock alert count
-  - 7-day revenue bar chart (Recharts, daily breakdown)
-  - Top 5 selling items by quantity
-  - Top 5 debtors by credit balance
-
-**Manager / Cashier view — single branch**
-
-![Manager Dashboard](screenshots/ManagerDashboard-Screenshot.png)
-
-- Today's sales count and total revenue
-- Low-stock alert list (item name, current quantity vs. threshold)
+**Manager / Cashier view**
+- Today's sales count and revenue
+- Low-stock alert list with item name and quantity vs. threshold
 
 ---
 
-### Inventory Management
+### Inventory
 
-![Inventory](screenshots/Inventory-Screenshot.png)
-
-- Summary stats: total items, active items, low-stock count
-- Add and update items with SKU, category, description, supplier link, and three price tiers
-- Per-item, per-branch **low-stock threshold** (default 5 units; configurable)
-- **Stock In dialog** — record a purchase order from a supplier; automatically increments the branch's stock
-- Soft delete: deactivate/reactivate items — no data is ever permanently lost
-- Category management: create and filter items by category
-- Stock auto-decrements on completed sales; auto-restores on voided receipts
-- Admin sees stock across all branches; non-admin sees only their branch
+- Item records: SKU, name, category, supplier, three price tiers, cost price, lead time, reorder point
+- Per-item, per-branch stock quantity and low-stock threshold
+- Soft delete: deactivate/reactivate items without losing history
+- Admin sees all branches; non-admin sees only their branch
 
 ---
 
-### Customer Management
+### Purchase Orders
 
-![Customers](screenshots/Customer-Screenshot.png)
+Full PO lifecycle with six statuses: **DRAFT → SENT → CONFIRMED → PARTIAL → RECEIVED / CANCELLED**
 
-- Customer records with name, phone, address, and branch
-- Summary stats: total customers, customers with outstanding credit, total credit owed, new this month
+- Line items with unit cost and received quantity (supports partial deliveries)
+- Supplier invoice matching on every PO: invoice reference, amount, date, and status (**NONE → RECEIVED → PAID / DISPUTED**)
+- Payment recorded against invoice with timestamp and who approved it
+- Payables summary: outstanding invoice totals by status and supplier
+
+---
+
+### Stock Transfers
+
+Branch-to-branch stock movements with a four-step lifecycle: **PENDING → IN_TRANSIT → RECEIVED / CANCELLED**
+
+- Raise a transfer request with line items
+- **PENDING**: created, awaiting approval
+- **IN_TRANSIT**: stock dispatched from source, TRANSFER_OUT log created; TRANSFER_IN log created on receipt
+- **RECEIVED**: full audit trail of both legs in the stock log
+- Stats: total transfers, in-transit value, completed this month
+
+---
+
+### Expenses
+
+- Record operating expenses by category: Rent, Salaries, Utilities, Transport, Maintenance, Marketing, Other
+- Branch-scoped or org-wide
+- Summary stats: total spend, monthly breakdown, category totals
+- Date-range filtering and branch filter for admin
+
+---
+
+### Customers
+
+- Customer records with name, phone, address, and home branch
+- Credit balance tracking: increases on credit sales, decreases when payments are recorded
+- Record credit payment: atomic transaction creates the payment record and decrements the balance simultaneously
+- Customer detail page: full purchase history + full payment history
 - Filter by credit status: All / Has Credit / No Credit
-- Branch-scoped: non-admin users only see customers from their branch
-
-**Customer detail page**
-
-![Customer Detail](screenshots/CustomerDetail-Screenshot.png)
-
-- Complete purchase history (receipt number, type, status, total, date)
-- Full credit payment history including the employee who recorded each payment
-- **Record credit payment** — atomic transaction: creates the payment record and decrements the customer's balance simultaneously
 
 ---
 
-### Supplier Management
-
-![Suppliers](screenshots/Suppliers-Screenshot.png)
+### Suppliers
 
 - Supplier records: name, phone, email, address, notes
-- Summary stats: total suppliers, total items sourced, total purchase orders, total spend (calculated from cost prices)
-- **Record Purchase Order** — add multiple line items in one order; atomically creates each order line and increments branch stock
-
-**Supplier detail page**
-
-![Supplier Detail](screenshots/SupplierDetails-Screenshot.png)
-
-- Lists all items supplied (with SKU, category, prices, current stock)
-- Full purchase order history (quantity, cost, date, recorder name)
+- Summary stats: total items sourced, total POs, total spend from cost prices
+- Supplier detail: lists all supplied items with current stock levels and full PO history
 
 ---
 
 ### Reports
 
-![Reports](screenshots/Report-Screenshot.png)
+Manager and Admin only.
 
-- Role-gated: **Manager and Admin only**
-- Filter sales by custom date range
-- Revenue breakdown: total, retail-only, and wholesale-only
-- Full receipt history table: receipt number, date, sale type, customer, total, payment status
-- **Void receipt** (Admin only) — marks the sale as void, records the void reason and timestamp, and restores stock for all items in the receipt
-- CSV export of the current report view
-- Admin can view all branches or filter to a single branch; Managers see only their branch
+- **Sales report**: revenue by date range, retail vs. wholesale breakdown, full receipt table, CSV export
+- **P&L report** (Growth+): revenue, expenses, and purchases in one view
+- **Stock Movements report** (Growth+): full stock log with reason codes
+- Void a receipt (Admin only): marks the sale void, records reason and timestamp, restores all stock items atomically
 
 ---
 
 ### Employee Management
 
-![Employees](screenshots/Employees-Screenshot.png)
+Admin only.
 
-- Admin-only access
-- Create employee accounts with role assignment: **Cashier**, **Manager**, or **Admin**
-- Assign employees to specific branches
-- Activate / deactivate accounts (soft delete)
-- Reset passwords (bcrypt-hashed on the server)
-- Per-employee sales activity: sales count and total revenue
+- Create accounts with role: **Cashier**, **Manager**, or **Admin**
+- Assign to a branch
+- Activate / deactivate (soft delete)
+- Reset passwords (bcrypt, server-side)
+- Per-employee sales stats: count and total revenue
 
 ---
 
 ### Branch Management
 
-![Branches](screenshots/Branch-Screenshot.png)
-
-- Admin-only access
-- Create and manage store locations: name, address, phone, Paybill number, PIN
-- Per-branch stats: employee count, customer count, total sales
-- Activate / deactivate branches without losing historical data
+Admin only. Create and manage locations (name, address, phone). Per-branch stats: employee count, customer count, total sales.
 
 ---
 
 ### Audit Log
 
-![Audit Log](screenshots/AuditLog-Screenshotpng.png)
-
-- Admin-only access
-- Immutable trail of all credit payment recordings and stock-in events
-- Each entry shows: date, action type, item or customer, quantity, and the employee who performed the action
+Admin only. Immutable trail of all system events: sales, voids, stock movements, PO changes, user logins, credit payments. Each entry records the action type, entity, description, and the user who performed it.
 
 ---
 
-## Role-Based Access Control
+### Settings
 
-Three roles enforced at the **middleware level** — no role checks scattered across page components:
-
-```
-CASHIER   → POS · Inventory (view + edit) · Customers · Suppliers
-MANAGER   → Everything above + Reports
-ADMIN     → Full access: Employees · Branches · Audit Log · Void receipts · Export data
-```
-
-Non-admin users are automatically scoped to their assigned branch across all views.
+- **Profile**: name and password update
+- **Organisation**: name, contact details, VAT number, currency, timezone — these populate receipts and documents
+- **Billing**: Stripe-powered plan management with subscription status, current period, and upgrade/downgrade flow
 
 ---
 
-## Architecture Highlights
+## AI Layer (Enterprise)
+
+A Python + FastAPI microservice called by the Next.js app via an internal HTTP client. All reasoning is generated by Claude.
+
+### Reorder Alerts
+Analyses sales velocity, current stock, lead times, and reorder points across all branches. Returns ranked recommendations with priority (critical / high / medium / low), suggested order quantity, estimated days until stockout, and Claude-generated reasoning. Growth plan gets the top-5 list without reasoning; Enterprise unlocks all items with full explanations.
+
+### Overstock Detection
+Identifies items where stock exceeds realistic demand. Calculates days of cover, excess units, and capital tied up. Flags transfer opportunities to understocked branches with estimated impact on days of cover at the destination.
+
+### Transfer Recommendations
+Finds cross-branch redistribution opportunities where moving stock from an overstocked branch to an understocked one avoids a reorder. Ranks by priority, shows capital freed, and estimates reorder savings.
+
+### ABC/XYZ Analysis
+Classifies every item on two axes:
+- **ABC** (revenue contribution): A = top 80%, B = next 15%, C = bottom 5%
+- **XYZ** (demand variability): X = stable, Y = variable, Z = erratic
+
+Combined class (e.g. AX, BZ) drives stocking strategy. Includes a 3×3 matrix heatmap and per-item rank with action recommendation.
+
+### Anomaly Detection
+Scans recent stock logs and expense records against historical baselines. Detects four anomaly types:
+- **Sales spike** — item sold far above its usual rate
+- **Sales drop** — item with consistent history goes quiet
+- **Stock shrinkage** — manual adjustment logs indicating unexplained loss
+- **Expense outlier** — single expense significantly above category average
+
+Each anomaly includes severity (critical / warning), description, and a suggested action.
+
+### Cash Flow Forecasting
+Projects daily cash flow for the current month. Combines actual revenue and expenses already recorded with expected purchase costs from pending and confirmed POs. Outputs a daily net cash curve with cumulative balance, plus itemised upcoming purchases that need funding.
+
+### Weekly AI Briefing
+Every Monday, Claude writes a plain-English digest for the org covering:
+- Top stockout risks with days of cover
+- Biggest anomaly of the week
+- Supplier performance watch (order count, average lead days)
+- A single recommended operational action
+
+Delivered as an in-app card with an unread badge in the sidebar. Also generates an email-ready copy. Results are cached per org per week (no re-generation on page refresh).
+
+### Market Intelligence
+Fetches live supply-chain news and commodity prices relevant to the organisation's industry keywords. Claude summarises each article with a relevance score, sentiment (positive / negative / neutral), and impact tags. Commodity price section shows live spot prices with 24h change. FX rate strip for relevant currency pairs. Results cached for 2 hours.
+
+---
+
+## Architecture
+
+### Multi-tenancy
+Every row in every table carries `organizationId`. All queries are scoped to the authenticated user's org. Branches provide a second scope — non-admin users only see data for their assigned branch.
 
 ### Price snapshot
-`SaleItem.unitPrice` stores the exact price at the time of sale. Historic receipts are never affected by future price changes.
+`SaleItem.unitPrice` stores the price at the time of sale. Price changes never affect historical receipts.
 
 ### Atomic transactions
-All multi-step writes use **Prisma `$transaction()`** — either every step commits or nothing does:
-- Sale creation → stock decrement → credit balance update
-- Credit payment → balance decrement
-- Purchase order → stock increment
-- Void receipt → stock restore
+All multi-step writes use `prisma.$transaction()`: sale + stock + credit, payment + balance, PO receipt + stock increment, void + stock restore, transfer dispatch + log.
 
-### VAT handling (Kenya)
-Prices are stored and displayed VAT-inclusive (16%). The server extracts VAT from totals using `total × (16/116)` so receipt calculations are always correct regardless of client-side rounding.
+### VAT
+UK 20% VAT. Prices are stored and displayed VAT-inclusive. VAT is extracted from totals using `total × (20/120)` on the server.
 
-### Branch-scoped data
-Every query for inventory, customers, sales, and suppliers is filtered by the user's branch unless the user is an Admin, who sees cross-branch data with per-branch breakdowns.
+### Role enforcement
+Three roles: **CASHIER**, **MANAGER**, **ADMIN**. Access is checked in server components and server actions — no client-side role logic. Non-admin queries are automatically branch-scoped.
 
-### Type safety
-- Prisma generates fully-typed models used directly in server actions
-- Zod schemas validate all form inputs before they reach the database
-- `useSession()` typed with the custom session shape (`id`, `name`, `email`, `role`, `branchId`)
-- No `any` types in the codebase
+### Stock log
+Every stock movement (sale, void, purchase receipt, transfer in/out, manual adjustment) writes an immutable `StockLog` row with reason code, reference ID, and recorder. This gives the AI microservice a complete auditable history to analyse.
 
 ---
 
-## Database Schema
+## Database Models
 
-9 models across two logical groups:
-
-**Sales & inventory**
-`User` → `Sale` → `SaleItem` ← `Item` ← `BranchStock`
-
-**People, finance & procurement**
-`Customer` → `CreditPayment`, `Supplier` → `Item` → `PurchaseOrder`
-
-Supporting: `Branch`, `Category`, `StockLog`
+```
+Organization → Branch → User
+                      → BranchStock ← Item ← Category
+                                            ← Supplier → PurchaseOrder → PurchaseOrderItem
+Organization → Sale → SaleItem
+             → Customer → CreditPayment
+             → StockTransfer → StockTransferItem
+             → Expense
+             → StockLog
+             → Forecast
+             → WeeklyBriefing
+             → AuditLog
+```
 
 ---
-
 
 ## Author
 
-**Janice Ngugi**  
+**Janice Ngugi**
 GitHub: [@janicefoi](https://github.com/janicefoi)
