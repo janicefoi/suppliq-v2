@@ -1,6 +1,10 @@
 # Suppliq
 
-A multi-tenant SaaS ERP for electronics and industrial distributors. Covers the full operational cycle — point of sale, inventory, procurement, supplier invoice matching, stock transfers, expense tracking, customer credit, and an AI layer that turns historical data into actionable intelligence.
+**AI-powered ERP for retail and wholesale businesses.**
+
+Run your whole operation in one place — point of sale, inventory, procurement, expenses, customer credit, multi-branch stock transfers — and let the AI layer do the thinking: reorder alerts, anomaly detection, demand forecasting, ABC analysis, cash flow projections, and a weekly Claude-written briefing delivered every Monday.
+
+Built for any product-based business. Wholesalers, retailers, distributors, stockists. Configure your currency, VAT rate, and industry — the platform adapts.
 
 ---
 
@@ -222,7 +226,7 @@ Every row in every table carries `organizationId`. All queries are scoped to the
 All multi-step writes use `prisma.$transaction()`: sale + stock + credit, payment + balance, PO receipt + stock increment, void + stock restore, transfer dispatch + log.
 
 ### VAT
-UK 20% VAT. Prices are stored and displayed VAT-inclusive. VAT is extracted from totals using `total × (20/120)` on the server.
+VAT rate is configurable per organisation. Prices are stored and displayed VAT-inclusive. VAT is extracted from totals server-side using `total × (rate / (100 + rate))`.
 
 ### Role enforcement
 Three roles: **CASHIER**, **MANAGER**, **ADMIN**. Access is checked in server components and server actions — no client-side role logic. Non-admin queries are automatically branch-scoped.
