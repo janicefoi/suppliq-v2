@@ -365,7 +365,7 @@ export function MarketClient({
             <p className="text-[10px] text-slate-400">
               Prices from Alpha Vantage (free tier: 25 req/day).
               24h change shown where available.
-              FX pairs auto-selected for your org's base currency.
+              FX pairs auto-selected for your org&apos;s base currency.
             </p>
           )}
         </div>

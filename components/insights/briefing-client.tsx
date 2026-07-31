@@ -190,7 +190,7 @@ export function BriefingClient({
           <Lightbulb className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
           <div>
             <p className="text-[10px] font-bold uppercase tracking-wider text-blue-500 mb-0.5">
-              This week's key action
+              This week&apos;s key action
             </p>
             <p className="text-sm text-blue-900">{recommendation}</p>
           </div>
@@ -291,8 +291,8 @@ export function BriefingClient({
 
       <p className="text-[10px] text-slate-400 pt-1">
         Briefing generated every Monday at 08:00 UTC by the SUPPLIQ AI scheduler.
-        Use "Copy as email" to paste into your mail client for team distribution.
-        "Regenerate" forces a fresh briefing with current data.
+        Use &quot;Copy as email&quot; to paste into your mail client for team distribution.
+        &quot;Regenerate&quot; forces a fresh briefing with current data.
       </p>
     </div>
   );
