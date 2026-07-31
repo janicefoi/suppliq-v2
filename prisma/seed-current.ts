@@ -96,7 +96,7 @@ async function main() {
 
   const items = await prisma.item.findMany({ where: { organizationId: org.id } });
   const iMap: Record<string, { id: string; rp: number; wp: number }> = {};
-  for (const i of items) iMap[i.sku] = { id: i.id, rp: i.retailPrice, wp: i.wholesalePrice };
+  for (const i of items) iMap[i.sku] = { id: i.id, rp: Number(i.retailPrice), wp: Number(i.wholesalePrice) };
 
   const up = (sku: string, type: "RETAIL" | "WHOLESALE") =>
     type === "RETAIL" ? iMap[sku].rp : iMap[sku].wp;
