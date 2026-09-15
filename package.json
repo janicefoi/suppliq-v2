@@ -17,7 +17,9 @@
     "db:seed-current": "tsx prisma/seed-current.ts",
     "db:seed-stocks": "tsx prisma/seed-stocks.ts",
     "db:seed-events": "tsx prisma/seed-events.ts",
-    "db:reset": "tsx prisma/reset.ts"
+    "db:reset": "tsx prisma/reset.ts",
+    "db:seed-prod": "tsx scripts/seed-prod.ts",
+    "doctor": "tsx scripts/doctor.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
