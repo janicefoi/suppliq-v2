@@ -140,21 +140,45 @@ async function main() {
 
         // Receipt and PO numbers embed the date they were issued on
         // (RCP-20260617-0006). Left alone they would contradict the row's own
-        // createdAt. The trailing sequence is preserved, and every row moved by
-        // the same offset, so the unique constraints still hold.
-        const receipts = await tx.$executeRawUnsafe(
-          `UPDATE sales
-              SET "receiptNumber" = 'RCP-' || to_char("createdAt", 'YYYYMMDD') || '-' || split_part("receiptNumber", '-', 3)
-            WHERE "receiptNumber" LIKE 'RCP-%-%'`
-        );
-        if (receipts > 0) touched.push(`sales.receiptNumber (${receipts})`);
+        // createdAt.
+        //
+        // Two passes are required. Both columns carry a UNIQUE constraint that
+        // Postgres enforces row by row, not at commit, so renaming in place
+        // collides: a sale moving onto 9 June claims RCP-20260609-0001 while
+        // the sale that was already there still holds it. Parking every row on
+        // a guaranteed-unique temporary value first removes the overlap.
+        //
+        // The sequence is regenerated from the new ordering rather than reused,
+        // which makes the result unique by construction instead of relying on
+        // the old numbering being consistent with createdAt.
+        for (const [table, column, prefix] of [
+          ["sales", "receiptNumber", "RCP"],
+          ["purchase_orders", "poNumber", "PO"],
+        ] as const) {
+          await tx.$executeRawUnsafe(
+            `UPDATE ${table} SET "${column}" = 'TMP-' || id`
+          );
 
-        const pos = await tx.$executeRawUnsafe(
-          `UPDATE purchase_orders
-              SET "poNumber" = 'PO-' || to_char("createdAt", 'YYYYMMDD') || '-' || split_part("poNumber", '-', 3)
-            WHERE "poNumber" LIKE 'PO-%-%'`
-        );
-        if (pos > 0) touched.push(`purchase_orders.poNumber (${pos})`);
+          const renamed = await tx.$executeRawUnsafe(
+            `WITH numbered AS (
+               SELECT id,
+                      '${prefix}-' || to_char("createdAt", 'YYYYMMDD') || '-' ||
+                      lpad(
+                        (row_number() OVER (
+                           PARTITION BY "organizationId", ("createdAt")::date
+                           ORDER BY "createdAt", id
+                         ))::text, 4, '0'
+                      ) AS new_number
+                 FROM ${table}
+             )
+             UPDATE ${table} t
+                SET "${column}" = n.new_number
+               FROM numbered n
+              WHERE t.id = n.id`
+          );
+
+          if (renamed > 0) touched.push(`${table}.${column} (${renamed})`);
+        }
       },
       { timeout: 120_000, maxWait: 15_000 }
     );
