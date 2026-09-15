@@ -6,8 +6,11 @@ import {
 } from "recharts";
 import type { DailyRevenue } from "@/lib/actions/dashboard";
 
+// Test the magnitude, not the signed value: a negative day (net voids) would
+// otherwise fall through to the raw number ("-20000") and overflow the axis,
+// which clips it to unreadable fragments like ")000".
 function fmtK(v: number) {
-  if (v >= 1000) return `${(v / 1000).toFixed(0)}k`;
+  if (Math.abs(v) >= 1000) return `${(v / 1000).toFixed(0)}k`;
   return String(v);
 }
 
@@ -49,7 +52,8 @@ export function RevenueChart({ data, currency }: { data: DailyRevenue[]; currenc
               axisLine={false}
               tickLine={false}
               tickFormatter={fmtK}
-              width={32}
+              // Room for a negative abbreviated tick ("-20k") without clipping.
+              width={44}
             />
             <Tooltip content={<CustomTooltip currency={currency} />} cursor={{ fill: "#f8fafc", radius: 4 }} />
             <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
