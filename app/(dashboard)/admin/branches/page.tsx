@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getBranches } from "@/lib/actions/branches";
 import { BranchesClient } from "@/components/admin/branches-client";
 
-export const metadata = { title: "Branches | JSH ERP" };
+export const metadata = { title: "Branches | Suppliq" };
 
 export default async function BranchesPage() {
   const session = await auth();

@@ -5,7 +5,7 @@ import { OverstockClient } from "@/components/insights/overstock-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "Overstock | SUPPLIQ" };
+export const metadata = { title: "Overstock | Suppliq" };
 
 export type OverstockTransferSuggestion = {
   to_branch_id: string;

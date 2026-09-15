@@ -349,7 +349,7 @@ export default function SignupPage() {
         </p>
 
         <p className="text-center text-xs text-slate-400 mt-3">
-          SUPPLIQ &copy; {new Date().getFullYear()}
+          Suppliq &copy; {new Date().getFullYear()}
         </p>
       </div>
     </div>

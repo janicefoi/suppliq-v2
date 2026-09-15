@@ -4,7 +4,7 @@ import { getSuppliers } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/branches";
 import { InventoryClient } from "@/components/inventory/inventory-client";
 
-export const metadata = { title: "Inventory | JSH ERP" };
+export const metadata = { title: "Inventory | Suppliq" };
 
 export default async function InventoryPage() {
   const session = await auth();

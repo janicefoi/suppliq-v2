@@ -4,7 +4,7 @@ import { getEmployees } from "@/lib/actions/employees";
 import { getBranches } from "@/lib/actions/branches";
 import { EmployeesClient } from "@/components/admin/employees-client";
 
-export const metadata = { title: "Employees | JSH ERP" };
+export const metadata = { title: "Employees | Suppliq" };
 
 export default async function EmployeesPage() {
   const session = await auth();

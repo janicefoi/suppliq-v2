@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { SettingsNav } from "@/components/settings/settings-nav";
 
-export const metadata = { title: "Settings | SUPPLIQ" };
+export const metadata = { title: "Settings | Suppliq" };
 
 export default async function SettingsLayout({
   children,

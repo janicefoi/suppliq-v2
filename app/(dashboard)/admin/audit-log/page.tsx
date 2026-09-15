@@ -3,7 +3,7 @@ import { auth } from "@/auth";
 import { getAuditLogs } from "@/lib/actions/audit";
 import { AuditLogClient } from "@/components/audit/audit-log-client";
 
-export const metadata = { title: "Audit Log | JSH ERP" };
+export const metadata = { title: "Audit Log | Suppliq" };
 
 export default async function AuditLogPage() {
   const session = await auth();

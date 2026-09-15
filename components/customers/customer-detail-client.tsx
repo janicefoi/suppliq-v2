@@ -35,9 +35,10 @@ interface Props {
   customer: CustomerDetail;
   role: string;
   currency: string;
+  orgName: string;
 }
 
-export function CustomerDetailClient({ customer, role, currency }: Props) {
+export function CustomerDetailClient({ customer, role, currency, orgName }: Props) {
   const canEdit = role !== "CASHIER";
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -165,7 +166,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
               {formatCurrency(balance, currency)}
             </p>
             <p className="text-xs mt-1">
-              {hasCredit ? <span className="text-red-500">Amount owed to JSH</span> : <span className="text-green-600">No outstanding balance</span>}
+              {hasCredit ? <span className="text-red-500">Amount owed to {orgName}</span> : <span className="text-green-600">No outstanding balance</span>}
             </p>
           </div>
           <Button
@@ -320,7 +321,7 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
       {/* ── Printable statement (hidden on screen, shown on print) ─────────── */}
       <div className="customer-statement-print" style={{ display: "none" }}>
         <div style={{ borderBottom: "2px solid #0f172a", paddingBottom: 12, marginBottom: 16 }}>
-          <p style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>SUPPLIQ</p>
+          <p style={{ fontWeight: 700, fontSize: 18, margin: 0 }}>{orgName}</p>
           {customer.branch && (
             <>
               <p style={{ margin: "2px 0", fontSize: 13 }}>{customer.branch.name}</p>
@@ -408,20 +409,20 @@ export function CustomerDetailClient({ customer, role, currency }: Props) {
         <div style={{ borderTop: "2px solid #0f172a", paddingTop: 10, marginTop: 8 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
             <span>Total purchases ({printPeriodLabel})</span>
-            <strong>KES {periodSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+            <strong>{currency} {periodSpent.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
             <span>Total payments ({printPeriodLabel})</span>
-            <strong>KES {periodPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+            <strong>{currency} {periodPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #0f172a", paddingTop: 6, marginTop: 6 }}>
             <span>Outstanding balance</span>
-            <span style={{ color: hasCredit ? "#dc2626" : "#16a34a" }}>KES {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+            <span style={{ color: hasCredit ? "#dc2626" : "#16a34a" }}>{currency} {balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
 
         <p style={{ fontSize: 10, color: "#94a3b8", marginTop: 24, textAlign: "center" }}>
-          This is an official statement from JSH Motorcycle Spare Parts. For enquiries contact us on the details above.
+          This is an official statement from {orgName}. For enquiries contact us on the details above.
         </p>
       </div>
 

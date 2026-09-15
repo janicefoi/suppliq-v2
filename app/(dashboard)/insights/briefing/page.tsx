@@ -5,7 +5,7 @@ import { BriefingClient } from "@/components/insights/briefing-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "AI Briefing | SUPPLIQ" };
+export const metadata = { title: "AI Briefing | Suppliq" };
 
 export type StockoutRisk = {
   item_name: string;
