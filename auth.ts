@@ -13,26 +13,38 @@ const CredentialsSchema = z.object({
 
 const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
   ...authConfig,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       async authorize(credentials) {
         const parsed = CredentialsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const user = await db.user.findUnique({
-          where: { email: parsed.data.email },
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            passwordHash: true,
-            role: true,
-            isActive: true,
-            branchId: true,
-            organizationId: true,
-            organization: { select: { currency: true, plan: true, trialEndsAt: true } },
-          },
-        });
+        // This is the first query the app makes on a cold deploy. If the
+        // database is unreachable or unmigrated, an uncaught throw here
+        // surfaces as an opaque 500 with nothing in the browser to explain it.
+        // Log the real cause server-side (visible in Vercel runtime logs) and
+        // fail closed instead.
+        let user;
+        try {
+          user = await db.user.findUnique({
+            where: { email: parsed.data.email },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              passwordHash: true,
+              role: true,
+              isActive: true,
+              branchId: true,
+              organizationId: true,
+              organization: { select: { currency: true, plan: true, trialEndsAt: true } },
+            },
+          });
+        } catch (err) {
+          console.error("[auth] database lookup failed during sign-in:", err);
+          return null;
+        }
 
         if (!user || !user.isActive) return null;
 
@@ -76,15 +88,22 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
       const now = Date.now();
       const lastCheck = (token.planCheckedAt as number | undefined) ?? 0;
       if (now - lastCheck > 5 * 60 * 1000) {
-        const org = await db.organization.findUnique({
-          where: { id: token.organizationId as string },
-          select: { plan: true, currency: true, trialEndsAt: true },
-        });
-        if (org) {
-          token.plan          = org.plan;
-          token.currency      = org.currency;
-          token.trialEndsAt   = org.trialEndsAt?.toISOString() ?? null;
-          token.planCheckedAt = now;
+        // Runs on every authenticated request once the window elapses. A throw
+        // here would 500 every page in the app, so keep the existing token on
+        // failure and retry on the next request.
+        try {
+          const org = await db.organization.findUnique({
+            where: { id: token.organizationId as string },
+            select: { plan: true, currency: true, trialEndsAt: true },
+          });
+          if (org) {
+            token.plan          = org.plan;
+            token.currency      = org.currency;
+            token.trialEndsAt   = org.trialEndsAt?.toISOString() ?? null;
+            token.planCheckedAt = now;
+          }
+        } catch (err) {
+          console.error("[auth] plan refresh failed, keeping cached token:", err);
         }
       }
 

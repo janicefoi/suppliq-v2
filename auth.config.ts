@@ -3,6 +3,7 @@
 // Edge-safe config - no Prisma, no Node-only modules.
 // Used by middleware to verify JWT and enforce route guards.
 export const authConfig: NextAuthConfig = {
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/login",
   },
