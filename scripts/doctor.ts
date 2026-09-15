@@ -43,6 +43,46 @@ function loadEnvFiles() {
   }
 }
 
+/**
+ * Reads one key out of `.env.production.local`, the file written by
+ * `npx vercel env pull .env.production.local`. Using it guarantees we inspect
+ * the same database the deployment reads from, rather than a hand-copied
+ * string that might belong to a different project. Never merged into
+ * process.env — the caller asks for exactly the key it wants.
+ */
+function readFromVercelEnvFile(key: string): string | undefined {
+  const file = ".env.production.local";
+  if (!existsSync(file)) return undefined;
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (match && match[1] === key) {
+      return match[2].trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Finds a connection string suitable for schema work and seeding, preferring
+ * an unpooled/direct one. Providers name these differently — the Neon and
+ * Vercel Postgres integrations set DATABASE_URL_UNPOOLED and
+ * POSTGRES_URL_NON_POOLING; a hand-configured project uses DIRECT_URL.
+ * Falls back to the pooled DATABASE_URL, which is fine for reading.
+ */
+export function resolveDirectUrl(): string | undefined {
+  const PREFERENCE = [
+    "DIRECT_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
+  ];
+  for (const key of PREFERENCE) {
+    const value = readFromVercelEnvFile(key);
+    if (value && value !== "[SENSITIVE]") return value;
+  }
+  return undefined;
+}
+
 function firstLine(err: unknown): string {
   const text = err instanceof Error ? err.message : String(err);
   // Prisma errors lead with blank lines and an echo of the invocation.
@@ -74,10 +114,33 @@ function warn(msg: string, note: string) {
 async function main() {
   loadEnvFiles();
 
-  const override = process.env.PROD_DATABASE_URL;
+  // --prod reads the deployment's own connection string. Prefer DIRECT_URL:
+  // schema checks and seeding need a real session, which the pooler can't give.
+  const wantsProd = process.argv.includes("--prod");
+  let override = process.env.PROD_DATABASE_URL;
+  let source = override ? "PROD_DATABASE_URL" : "";
+
+  if (!override && wantsProd) {
+    override = resolveDirectUrl();
+    source = ".env.production.local";
+    if (!override) {
+      // Must stop, not fall through — silently checking the local database
+      // after being asked for production would be actively misleading.
+      fail(
+        "--prod was passed, but .env.production.local has no DIRECT_URL or DATABASE_URL.",
+        "Create it with:  npx vercel env pull .env.production.local\n" +
+          "       ...or set PROD_DATABASE_URL yourself."
+      );
+      console.log("\nRefusing to fall back to the local database.\n");
+      process.exit(1);
+    }
+  }
+
   const url = override ?? process.env.DATABASE_URL;
 
-  console.log(`\nSuppliq deployment doctor — target: ${override ? "REMOTE" : "local (.env)"}\n`);
+  console.log(
+    `\nSuppliq deployment doctor — target: ${override ? `REMOTE (via ${source})` : "local (.env)"}\n`
+  );
 
   console.log("Environment");
 

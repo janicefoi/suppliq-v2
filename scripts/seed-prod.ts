@@ -20,6 +20,7 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { readFileSync, existsSync } from "node:fs";
 
 // Order matters: each builds on the rows the previous one created.
 const SEEDS = [
@@ -35,12 +36,50 @@ function fail(message: string): never {
   process.exit(1);
 }
 
-const url = process.env.PROD_DATABASE_URL;
+/**
+ * Reads one key from `.env.production.local` (written by
+ * `npx vercel env pull .env.production.local`), so seeding targets the exact
+ * database the deployment reads from rather than a hand-copied string.
+ */
+function readFromVercelEnvFile(key: string): string | undefined {
+  const file = ".env.production.local";
+  if (!existsSync(file)) return undefined;
+  for (const line of readFileSync(file, "utf8").split("\n")) {
+    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
+    if (match && match[1] === key) {
+      return match[2].trim().replace(/^["']|["']$/g, "");
+    }
+  }
+  return undefined;
+}
+
+// Prefer an unpooled connection: the seeds run long multi-statement
+// transactions that a pooler can't hold open. Providers name it differently —
+// Neon/Vercel Postgres set DATABASE_URL_UNPOOLED or POSTGRES_URL_NON_POOLING.
+function resolveDirectUrl(): string | undefined {
+  const PREFERENCE = [
+    "DIRECT_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+    "DATABASE_URL",
+  ];
+  for (const key of PREFERENCE) {
+    const value = readFromVercelEnvFile(key);
+    if (value && value !== "[SENSITIVE]") return value;
+  }
+  return undefined;
+}
+
+const url =
+  process.env.PROD_DATABASE_URL ??
+  (process.argv.includes("--prod") ? resolveDirectUrl() : undefined);
 
 if (!url) {
   fail(
-    "PROD_DATABASE_URL is not set.\n" +
-      "  Set it to the target database's DIRECT connection string first.\n" +
+    "No target database.\n" +
+      "  Either run `npm run db:seed-prod:vercel` after\n" +
+      "  `npx vercel env pull .env.production.local`,\n" +
+      "  or set PROD_DATABASE_URL to the target's DIRECT connection string.\n" +
       "  Refusing to run — otherwise this would silently seed your local DB."
   );
 }
