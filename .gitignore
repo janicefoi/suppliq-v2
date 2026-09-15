@@ -35,3 +35,10 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
+
+# Added by `vercel link`. Broad on purpose, but the example file
+# is documentation and must stay tracked.
+.env*
+!.env.example

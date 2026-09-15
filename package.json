@@ -19,10 +19,15 @@
     "db:seed-events": "tsx prisma/seed-events.ts",
     "db:reset": "tsx prisma/reset.ts",
     "db:seed-prod": "tsx scripts/seed-prod.ts",
-    "doctor": "tsx scripts/doctor.ts"
+    "doctor": "tsx scripts/doctor.ts",
+    "doctor:prod": "tsx scripts/doctor.ts --prod",
+    "db:seed-prod:vercel": "tsx scripts/seed-prod.ts --prod",
+    "db:push-prod": "tsx scripts/push-prod.ts",
+    "db:shift-dates": "tsx scripts/shift-dates.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@neondatabase/serverless": "^1.1.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-accordion": "^1.2.1",
     "@radix-ui/react-alert-dialog": "^1.1.2",
