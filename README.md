@@ -1,260 +1,184 @@
 # Suppliq
 
-**AI-powered ERP for retail and wholesale businesses.**
+**An AI-assisted ERP for retail and wholesale businesses.** Point of sale, inventory, procurement, multi-branch stock transfers, customer credit, and expenses in one system, with a separate Python service that layers demand forecasting, reorder recommendations, anomaly detection and cash flow projection on top.
 
-Run your whole operation in one place — point of sale, inventory, procurement, expenses, customer credit, multi-branch stock transfers — and let the AI layer do the thinking: reorder alerts, anomaly detection, demand forecasting, ABC analysis, cash flow projections, and a weekly Claude-written briefing delivered every Monday.
+### [→ Try the live demo](https://suppliq-v2.vercel.app/login?demo=true)
 
-Built for any product-based business. Wholesalers, retailers, distributors, stockists. Configure your currency, VAT rate, and industry — the platform adapts.
+No signup required. That link signs you in as a read-only admin on a seeded organisation (Meridian Electronics Ltd, two branches, nine months of trading history). Credentials, if you prefer the normal form: `demo@suppliq.com` / `demo1234`.
+
+Worth a look: the **admin dashboard** (per-branch breakdown, credit exposure, 7-day revenue), **point of sale** (three price tiers, credit sales, printable receipt), **purchase orders** (six-state lifecycle with supplier invoice matching), and **reports** (CSV export, void-and-restore).
 
 ---
 
-## Tech Stack
+## What this project is
 
-| Layer | Technology |
+A full multi-tenant SaaS product built end to end: data model, backend, frontend, authentication, authorisation, billing, a second service in a second language, deployment, and the operational tooling to run it.
+
+It is deliberately not a CRUD demo. The problems that took the most work were the ones that only show up when a system has to be correct: keeping every query scoped to the right tenant, making multi-step money operations atomic, ensuring a price change never rewrites history, and degrading gracefully when a dependency is down.
+
+| | |
 |---|---|
-| Language | TypeScript (strict, end-to-end) |
-| Framework | Next.js 14 App Router |
-| Styling | Tailwind CSS + shadcn/ui |
-| Database | PostgreSQL |
-| ORM | Prisma 5 |
-| Authentication | NextAuth.js v5 (credentials, JWT) |
-| State management | Zustand (POS cart) |
-| Charts | Recharts |
-| Validation | Zod + React Hook Form |
-| AI microservice | Python + FastAPI |
-| AI model | Claude (Anthropic) |
-| Billing | Stripe |
-| Email | Resend |
-
----
-
-## Plans
-
-Three tiers gated in `lib/plans.ts` and enforced at the page level:
-
-| Plan | Price | Included |
-|---|---|---|
-| **Starter** | €29/mo (14-day trial) | Full core ERP + Sales report |
-| **Growth** | — | + P&L report, Stock Movements report, Reorder Alerts (top 5) |
-| **Enterprise** | — | + all AI modules with full Claude reasoning |
-
----
-
-## Features
-
-### Point of Sale
-
-- Live item search by name or SKU (debounced, branch-scoped)
-- Three price tiers per item: **Retail**, **Wholesale**, **Special** — cart reprices instantly when switching
-- Attach a customer, set payment as **Paid** or **On Credit**
-- Discount input with live change calculation
-- Stock validation on the server before committing — rejects the sale if any item is unavailable
-- Atomic transaction: sale record + stock decrement + credit balance update in a single `$transaction()`
-- Printable thermal receipt: receipt number (`RCP-YYYYMMDD-XXXX`), served-by, itemised lines with SKU and price snapshot, VAT breakdown, QR code for branch WhatsApp
-
----
-
-### Dashboard
-
-**Admin view**
-- System-wide totals across all branches
-- Per-branch cards: today's revenue, sales count, outstanding credit, low-stock alert count, 7-day revenue bar chart, top 5 items by quantity, top 5 debtors
-
-**Manager / Cashier view**
-- Today's sales count and revenue
-- Low-stock alert list with item name and quantity vs. threshold
-
----
-
-### Inventory
-
-- Item records: SKU, name, category, supplier, three price tiers, cost price, lead time, reorder point
-- Per-item, per-branch stock quantity and low-stock threshold
-- Soft delete: deactivate/reactivate items without losing history
-- Admin sees all branches; non-admin sees only their branch
-
----
-
-### Purchase Orders
-
-Full PO lifecycle with six statuses: **DRAFT → SENT → CONFIRMED → PARTIAL → RECEIVED / CANCELLED**
-
-- Line items with unit cost and received quantity (supports partial deliveries)
-- Supplier invoice matching on every PO: invoice reference, amount, date, and status (**NONE → RECEIVED → PAID / DISPUTED**)
-- Payment recorded against invoice with timestamp and who approved it
-- Payables summary: outstanding invoice totals by status and supplier
-
----
-
-### Stock Transfers
-
-Branch-to-branch stock movements with a four-step lifecycle: **PENDING → IN_TRANSIT → RECEIVED / CANCELLED**
-
-- Raise a transfer request with line items
-- **PENDING**: created, awaiting approval
-- **IN_TRANSIT**: stock dispatched from source, TRANSFER_OUT log created; TRANSFER_IN log created on receipt
-- **RECEIVED**: full audit trail of both legs in the stock log
-- Stats: total transfers, in-transit value, completed this month
-
----
-
-### Expenses
-
-- Record operating expenses by category: Rent, Salaries, Utilities, Transport, Maintenance, Marketing, Other
-- Branch-scoped or org-wide
-- Summary stats: total spend, monthly breakdown, category totals
-- Date-range filtering and branch filter for admin
-
----
-
-### Customers
-
-- Customer records with name, phone, address, and home branch
-- Credit balance tracking: increases on credit sales, decreases when payments are recorded
-- Record credit payment: atomic transaction creates the payment record and decrements the balance simultaneously
-- Customer detail page: full purchase history + full payment history
-- Filter by credit status: All / Has Credit / No Credit
-
----
-
-### Suppliers
-
-- Supplier records: name, phone, email, address, notes
-- Summary stats: total items sourced, total POs, total spend from cost prices
-- Supplier detail: lists all supplied items with current stock levels and full PO history
-
----
-
-### Reports
-
-Manager and Admin only.
-
-- **Sales report**: revenue by date range, retail vs. wholesale breakdown, full receipt table, CSV export
-- **P&L report** (Growth+): revenue, expenses, and purchases in one view
-- **Stock Movements report** (Growth+): full stock log with reason codes
-- Void a receipt (Admin only): marks the sale void, records reason and timestamp, restores all stock items atomically
-
----
-
-### Employee Management
-
-Admin only.
-
-- Create accounts with role: **Cashier**, **Manager**, or **Admin**
-- Assign to a branch
-- Activate / deactivate (soft delete)
-- Reset passwords (bcrypt, server-side)
-- Per-employee sales stats: count and total revenue
-
----
-
-### Branch Management
-
-Admin only. Create and manage locations (name, address, phone). Per-branch stats: employee count, customer count, total sales.
-
----
-
-### Audit Log
-
-Admin only. Immutable trail of all system events: sales, voids, stock movements, PO changes, user logins, credit payments. Each entry records the action type, entity, description, and the user who performed it.
-
----
-
-### Settings
-
-- **Profile**: name and password update
-- **Organisation**: name, contact details, VAT number, currency, timezone — these populate receipts and documents
-- **Billing**: Stripe-powered plan management with subscription status, current period, and upgrade/downgrade flow
-
----
-
-## AI Layer (Enterprise)
-
-A Python + FastAPI microservice called by the Next.js app via an internal HTTP client. All reasoning is generated by Claude.
-
-### Reorder Alerts
-Analyses sales velocity, current stock, lead times, and reorder points across all branches. Returns ranked recommendations with priority (critical / high / medium / low), suggested order quantity, estimated days until stockout, and Claude-generated reasoning. Growth plan gets the top-5 list without reasoning; Enterprise unlocks all items with full explanations.
-
-### Overstock Detection
-Identifies items where stock exceeds realistic demand. Calculates days of cover, excess units, and capital tied up. Flags transfer opportunities to understocked branches with estimated impact on days of cover at the destination.
-
-### Transfer Recommendations
-Finds cross-branch redistribution opportunities where moving stock from an overstocked branch to an understocked one avoids a reorder. Ranks by priority, shows capital freed, and estimates reorder savings.
-
-### ABC/XYZ Analysis
-Classifies every item on two axes:
-- **ABC** (revenue contribution): A = top 80%, B = next 15%, C = bottom 5%
-- **XYZ** (demand variability): X = stable, Y = variable, Z = erratic
-
-Combined class (e.g. AX, BZ) drives stocking strategy. Includes a 3×3 matrix heatmap and per-item rank with action recommendation.
-
-### Anomaly Detection
-Scans recent stock logs and expense records against historical baselines. Detects four anomaly types:
-- **Sales spike** — item sold far above its usual rate
-- **Sales drop** — item with consistent history goes quiet
-- **Stock shrinkage** — manual adjustment logs indicating unexplained loss
-- **Expense outlier** — single expense significantly above category average
-
-Each anomaly includes severity (critical / warning), description, and a suggested action.
-
-### Cash Flow Forecasting
-Projects daily cash flow for the current month. Combines actual revenue and expenses already recorded with expected purchase costs from pending and confirmed POs. Outputs a daily net cash curve with cumulative balance, plus itemised upcoming purchases that need funding.
-
-### Weekly AI Briefing
-Every Monday, Claude writes a plain-English digest for the org covering:
-- Top stockout risks with days of cover
-- Biggest anomaly of the week
-- Supplier performance watch (order count, average lead days)
-- A single recommended operational action
-
-Delivered as an in-app card with an unread badge in the sidebar. Also generates an email-ready copy. Results are cached per org per week (no re-generation on page refresh).
-
-### Market Intelligence
-Fetches live supply-chain news and commodity prices relevant to the organisation's industry keywords. Claude summarises each article with a relevance score, sentiment (positive / negative / neutral), and impact tags. Commodity price section shows live spot prices with 24h change. FX rate strip for relevant currency pairs. Results cached for 2 hours.
+| **Scale** | 20 database models, 30 pages, 17 server-action modules, 2 services |
+| **Live** | [suppliq-v2.vercel.app](https://suppliq-v2.vercel.app) on Vercel + Neon Postgres |
+| **Language** | TypeScript (strict) and Python |
 
 ---
 
 ## Architecture
 
-### Multi-tenancy
-Every row in every table carries `organizationId`. All queries are scoped to the authenticated user's org. Branches provide a second scope — non-admin users only see data for their assigned branch.
+```mermaid
+flowchart LR
+    B["Browser"] --> N["Next.js 14 App Router<br/>React Server Components<br/>Server Actions"]
+    N --> P[("PostgreSQL<br/>Neon")]
+    N -->|"internal HTTP<br/>10s timeout"| A["FastAPI service<br/>forecasting · anomalies<br/>optimisation"]
+    A --> P
+    A --> C["Claude API<br/>narrative reasoning"]
+    S["Stripe"] -->|"webhook"| N
+```
 
-### Price snapshot
-`SaleItem.unitPrice` stores the price at the time of sale. Price changes never affect historical receipts.
+**Two services, one database.** The Next.js app owns all writes for business operations. The Python service reads the same Postgres directly and writes only to the `forecasts` table, which keeps the ownership boundary unambiguous and avoids building a synchronisation layer that would have to be kept correct.
 
-### Atomic transactions
-All multi-step writes use `prisma.$transaction()`: sale + stock + credit, payment + balance, PO receipt + stock increment, void + stock restore, transfer dispatch + log.
+**The AI layer is optional by design.** Every call goes through one HTTP client with a uniform timeout, and connection failures are surfaced as `unavailable` rather than thrown. If the Python service is down, the insight pages show an offline state and the rest of the ERP is unaffected. Nothing in the core product depends on it.
 
-### VAT
-VAT rate is configurable per organisation. Prices are stored and displayed VAT-inclusive. VAT is extracted from totals server-side using `total × (rate / (100 + rate))`.
-
-### Role enforcement
-Three roles: **CASHIER**, **MANAGER**, **ADMIN**. Access is checked in server components and server actions — no client-side role logic. Non-admin queries are automatically branch-scoped.
-
-### Stock log
-Every stock movement (sale, void, purchase receipt, transfer in/out, manual adjustment) writes an immutable `StockLog` row with reason code, reference ID, and recorder. This gives the AI microservice a complete auditable history to analyse.
+**Server Components by default.** Data fetching happens on the server, so no API layer exists purely to feed the frontend. Client components are used only where interactivity requires them: the POS cart, dialogs, and charts.
 
 ---
 
-## Database Models
+## Engineering decisions
 
+These are the choices that shaped the codebase, and the reasoning behind them.
+
+**Multi-tenancy is enforced at every query, not by middleware.** Every table carries `organizationId`, and each server action derives it from the session rather than accepting it from the client. Mutations re-verify ownership before writing, so a guessed ID fails at the data layer rather than relying on a route guard being present. Branches form a second scope: non-admin users only ever see their own branch's data.
+
+**Money operations are atomic.** A sale writes the sale record, decrements stock across line items, writes stock log entries, and updates the customer's credit balance. Any of those failing alone would corrupt the books, so they run in a single `prisma.$transaction()`. The same applies to recording a payment, receiving a purchase order, dispatching a transfer, and voiding a receipt.
+
+**Prices are snapshotted, never referenced.** `SaleItem.unitPrice` stores the price at the moment of sale. Changing an item's price tomorrow does not silently rewrite last month's receipts or last quarter's revenue report.
+
+**Every stock movement is an immutable log entry.** Sales, voids, purchase receipts, transfers in and out, and manual adjustments all write a `StockLog` row with a reason code and a reference. Current stock is therefore explainable rather than merely present, which is what makes shrinkage detection possible at all.
+
+**Authorisation is checked server-side, twice.** Roles (cashier, manager, admin) gate pages, and the same checks are repeated inside the server actions. No client-side role logic decides access. Plan gating (Starter / Growth / Enterprise) is a separate axis layered on top, so a plan downgrade closes features without touching the role model.
+
+**Subscription state is refreshed without forcing re-login.** Plan lives in the JWT for cheap access, but a Stripe webhook can change it at any moment. The JWT callback re-reads plan and currency from the database every five minutes, so an upgrade takes effect quickly without a session round trip on every request.
+
+**Operational tooling is part of the project.** Deploying this surfaced a class of problem that only exists in production, so the repo includes tooling for it:
+
+| Command | What it does |
+|---|---|
+| `npm run doctor` | Checks environment variables, database reachability, whether the schema is applied, and whether the demo account is intact. Runs against local or, with `PROD_DATABASE_URL`, a remote database. |
+| `npm run db:push-prod` | Applies the schema to a remote database without editing `.env`, normalising the shell-quoting artefacts that otherwise surface as an opaque Prisma `P1013`. |
+| `npm run db:seed-prod` | Runs all five seed scripts in dependency order against an explicitly named remote database. Refuses to run against localhost. |
+| `npm run db:shift-dates` | Rolls the seeded demo data forward so it always ends today, keeping the live demo current. Idempotent and transactional. |
+
+---
+
+## Features
+
+<details>
+<summary><b>Point of sale</b></summary>
+
+Debounced branch-scoped item search by name or SKU. Three price tiers per item (retail, wholesale, special) with the cart repricing instantly on switch. Customer attachment, paid or on-credit payment, discount input with live change calculation. Server-side stock validation before commit. Printable thermal receipt with receipt number, itemised lines, VAT breakdown and QR code.
+</details>
+
+<details>
+<summary><b>Dashboard</b></summary>
+
+Admin view shows system-wide totals plus per-branch cards: today's revenue, sales count, outstanding credit, low-stock alerts, a 7-day revenue chart, top items and top debtors. Manager and cashier views narrow to their own branch.
+</details>
+
+<details>
+<summary><b>Inventory</b></summary>
+
+Item records with SKU, category, supplier, three price tiers, cost price, lead time and reorder point. Per-branch stock quantity and low-stock threshold. Soft delete preserves history. CSV import with per-row validation and a skipped-row report.
+</details>
+
+<details>
+<summary><b>Purchase orders</b></summary>
+
+Six-state lifecycle (draft, sent, confirmed, partial, received, cancelled) supporting partial deliveries. Supplier invoice matching on every order with its own status track, payment recorded against the invoice, and a payables summary by status and supplier.
+</details>
+
+<details>
+<summary><b>Stock transfers</b></summary>
+
+Branch-to-branch movement with a four-state lifecycle. Dispatch writes a `TRANSFER_OUT` log, receipt writes `TRANSFER_IN`, giving a full audit trail of both legs.
+</details>
+
+<details>
+<summary><b>Customers and credit</b></summary>
+
+Credit balance tracking that rises on credit sales and falls when payments are recorded, as one atomic operation. Customer detail shows full purchase and payment history, with a printable account statement.
+</details>
+
+<details>
+<summary><b>Suppliers, expenses, reports</b></summary>
+
+Supplier records with sourced items, order history and total spend. Operating expenses by category, branch-scoped or organisation-wide. Sales report with CSV export, P&L and stock movement reports (Growth plan and above), and admin-only receipt voiding that restores stock atomically.
+</details>
+
+<details>
+<summary><b>Administration</b></summary>
+
+Employee accounts with role assignment, branch assignment, activation and password reset. Branch management. An immutable audit log of sales, voids, stock movements, order changes, logins and credit payments. Organisation settings for currency, VAT rate, timezone and tax number, which flow through to receipts and documents.
+</details>
+
+<details>
+<summary><b>AI layer</b></summary>
+
+A FastAPI service providing reorder recommendations (reorder point and economic order quantity, ranked by urgency), overstock detection with capital-tied analysis, inter-branch transfer recommendations, ABC/XYZ classification, anomaly detection across sales, stock and expenses, 30-day cash flow projection, a weekly written briefing, and supply chain market intelligence. Claude generates the plain-English reasoning attached to each recommendation.
+</details>
+
+---
+
+## Running locally
+
+Requires Node 20+, Python 3.11+, and Docker (or any PostgreSQL 16 instance).
+
+```bash
+git clone https://github.com/janicefoi/suppliq-v2.git
+cd suppliq-v2
+npm install
+cp .env.example .env.local
 ```
-Organization → Branch → User
-                      → BranchStock ← Item ← Category
-                                            ← Supplier → PurchaseOrder → PurchaseOrderItem
-Organization → Sale → SaleItem
-             → Customer → CreditPayment
-             → StockTransfer → StockTransferItem
-             → Expense
-             → StockLog
-             → Forecast
-             → WeeklyBriefing
-             → AuditLog
+
+Fill in `.env.local`. At minimum you need `DATABASE_URL`, `DIRECT_URL` and `AUTH_SECRET` (generate one with `openssl rand -base64 32`). Then:
+
+```bash
+docker compose up -d
+npx prisma db push
+npm run db:seed && npm run db:seed-history && npm run db:seed-current && npm run db:seed-stocks && npm run db:seed-events
+npm run dev
 ```
+
+Sign in with `demo@suppliq.com` / `demo1234`. Run `npm run doctor` if anything fails; it reports which layer is at fault.
+
+The AI service is separate and optional:
+
+```bash
+cd ai
+python -m venv venv && venv/Scripts/activate   # source venv/bin/activate on macOS/Linux
+pip install -r requirements.txt
+cp .env.example .env                            # needs DATABASE_URL and ANTHROPIC_API_KEY
+python -m uvicorn main:app --reload --port 8000
+```
+
+---
+
+## Project status
+
+The core ERP is complete and deployed. The demo above runs the production build against a live Postgres instance.
+
+**The AI service is not deployed in the public demo.** It runs locally against the same database, but hosting it requires a separate deployment and an Anthropic API key, so the insight pages in the demo show their offline state. The graceful degradation described above is what you are seeing there.
+
+Next, in priority order:
+
+1. Deploy the FastAPI service and authenticate the boundary between it and the Next.js app with a shared secret, so organisation-scoped endpoints cannot be called directly.
+2. Automated test coverage, starting with the money paths: VAT extraction, credit balance arithmetic, void-and-restore, and reorder point calculation.
+3. CI running typecheck, lint and tests on every push.
+4. Replace the in-process job scheduler with external cron, so scheduled forecasts survive multi-instance deployment.
 
 ---
 
 ## Author
 
 **Janice Ngugi**
-GitHub: [@janicefoi](https://github.com/janicefoi)
+[GitHub @janicefoi](https://github.com/janicefoi)

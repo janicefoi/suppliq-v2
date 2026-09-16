@@ -51,13 +51,6 @@ async def health_check() -> bool:
 
 # ── Organisation helpers ───────────────────────────────────────────────────
 
-async def get_all_org_ids() -> list[str]:
-    """Return all organisation IDs. Used by the nightly scheduler to fan out jobs."""
-    async with get_conn() as conn:
-        rows = await conn.fetch("SELECT id FROM organizations ORDER BY created_at")
-        return [str(r["id"]) for r in rows]
-
-
 # ── Sales analytics ────────────────────────────────────────────────────────
 
 async def get_sales_history(
@@ -75,18 +68,18 @@ async def get_sales_history(
     async with get_conn() as conn:
         query = """
             SELECT
-                DATE(s.created_at AT TIME ZONE 'UTC') AS date,
-                si.item_id,
-                s.branch_id,
+                DATE(s."createdAt" AT TIME ZONE 'UTC')            AS date,
+                si."itemId"                                       AS item_id,
+                s."branchId"                                      AS branch_id,
                 SUM(si.quantity)                                  AS total_qty,
-                SUM(si.quantity * si.unit_price)                  AS total_revenue
+                SUM(si.quantity * si."unitPrice")                 AS total_revenue
             FROM sale_items si
-            JOIN sales s ON s.id = si.sale_id
-            WHERE s.organization_id = $1
-              AND s.status = 'COMPLETED'
-              AND s.created_at >= NOW() - INTERVAL '1 day' * $2
-              AND ($3::text IS NULL OR si.item_id = $3)
-              AND ($4::text IS NULL OR s.branch_id = $4)
+            JOIN sales s ON s.id = si."saleId"
+            WHERE s."organizationId" = $1
+              AND s."isVoid" = FALSE
+              AND s."createdAt" >= NOW() - INTERVAL '1 day' * $2
+              AND ($3::text IS NULL OR si."itemId" = $3)
+              AND ($4::text IS NULL OR s."branchId" = $4)
             GROUP BY 1, 2, 3
             ORDER BY 1 DESC
         """
@@ -105,22 +98,22 @@ async def get_branch_stock(org_id: str, branch_id: str | None = None) -> list[di
     async with get_conn() as conn:
         query = """
             SELECT
-                bs.item_id,
-                i.name          AS item_name,
+                bs."itemId"             AS item_id,
+                i.name                  AS item_name,
                 i.sku,
-                bs.branch_id,
-                b.name          AS branch_name,
-                bs.stock_qty,
-                bs.low_stock_threshold,
-                i.retail_price,
-                i.wholesale_price
+                bs."branchId"           AS branch_id,
+                b.name                  AS branch_name,
+                bs."stockQty"           AS stock_qty,
+                bs."lowStockThreshold"  AS low_stock_threshold,
+                i."retailPrice"         AS retail_price,
+                i."wholesalePrice"      AS wholesale_price
             FROM branch_stocks bs
-            JOIN items i  ON i.id  = bs.item_id
-            JOIN branches b ON b.id = bs.branch_id
-            WHERE i.organization_id = $1
-              AND i.is_active = TRUE
-              AND ($2::text IS NULL OR bs.branch_id = $2)
-            ORDER BY bs.stock_qty ASC
+            JOIN items i  ON i.id  = bs."itemId"
+            JOIN branches b ON b.id = bs."branchId"
+            WHERE i."organizationId" = $1
+              AND i."isActive" = TRUE
+              AND ($2::text IS NULL OR bs."branchId" = $2)
+            ORDER BY bs."stockQty" ASC
         """
         rows = await conn.fetch(query, org_id, branch_id)
         return [dict(r) for r in rows]
@@ -139,7 +132,7 @@ async def get_expense_summary(org_id: str, days: int = 90) -> list[dict]:
                 COUNT(*)     AS count,
                 AVG(amount)  AS avg_amount
             FROM expenses
-            WHERE organization_id = $1
+            WHERE "organizationId" = $1
               AND date >= NOW() - INTERVAL '1 day' * $2
             GROUP BY category
             ORDER BY total DESC
@@ -156,23 +149,23 @@ async def get_purchase_order_history(org_id: str, days: int = 180) -> list[dict]
     async with get_conn() as conn:
         query = """
             SELECT
-                po.id           AS po_id,
-                po.supplier_id,
-                s.name          AS supplier_name,
-                po.branch_id,
-                poi.item_id,
-                i.name          AS item_name,
+                po.id            AS po_id,
+                po."supplierId"  AS supplier_id,
+                s.name           AS supplier_name,
+                po."branchId"    AS branch_id,
+                poi."itemId"     AS item_id,
+                i.name           AS item_name,
                 poi.quantity,
-                poi.cost_price,
-                po.created_at,
-                po.delivered_at
+                poi."costPrice"  AS cost_price,
+                po."createdAt"   AS created_at,
+                po."deliveredAt" AS delivered_at
             FROM purchase_orders po
-            JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
-            JOIN suppliers s ON s.id = po.supplier_id
-            JOIN items i     ON i.id = poi.item_id
-            WHERE po.organization_id = $1
-              AND po.created_at >= NOW() - INTERVAL '1 day' * $2
-            ORDER BY po.created_at DESC
+            JOIN purchase_order_items poi ON poi."purchaseOrderId" = po.id
+            JOIN suppliers s ON s.id = po."supplierId"
+            JOIN items i     ON i.id = poi."itemId"
+            WHERE po."organizationId" = $1
+              AND po."createdAt" >= NOW() - INTERVAL '1 day' * $2
+            ORDER BY po."createdAt" DESC
         """
         rows = await conn.fetch(query, org_id, days)
         return [dict(r) for r in rows]
@@ -193,11 +186,14 @@ async def get_items_for_org(org_id: str) -> list[dict]:
     async with get_conn() as conn:
         query = """
             SELECT
-                i.id, i.name, i.sku, i.retail_price, i.wholesale_price,
-                i.reorder_point, c.name AS category
+                i.id, i.name, i.sku,
+                i."retailPrice"    AS retail_price,
+                i."wholesalePrice" AS wholesale_price,
+                i."reorderPoint"   AS reorder_point,
+                c.name             AS category
             FROM items i
-            LEFT JOIN categories c ON c.id = i.category_id
-            WHERE i.organization_id = $1 AND i.is_active = TRUE
+            LEFT JOIN categories c ON c.id = i."categoryId"
+            WHERE i."organizationId" = $1 AND i."isActive" = TRUE
             ORDER BY i.name
         """
         rows = await conn.fetch(query, org_id)
@@ -210,7 +206,7 @@ async def get_suppliers_for_org(org_id: str) -> list[dict]:
         query = """
             SELECT id, name, phone, email, notes
             FROM suppliers
-            WHERE organization_id = $1
+            WHERE "organizationId" = $1
             ORDER BY name
         """
         rows = await conn.fetch(query, org_id)
@@ -228,11 +224,11 @@ async def upsert_forecast(forecast: dict) -> None:
         await conn.execute(
             """
             INSERT INTO forecasts (
-                id, item_id, branch_id, organization_id,
-                period_start, period_end,
-                predicted_demand, confidence_score,
-                reorder_suggested, suggested_qty,
-                model_version, generated_at
+                id, "itemId", "branchId", "organizationId",
+                "periodStart", "periodEnd",
+                "predictedDemand", "confidenceScore",
+                "reorderSuggested", "suggestedQty",
+                "modelVersion", "generatedAt"
             ) VALUES (
                 gen_random_uuid()::text, $1, $2, $3,
                 $4, $5,
@@ -240,14 +236,14 @@ async def upsert_forecast(forecast: dict) -> None:
                 $8, $9,
                 $10, NOW()
             )
-            ON CONFLICT (item_id, branch_id, period_start)
+            ON CONFLICT ("itemId", "branchId", "periodStart")
             DO UPDATE SET
-                predicted_demand  = EXCLUDED.predicted_demand,
-                confidence_score  = EXCLUDED.confidence_score,
-                reorder_suggested = EXCLUDED.reorder_suggested,
-                suggested_qty     = EXCLUDED.suggested_qty,
-                model_version     = EXCLUDED.model_version,
-                generated_at      = NOW()
+                "predictedDemand"  = EXCLUDED."predictedDemand",
+                "confidenceScore"  = EXCLUDED."confidenceScore",
+                "reorderSuggested" = EXCLUDED."reorderSuggested",
+                "suggestedQty"     = EXCLUDED."suggestedQty",
+                "modelVersion"     = EXCLUDED."modelVersion",
+                "generatedAt"      = NOW()
             """,
             forecast["item_id"],
             forecast["branch_id"],
@@ -274,16 +270,16 @@ async def get_latest_forecasts_by_item_branch(org_id: str) -> dict[tuple[str, st
     async with get_conn() as conn:
         rows = await conn.fetch(
             """
-            SELECT DISTINCT ON (item_id, branch_id)
-                item_id,
-                branch_id,
-                predicted_demand,
-                confidence_score,
-                EXTRACT(DAY FROM (period_end - period_start))::float AS horizon_days
+            SELECT DISTINCT ON ("itemId", "branchId")
+                "itemId"           AS item_id,
+                "branchId"         AS branch_id,
+                "predictedDemand"  AS predicted_demand,
+                "confidenceScore"  AS confidence_score,
+                EXTRACT(DAY FROM ("periodEnd" - "periodStart"))::float AS horizon_days
             FROM forecasts
-            WHERE organization_id = $1
-              AND generated_at >= NOW() - INTERVAL '48 hours'
-            ORDER BY item_id, branch_id, generated_at DESC
+            WHERE "organizationId" = $1
+              AND "generatedAt" >= NOW() - INTERVAL '48 hours'
+            ORDER BY "itemId", "branchId", "generatedAt" DESC
             """,
             org_id,
         )
@@ -308,8 +304,8 @@ async def update_branch_rop(item_id: str, branch_id: str, rop_value: int) -> boo
         result = await conn.execute(
             """
             UPDATE branch_stocks
-            SET low_stock_threshold = $1
-            WHERE item_id = $2 AND branch_id = $3
+            SET "lowStockThreshold" = $1
+            WHERE "itemId" = $2 AND "branchId" = $3
             """,
             rop_value,
             item_id,
@@ -327,15 +323,15 @@ async def get_item_revenue(org_id: str, days: int = 180) -> dict[str, dict]:
         rows = await conn.fetch(
             """
             SELECT
-                si.item_id,
-                SUM(si.quantity * si.unit_price)::float  AS revenue,
-                SUM(si.quantity)::int                    AS total_qty_sold
+                si."itemId"                             AS item_id,
+                SUM(si.quantity * si."unitPrice")::float AS revenue,
+                SUM(si.quantity)::int                   AS total_qty_sold
             FROM sale_items si
-            JOIN sales s ON s.id = si.sale_id
-            WHERE s.organization_id = $1
-              AND s.status = 'COMPLETED'
-              AND s.created_at >= NOW() - INTERVAL '1 day' * $2
-            GROUP BY si.item_id
+            JOIN sales s ON s.id = si."saleId"
+            WHERE s."organizationId" = $1
+              AND s."isVoid" = FALSE
+              AND s."createdAt" >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY si."itemId"
             """,
             org_id,
             days,
@@ -360,15 +356,15 @@ async def get_item_weekly_variability(org_id: str, days: int = 180) -> dict[str,
             """
             WITH weekly AS (
                 SELECT
-                    si.item_id,
-                    DATE_TRUNC('week', s.created_at AT TIME ZONE 'UTC') AS week,
+                    si."itemId" AS item_id,
+                    DATE_TRUNC('week', s."createdAt" AT TIME ZONE 'UTC') AS week,
                     SUM(si.quantity)::float AS weekly_qty
                 FROM sale_items si
-                JOIN sales s ON s.id = si.sale_id
-                WHERE s.organization_id = $1
-                  AND s.status = 'COMPLETED'
-                  AND s.created_at >= NOW() - INTERVAL '1 day' * $2
-                GROUP BY si.item_id, DATE_TRUNC('week', s.created_at AT TIME ZONE 'UTC')
+                JOIN sales s ON s.id = si."saleId"
+                WHERE s."organizationId" = $1
+                  AND s."isVoid" = FALSE
+                  AND s."createdAt" >= NOW() - INTERVAL '1 day' * $2
+                GROUP BY si."itemId", DATE_TRUNC('week', s."createdAt" AT TIME ZONE 'UTC')
             )
             SELECT
                 item_id,
@@ -513,14 +509,14 @@ async def get_daily_revenue_agg(org_id: str, days: int = 30) -> list[dict]:
         rows = await conn.fetch(
             """
             SELECT
-                DATE(s.created_at AT TIME ZONE 'UTC')           AS date,
-                SUM(si.quantity * si.unit_price)::float         AS revenue
+                DATE(s."createdAt" AT TIME ZONE 'UTC')          AS date,
+                SUM(si.quantity * si."unitPrice")::float        AS revenue
             FROM sale_items si
-            JOIN sales s ON s.id = si.sale_id
-            WHERE s.organization_id = $1
-              AND s.status = 'COMPLETED'
-              AND s.created_at >= NOW() - INTERVAL '1 day' * $2
-            GROUP BY DATE(s.created_at AT TIME ZONE 'UTC')
+            JOIN sales s ON s.id = si."saleId"
+            WHERE s."organizationId" = $1
+              AND s."isVoid" = FALSE
+              AND s."createdAt" >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY DATE(s."createdAt" AT TIME ZONE 'UTC')
             ORDER BY date ASC
             """,
             org_id,
@@ -533,7 +529,7 @@ async def get_branch_names(org_id: str) -> dict[str, str]:
     """Returns {branch_id: branch_name} for all branches in an org."""
     async with get_conn() as conn:
         rows = await conn.fetch(
-            "SELECT id, name FROM branches WHERE organization_id = $1",
+            'SELECT id, name FROM branches WHERE "organizationId" = $1',
             org_id,
         )
         return {str(r["id"]): r["name"] for r in rows}
@@ -550,23 +546,23 @@ async def get_stock_shrinkage_logs(org_id: str, days: int = 7) -> list[dict]:
         rows = await conn.fetch(
             """
             SELECT
-                sl.item_id,
-                i.name            AS item_name,
+                sl."itemId"        AS item_id,
+                i.name             AS item_name,
                 i.sku,
-                COALESCE(i.wholesale_price, 0)::float AS unit_cost,
-                sl.branch_id,
-                b.name            AS branch_name,
+                COALESCE(i."wholesalePrice", 0)::float AS unit_cost,
+                sl."branchId"      AS branch_id,
+                b.name             AS branch_name,
                 SUM(sl.quantity)::int   AS net_qty,
                 COUNT(*)::int           AS adjustment_count,
-                MIN(sl.created_at)      AS first_at
+                MIN(sl."createdAt")     AS first_at
             FROM stock_logs sl
-            JOIN items i ON i.id = sl.item_id
-            LEFT JOIN branches b ON b.id = sl.branch_id
-            WHERE sl.organization_id = $1
+            JOIN items i ON i.id = sl."itemId"
+            LEFT JOIN branches b ON b.id = sl."branchId"
+            WHERE sl."organizationId" = $1
               AND sl.reason = 'MANUAL_ADJUSTMENT'
               AND sl.quantity < 0
-              AND sl.created_at >= NOW() - INTERVAL '1 day' * $2
-            GROUP BY sl.item_id, i.name, i.sku, i.wholesale_price, sl.branch_id, b.name
+              AND sl."createdAt" >= NOW() - INTERVAL '1 day' * $2
+            GROUP BY sl."itemId", i.name, i.sku, i."wholesalePrice", sl."branchId", b.name
             HAVING SUM(sl.quantity) < 0
             ORDER BY SUM(sl.quantity) ASC
             """,
@@ -589,7 +585,7 @@ async def get_expense_by_period(
             """
             SELECT category, SUM(amount)::float AS total
             FROM expenses
-            WHERE organization_id = $1
+            WHERE "organizationId" = $1
               AND date >= NOW() - INTERVAL '1 day' * $2
               AND date <  NOW() - INTERVAL '1 day' * $3
             GROUP BY category
@@ -614,16 +610,16 @@ async def get_supplier_avg_lead_times(org_id: str, days: int = 180) -> dict[str,
         rows = await conn.fetch(
             """
             SELECT
-                supplier_id,
+                "supplierId" AS supplier_id,
                 AVG(
-                    EXTRACT(EPOCH FROM (delivered_at - created_at)) / 86400.0
+                    EXTRACT(EPOCH FROM ("deliveredAt" - "createdAt")) / 86400.0
                 )::float AS avg_lead_days
             FROM purchase_orders
-            WHERE organization_id = $1
-              AND created_at >= NOW() - INTERVAL '1 day' * $2
-              AND delivered_at IS NOT NULL
-              AND delivered_at > created_at
-            GROUP BY supplier_id
+            WHERE "organizationId" = $1
+              AND "createdAt" >= NOW() - INTERVAL '1 day' * $2
+              AND "deliveredAt" IS NOT NULL
+              AND "deliveredAt" > "createdAt"
+            GROUP BY "supplierId"
             """,
             org_id,
             days,
@@ -642,14 +638,14 @@ async def get_item_preferred_supplier(org_id: str, days: int = 180) -> dict[str,
     async with get_conn() as conn:
         rows = await conn.fetch(
             """
-            SELECT DISTINCT ON (poi.item_id)
-                poi.item_id,
-                po.supplier_id
+            SELECT DISTINCT ON (poi."itemId")
+                poi."itemId"    AS item_id,
+                po."supplierId" AS supplier_id
             FROM purchase_order_items poi
-            JOIN purchase_orders po ON po.id = poi.purchase_order_id
-            WHERE po.organization_id = $1
-              AND po.created_at >= NOW() - INTERVAL '1 day' * $2
-            ORDER BY poi.item_id, po.created_at DESC
+            JOIN purchase_orders po ON po.id = poi."purchaseOrderId"
+            WHERE po."organizationId" = $1
+              AND po."createdAt" >= NOW() - INTERVAL '1 day' * $2
+            ORDER BY poi."itemId", po."createdAt" DESC
             """,
             org_id,
             days,
@@ -664,12 +660,12 @@ async def get_forecast_summary(org_id: str) -> dict:
             """
             SELECT
                 COUNT(*)::int           AS total_forecasts,
-                MAX(generated_at)       AS last_run_at,
-                MIN(period_start)       AS period_start,
-                MAX(period_end)         AS period_end,
-                MAX(model_version)      AS model_version
+                MAX("generatedAt")      AS last_run_at,
+                MIN("periodStart")      AS period_start,
+                MAX("periodEnd")        AS period_end,
+                MAX("modelVersion")     AS model_version
             FROM forecasts
-            WHERE organization_id = $1
+            WHERE "organizationId" = $1
             """,
             org_id,
         )

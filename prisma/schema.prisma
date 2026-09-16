@@ -577,6 +577,10 @@ model Forecast {
   branch       Branch       @relation(fields: [branchId], references: [id])
   item         Item         @relation(fields: [itemId], references: [id])
 
+  // The AI service upserts forecasts with
+  // ON CONFLICT ("itemId", "branchId", "periodStart"), which needs a real
+  // unique constraint to target — an index alone is not enough.
+  @@unique([itemId, branchId, periodStart])
   @@index([organizationId])
   @@index([itemId])
   @@index([branchId])
