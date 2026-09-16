@@ -80,13 +80,13 @@ export function SupplierDialog({ open, onClose, supplier, onSuccess }: SupplierD
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="s-name">Name *</Label>
-              <Input id="s-name" placeholder="e.g. Kamau Spares Ltd" {...register("name")} />
+              <Input id="s-name" placeholder="e.g. Acme Distributors Ltd" {...register("name")} />
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="s-phone">Phone *</Label>
-              <Input id="s-phone" placeholder="+254 7XX XXX XXX" {...register("phone")} />
+              <Input id="s-phone" placeholder="e.g. +33 1 23 45 67 89" {...register("phone")} />
               {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
             </div>
           </div>

@@ -5,7 +5,7 @@ import { getSuppliers } from "@/lib/actions/suppliers";
 import { getBranches } from "@/lib/actions/branches";
 import { ReorderClient } from "@/components/insights/reorder-client";
 
-export const metadata = { title: "Reorder Alerts | SUPPLIQ" };
+export const metadata = { title: "Reorder Alerts | Suppliq" };
 
 export type ReorderRecommendation = {
   item_id: string;

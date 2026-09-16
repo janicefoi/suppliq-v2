@@ -5,7 +5,7 @@ import { MarketClient } from "@/components/insights/market-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "Market Intelligence | SUPPLIQ" };
+export const metadata = { title: "Market Intelligence | Suppliq" };
 
 export type NewsArticle = {
   title: string;

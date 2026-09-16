@@ -5,7 +5,7 @@ import { AnomaliesClient } from "@/components/insights/anomalies-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "Anomaly Alerts | SUPPLIQ" };
+export const metadata = { title: "Anomaly Alerts | Suppliq" };
 
 export type AnomalyRecord = {
   type: "sales_spike" | "sales_drop" | "stock_shrinkage" | "expense_outlier";

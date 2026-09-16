@@ -5,7 +5,7 @@ import { AbcAnalysisClient } from "@/components/insights/abc-analysis-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "ABC Analysis | SUPPLIQ" };
+export const metadata = { title: "ABC Analysis | Suppliq" };
 
 export type AbcXyzItem = {
   item_id: string;

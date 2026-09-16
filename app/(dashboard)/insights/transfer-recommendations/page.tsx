@@ -5,7 +5,7 @@ import { TransferRecommendationsClient } from "@/components/insights/transfer-re
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "Transfer Hints | SUPPLIQ" };
+export const metadata = { title: "Transfer Hints | Suppliq" };
 
 export type TransferRecommendation = {
   item_id: string;

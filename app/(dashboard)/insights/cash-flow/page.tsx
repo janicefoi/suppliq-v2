@@ -5,7 +5,7 @@ import { CashFlowClient } from "@/components/insights/cash-flow-client";
 import { canAccess } from "@/lib/plans";
 import { UpgradePrompt } from "@/components/insights/upgrade-prompt";
 
-export const metadata = { title: "Cash Flow | SUPPLIQ" };
+export const metadata = { title: "Cash Flow | Suppliq" };
 
 export type DailyPoint = {
   day: number;
